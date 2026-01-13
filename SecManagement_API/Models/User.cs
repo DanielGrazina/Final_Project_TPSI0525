@@ -15,7 +15,6 @@ namespace SecManagement_API.Models
         [Column("email")]
         public string Email { get; set; } = string.Empty;
 
-        // Pode ser null se vier do Google/Facebook
         [Column("passwordhash")]
         public string? PasswordHash { get; set; }
 
@@ -25,7 +24,6 @@ namespace SecManagement_API.Models
         [Column("facebookid")]
         public string? FacebookId { get; set; }
 
-        // Para ativação de email
         [Column("isactive")]
         public bool IsActive { get; set; } = false;
 
@@ -36,6 +34,7 @@ namespace SecManagement_API.Models
         [Column("avatarurl")]
         public string? AvatarUrl { get; set; }
 
+        // Dados Pessoais
         [Column("nome")]
         public string Nome { get; set; } = string.Empty;
 
@@ -50,6 +49,12 @@ namespace SecManagement_API.Models
 
         [Column("cc")]
         public string? Cc { get; set; }
+
+        [Column("resettoken")]
+        public string? ResetToken { get; set; }
+
+        [Column("resettokenexpiry")]
+        public DateTime? ResetTokenExpiry { get; set; }
 
         // Segurança 2FA
         [Column("twofactorsecret")]

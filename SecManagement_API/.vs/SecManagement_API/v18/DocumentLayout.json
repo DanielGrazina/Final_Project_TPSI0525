@@ -1,57 +1,73 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\",
+  "WorkspaceRootPath": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\logindto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\logindto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\interfaces\\iauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\interfaces\\iauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\authresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\authresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\resetpassworddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\resetpassworddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\forgotpassworddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\forgotpassworddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\registerdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\registerdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\controllers\\usercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:controllers\\usercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\interfaces\\iauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\interfaces\\iauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\activatedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\activatedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\sociallogindto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\sociallogindto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\interfaces\\emailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\interfaces\\emailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\interfaces\\iemailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\interfaces\\iemailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\authresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\authresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\forgotpassworddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\forgotpassworddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\resetpassworddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\resetpassworddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\registerdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\registerdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\controllers\\usercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:controllers\\usercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
@@ -62,17 +78,17 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 9,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Document",
               "DocumentIndex": 7,
               "Title": "appsettings.json",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\appsettings.json",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\appsettings.json",
               "RelativeDocumentMoniker": "appsettings.json",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\appsettings.json",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\appsettings.json",
               "RelativeToolTip": "appsettings.json",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAABoAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
               "WhenOpened": "2026-01-13T16:59:38.263Z",
               "IsPinned": true,
@@ -82,22 +98,75 @@
               "$type": "Document",
               "DocumentIndex": 8,
               "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Program.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Program.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Program.cs",
               "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAAEMAAAAAAAAAAAAiwGQAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAA4AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-13T17:00:49.012Z",
-              "IsPinned": true
+              "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "SocialLoginDto.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\SocialLoginDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\SocialLoginDto.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\SocialLoginDto.cs",
+              "RelativeToolTip": "DTOs\\SocialLoginDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-13T21:51:11.538Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 3,
+              "Title": "ActivateDto.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\ActivateDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\ActivateDto.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\ActivateDto.cs",
+              "RelativeToolTip": "DTOs\\ActivateDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-13T21:43:18.41Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "LoginDto.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\LoginDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\LoginDto.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\LoginDto.cs",
+              "RelativeToolTip": "DTOs\\LoginDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-13T17:05:35.855Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "AuthService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\AuthService.cs",
+              "RelativeDocumentMoniker": "Services\\AuthService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\AuthService.cs",
+              "RelativeToolTip": "Services\\AuthService.cs",
+              "ViewState": "AgIAAN0AAAAAAAAAAAAwwPIAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-13T17:07:27.421Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
               "Title": "AuthResponseDto.cs",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\AuthResponseDto.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\AuthResponseDto.cs",
               "RelativeDocumentMoniker": "DTOs\\AuthResponseDto.cs",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\AuthResponseDto.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\AuthResponseDto.cs",
               "RelativeToolTip": "DTOs\\AuthResponseDto.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAA7AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
@@ -106,24 +175,50 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "ResetPasswordDto.cs",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\ResetPasswordDto.cs",
-              "RelativeDocumentMoniker": "DTOs\\ResetPasswordDto.cs",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\ResetPasswordDto.cs",
-              "RelativeToolTip": "DTOs\\ResetPasswordDto.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAA/AAAAAAAAAA==",
+              "DocumentIndex": 1,
+              "Title": "User.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Models\\User.cs",
+              "RelativeDocumentMoniker": "Models\\User.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Models\\User.cs",
+              "RelativeToolTip": "Models\\User.cs",
+              "ViewState": "AgIAADEAAAAAAAAAAAAuwD8AAAA7AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-13T20:24:29.243Z",
+              "WhenOpened": "2026-01-13T16:57:52.686Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 4,
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\AuthController.cs",
+              "RelativeDocumentMoniker": "Controllers\\AuthController.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\AuthController.cs",
+              "RelativeToolTip": "Controllers\\AuthController.cs",
+              "ViewState": "AgIAAFEAAAAAAAAAAAAmwGwAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-13T17:09:06.944Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "IAuthService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\IAuthService.cs",
+              "RelativeDocumentMoniker": "Services\\Interfaces\\IAuthService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\IAuthService.cs",
+              "RelativeToolTip": "Services\\Interfaces\\IAuthService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAABsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-13T17:06:55.509Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
               "Title": "ForgotPasswordDto.cs",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\ForgotPasswordDto.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\ForgotPasswordDto.cs",
               "RelativeDocumentMoniker": "DTOs\\ForgotPasswordDto.cs",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\ForgotPasswordDto.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\ForgotPasswordDto.cs",
               "RelativeToolTip": "DTOs\\ForgotPasswordDto.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAA5AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
@@ -133,102 +228,80 @@
             {
               "$type": "Document",
               "DocumentIndex": 10,
-              "Title": "UserController.cs",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\UserController.cs",
-              "RelativeDocumentMoniker": "Controllers\\UserController.cs",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\UserController.cs",
-              "RelativeToolTip": "Controllers\\UserController.cs",
-              "ViewState": "AgIAAEQAAAAAAAAAAAAIwFoAAAAJAAAAAAAAAA==",
+              "Title": "IEmailService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\IEmailService.cs",
+              "RelativeDocumentMoniker": "Services\\Interfaces\\IEmailService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\IEmailService.cs",
+              "RelativeToolTip": "Services\\Interfaces\\IEmailService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-13T17:38:11.344Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "IAuthService.cs",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\IAuthService.cs",
-              "RelativeDocumentMoniker": "Services\\Interfaces\\IAuthService.cs",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\IAuthService.cs",
-              "RelativeToolTip": "Services\\Interfaces\\IAuthService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAA2AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-13T17:06:55.509Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "Login.cs",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\Login.cs",
-              "RelativeDocumentMoniker": "DTOs\\Login.cs",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\Login.cs",
-              "RelativeToolTip": "DTOs\\Login.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAyAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-13T17:05:35.855Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "AuthController.cs",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\AuthController.cs",
-              "RelativeDocumentMoniker": "Controllers\\AuthController.cs",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\AuthController.cs",
-              "RelativeToolTip": "Controllers\\AuthController.cs",
-              "ViewState": "AgIAABoAAAAAAAAAAAAcwE0AAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-13T17:09:06.944Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "AuthService.cs",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\AuthService.cs",
-              "RelativeDocumentMoniker": "Services\\AuthService.cs",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\AuthService.cs",
-              "RelativeToolTip": "Services\\AuthService.cs",
-              "ViewState": "AgIAADwAAAAAAAAAAAAIwIAAAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-13T17:07:27.421Z",
+              "WhenOpened": "2026-01-13T20:55:33.161Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 9,
+              "Title": "EmailService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\EmailService.cs",
+              "RelativeDocumentMoniker": "Services\\Interfaces\\EmailService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\EmailService.cs",
+              "RelativeToolTip": "Services\\Interfaces\\EmailService.cs",
+              "ViewState": "AgIAAB8AAAAAAAAAAAAwwDAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-13T20:55:52.552Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "ResetPasswordDto.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\ResetPasswordDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\ResetPasswordDto.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\ResetPasswordDto.cs",
+              "RelativeToolTip": "DTOs\\ResetPasswordDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAA/AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-13T20:24:29.243Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "UserController.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\UserController.cs",
+              "RelativeDocumentMoniker": "Controllers\\UserController.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\UserController.cs",
+              "RelativeToolTip": "Controllers\\UserController.cs",
+              "ViewState": "AgIAAEQAAAAAAAAAAAAIwFoAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-13T17:38:11.344Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
               "Title": "RegisterDto.cs",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\RegisterDto.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\RegisterDto.cs",
               "RelativeDocumentMoniker": "DTOs\\RegisterDto.cs",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\RegisterDto.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\RegisterDto.cs",
               "RelativeToolTip": "DTOs\\RegisterDto.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAA8AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-13T17:05:15.638Z"
+              "WhenOpened": "2026-01-13T17:05:15.638Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 16,
               "Title": "AppDbContext.cs",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Data\\AppDbContext.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Data\\AppDbContext.cs",
               "RelativeDocumentMoniker": "Data\\AppDbContext.cs",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Data\\AppDbContext.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Data\\AppDbContext.cs",
               "RelativeToolTip": "Data\\AppDbContext.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-13T16:59:18.818Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "User.cs",
-              "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Models\\User.cs",
-              "RelativeDocumentMoniker": "Models\\User.cs",
-              "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Models\\User.cs",
-              "RelativeToolTip": "Models\\User.cs",
-              "ViewState": "AgIAACoAAAAAAAAAAAA3wDYAAAAjAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-13T16:57:52.686Z"
+              "WhenOpened": "2026-01-13T16:59:18.818Z",
+              "EditorCaption": ""
             }
           ]
         }

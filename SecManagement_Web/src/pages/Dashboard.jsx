@@ -1,17 +1,26 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
-import EditUserModal from '../components/EditUserModal'; // <--- Importar o Modal
+import EditUserModal from '../components/EditUserModal';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function Dashboard() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [editingUser, setEditingUser] = useState(null); // <--- Estado para o Modal
+    const [editingUser, setEditingUser] = useState(null);
+    const [qrCodeUrl, setQrCodeUrl] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchUsers();
     }, []);
+
+    const handleEnable2FA = async () => {
+        try {
+            const res = await api.post('/Auth/enable-2fa');
+            setQrCodeUrl(res.data.qrCodeUrl);
+        } catch (err) { alert('Erro ao ativar 2FA'); }
+    };
 
     const fetchUsers = async () => {
         try {
@@ -57,6 +66,19 @@ export default function Dashboard() {
                 </div>
             </nav>
 
+            <div className="mb-6 p-4 bg-purple-50 rounded border border-purple-200">
+                <h3 className="font-bold text-purple-700">Segurança</h3>
+                <button onClick={handleEnable2FA} className="mt-2 bg-purple-600 text-white px-4 py-2 rounded">
+                    Ativar Autenticação de 2 Fatores
+                </button>
+
+                {qrCodeUrl && (
+                    <div className="mt-4 bg-white p-4 inline-block shadow">
+                        <p className="text-sm mb-2">Lê este QR Code com o Google Authenticator:</p>
+                        <QRCodeSVG value={qrCodeUrl} />
+                    </div>
+                )}
+            </div>
             <div className="container mx-auto px-4">
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                     <table className="min-w-full">
@@ -80,13 +102,13 @@ export default function Dashboard() {
                                     </td>
                                     <td className="py-3 px-4 flex gap-2">
                                         {/* Botão EDITAR */}
-                                        <button 
+                                        <button
                                             onClick={() => setEditingUser(user)}
                                             className="text-yellow-600 hover:text-yellow-800 font-medium"
                                         >
                                             Editar
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => handleDelete(user.id)}
                                             className="text-red-600 hover:text-red-800 font-medium"
                                         >
@@ -102,9 +124,9 @@ export default function Dashboard() {
 
             {/* Renderizar o Modal se houver um user a ser editado */}
             {editingUser && (
-                <EditUserModal 
-                    user={editingUser} 
-                    onClose={() => setEditingUser(null)} 
+                <EditUserModal
+                    user={editingUser}
+                    onClose={() => setEditingUser(null)}
                     onUpdate={handleUpdateSuccess}
                 />
             )}

@@ -1,7 +1,10 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/login';
 import Dashboard from './pages/Dashboard';
-import Register from './pages/register'; // <--- Importa aqui
+import Register from './pages/register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import Activate from './pages/Activate';
 
 function App() {
   return (
@@ -9,7 +12,10 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/register" element={<Register />} /> {/* <--- Adiciona aqui */}
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/activate" element={<Activate />} />
       </Routes>
     </BrowserRouter>
   );

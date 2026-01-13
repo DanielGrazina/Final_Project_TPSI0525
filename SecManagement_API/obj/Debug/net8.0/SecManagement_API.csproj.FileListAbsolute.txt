@@ -113,3 +113,9 @@ C:\Users\Vitor\DEV\Final_Project_TPSI0525\SecManagement_API\obj\Debug\net8.0\ref
 C:\Users\Vitor\DEV\Final_Project_TPSI0525\SecManagement_API\obj\Debug\net8.0\SecManagement_API.pdb
 C:\Users\Vitor\DEV\Final_Project_TPSI0525\SecManagement_API\obj\Debug\net8.0\SecManagement_API.genruntimeconfig.cache
 C:\Users\Vitor\DEV\Final_Project_TPSI0525\SecManagement_API\obj\Debug\net8.0\ref\SecManagement_API.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\BouncyCastle.Cryptography.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\MailKit.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\MimeKit.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\System.Security.Cryptography.Pkcs.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\runtimes\win\lib\net8.0\System.Security.Cryptography.Pkcs.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\obj\Debug\net8.0\SecManagement_API.sourcelink.json

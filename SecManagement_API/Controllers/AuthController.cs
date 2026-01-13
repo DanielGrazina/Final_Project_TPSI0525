@@ -17,7 +17,19 @@ namespace SecManagement_API.Controllers
             _authService = authService;
         }
 
-        // (Mantém o HttpPost Register igual)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto request)
+        {
+            try
+            {
+                var result = await _authService.RegisterAsync(request);
+                return Ok(new { message = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto request)
@@ -62,6 +74,17 @@ namespace SecManagement_API.Controllers
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
+        [HttpPost("activate")]
+        public async Task<IActionResult> Activate([FromBody] ActivateDto request)
+        {
+            try
+            {
+                var result = await _authService.ActivateAccountAsync(request.Email, request.Token);
+                return Ok(new { message = result });
+            }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
         [Authorize] // Só pode ativar quem já está logado
         [HttpPost("enable-2fa")]
         public async Task<IActionResult> Enable2FA()
@@ -73,6 +96,14 @@ namespace SecManagement_API.Controllers
                 return Ok(new { qrCodeUrl });
             }
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
+
+        [HttpPost("social-login")]
+        public async Task<IActionResult> SocialLogin([FromBody] SocialLoginDto request)
+        {
+            var result = await _authService.SocialLoginAsync(request.Email, request.Provider, request.ProviderKey, request.Nome);
+            return Ok(result);
         }
     }
 }

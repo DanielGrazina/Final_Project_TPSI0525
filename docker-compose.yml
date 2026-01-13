@@ -29,7 +29,7 @@ services:
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: SecManagement
     volumes:
-      - ./database:/docker-entrypoint-initdb.d
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
       - postgres-data:/var/lib/postgresql/data
     networks:
       - backend
