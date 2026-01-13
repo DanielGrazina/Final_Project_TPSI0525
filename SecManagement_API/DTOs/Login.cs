@@ -10,5 +10,7 @@ namespace SecManagement_API.DTOs
 
         [Required]
         public string Password { get; set; } = string.Empty;
+
+        public string? twoFactorCode { get; set; }
     }
 }
