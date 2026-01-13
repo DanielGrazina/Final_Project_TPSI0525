@@ -1,0 +1,56 @@
+services:
+  api:
+    container_name: API
+    build:
+      context: ./SecManagement_API
+      dockerfile: Dockerfile
+    ports:
+      - "5000:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=SecManagement;Username=admin;Password=admin"
+      Redis__ConnectionString: "redis:6379"
+    networks:
+      - backend
+
+  db:
+    container_name: postgres
+    image: postgres:16
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: SecManagement
+    volumes:
+      - ./database:/docker-entrypoint-initdb.d
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  redis:
+    container_name: redis-SecManagement
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--protected-mode", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - backend
+
+networks:
+  backend:
+  
+volumes:
+  postgres-data:
