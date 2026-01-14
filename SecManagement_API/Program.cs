@@ -74,11 +74,12 @@ builder.Services.AddSwaggerGen(option =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp",
-        builder => builder
-            .AllowAnyOrigin() // Em produção deves especificar o URL, mas para hoje serve
-            .AllowAnyMethod()
-            .AllowAnyHeader());
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
 
 var app = builder.Build();
@@ -91,9 +92,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
-app.UseCors("AllowReactApp");
+app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

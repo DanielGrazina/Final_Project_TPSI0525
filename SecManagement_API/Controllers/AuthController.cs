@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SecManagement_API.DTOs;
 using SecManagement_API.Services.Interfaces;
 using System.Security.Claims;
+using Google.Apis.Auth;
 
 namespace SecManagement_API.Controllers
 {
@@ -98,6 +99,33 @@ namespace SecManagement_API.Controllers
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
+        // ✅ NOVO: Login via Google (recebe idToken do frontend)
+        [HttpPost("google")]
+        public async Task<IActionResult> Google([FromBody] GoogleLoginDto request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.IdToken))
+                    return BadRequest(new { message = "IdToken em falta." });
+
+                // Valida o ID Token do Google
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
+
+                // Cria/atualiza o user e devolve JWT da vossa app
+                var result = await _authService.SocialLoginAsync(
+                    payload.Email,
+                    "Google",
+                    payload.Subject, // ID único do Google
+                    payload.Name ?? payload.Email
+                );
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Token Google inválido: " + ex.Message });
+            }
+        }
 
         [HttpPost("social-login")]
         public async Task<IActionResult> SocialLogin([FromBody] SocialLoginDto request)
