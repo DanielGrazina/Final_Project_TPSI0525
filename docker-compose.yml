@@ -15,6 +15,12 @@ services:
       ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=SecManagement;Username=admin;Password=admin"
       Redis__ConnectionString: "redis:6379"
+
+    # ✅ DNS FORÇADO PARA RESOLVER GOOGLEAPIS.COM
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
     networks:
       - backend
 
@@ -51,6 +57,7 @@ services:
 
 networks:
   backend:
-  
+    driver: bridge # Garante que a rede tenha uma ponte para a internet externa
+
 volumes:
   postgres-data:
