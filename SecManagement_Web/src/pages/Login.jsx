@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
 import { GoogleLogin } from "@react-oauth/google";
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,7 +46,6 @@ export default function Login() {
         return;
       }
 
-      // Envia exatamente como o DTO do backend espera: IdToken
       const response = await api.post("/Auth/google", { IdToken: idToken });
 
       localStorage.setItem("token", response.data.token);
@@ -63,10 +61,6 @@ export default function Login() {
 
   function handleGoogleError() {
     setError("Falha no login Google.");
-  }
-
-  function handleFacebookClick() {
-    alert("Facebook ainda não está implementado nesta versão.");
   }
 
   return (
@@ -145,16 +139,6 @@ export default function Login() {
 
             <div className="flex justify-center">
               <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
-            </div>
-
-            <div className="mt-2">
-              <button
-                type="button"
-                onClick={handleFacebookClick}
-                className="w-full bg-blue-800 text-white py-2 rounded text-sm hover:bg-blue-900 transition"
-              >
-                Facebook
-              </button>
             </div>
           </div>
         )}

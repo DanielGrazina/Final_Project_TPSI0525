@@ -28,17 +28,15 @@ namespace SecManagement_API.Services
 
         public async Task<string> RegisterAsync(RegisterDto dto)
         {
-            // 1. Verificar se o email já existe
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
             {
                 throw new Exception("Este email já está registado.");
             }
 
-            // 2. Criar o Hash da Password
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
             string activationToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
 
-            // 3. Criar o Utilizador
+            // Criar o Utilizador
             var user = new User
             {
                 Nome = dto.Nome,
@@ -46,7 +44,7 @@ namespace SecManagement_API.Services
                 PasswordHash = passwordHash,
                 Role = "Formando",
                 IsActive = false, // Começa inativo
-                ResetToken = activationToken, // Guardamos o token aqui
+                ResetToken = activationToken,
                 ResetTokenExpiry = DateTime.UtcNow.AddHours(24),
                 CreatedAt = DateTime.UtcNow
             };
@@ -54,7 +52,7 @@ namespace SecManagement_API.Services
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            // 4. Enviar Email de Ativação
+            // Enviar Email de Ativação
             string link = $"http://localhost:5173/activate?email={dto.Email}&token={activationToken}";
 
             try
@@ -75,7 +73,6 @@ namespace SecManagement_API.Services
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
-            // Verifica se o token bate certo
             if (user == null || user.ResetToken != token)
                 throw new Exception("Token de ativação inválido.");
 
@@ -97,7 +94,7 @@ namespace SecManagement_API.Services
 
             if (!user.IsActive) throw new Exception("Conta inativa. Verifique o seu email.");
 
-            // --- LÓGICA 2FA (Requisito 1.e) ---
+            // --- LÓGICA 2FA ---
             if (user.TwoFactorEnabled)
             {
                 // Se o utilizador ainda não enviou o código
@@ -109,7 +106,6 @@ namespace SecManagement_API.Services
                 // Validar o código enviado
                 var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
 
-                // A janela de tempo permite ligeiros desvios de relógio
                 if (!totp.VerifyTotp(dto.TwoFactorCode, out long timeStepMatched))
                 {
                     throw new Exception("Código 2FA incorreto.");
@@ -121,7 +117,7 @@ namespace SecManagement_API.Services
             return new AuthResponseDto { Token = token, Message = "Login com sucesso" };
         }
 
-        // --- LÓGICA RECUPERAÇÃO PASSWORD (Requisito 1.d) ---
+        // --- LÓGICA RECUPERAÇÃO PASSWORD ---
         public async Task<string> ForgotPasswordAsync(string email)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
@@ -161,13 +157,13 @@ namespace SecManagement_API.Services
             return "Password alterada com sucesso.";
         }
 
-        // --- LÓGICA ATIVAR 2FA (Requisito 1.e) ---
+        // --- LÓGICA ATIVAR 2FA ---
         public async Task<string> EnableTwoFactorAsync(int userId)
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null) throw new Exception("User não encontrado.");
 
-            // Gerar Segredo
+            // Gerar Key
             var key = KeyGeneration.GenerateRandomKey(20);
             var secret = Base32Encoding.ToString(key);
 
@@ -224,7 +220,6 @@ namespace SecManagement_API.Services
                 };
 
                 if (provider == "Google") user.GoogleId = providerKey;
-                if (provider == "Facebook") user.FacebookId = providerKey;
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
@@ -233,7 +228,6 @@ namespace SecManagement_API.Services
             {
                 // SE JÁ EXISTE: Atualiza o ID da rede social
                 if (provider == "Google") user.GoogleId = providerKey;
-                if (provider == "Facebook") user.FacebookId = providerKey;
                 await _context.SaveChangesAsync();
             }
 

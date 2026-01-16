@@ -44,7 +44,6 @@ builder.Services.AddSwaggerGen(option =>
 {
     option.SwaggerDoc("v1", new OpenApiInfo { Title = "SecManagement API", Version = "v1" });
 
-    // 1. Definir o esquema de segurança (O botão Authorize)
     option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -55,7 +54,6 @@ builder.Services.AddSwaggerGen(option =>
         Scheme = "Bearer"
     });
 
-    // 2. Adicionar o requisito de segurança a todos os endpoints
     option.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {

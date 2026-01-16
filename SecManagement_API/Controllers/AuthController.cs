@@ -86,7 +86,7 @@ namespace SecManagement_API.Controllers
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
-        [Authorize] // Só pode ativar quem já está logado
+        [Authorize]
         [HttpPost("enable-2fa")]
         public async Task<IActionResult> Enable2FA()
         {
@@ -99,7 +99,7 @@ namespace SecManagement_API.Controllers
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
-        // ✅ NOVO: Login via Google (recebe idToken do frontend)
+        // Login via Google
         [HttpPost("google")]
         public async Task<IActionResult> Google([FromBody] GoogleLoginDto request)
         {
@@ -111,7 +111,7 @@ namespace SecManagement_API.Controllers
                 // Valida o ID Token do Google
                 var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
 
-                // Cria/atualiza o user e devolve JWT da vossa app
+                // Cria/atualiza o user e devolve JWT
                 var result = await _authService.SocialLoginAsync(
                     payload.Email,
                     "Google",

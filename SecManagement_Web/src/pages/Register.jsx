@@ -20,15 +20,12 @@ export default function Register() {
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
-
-        // Validação básica de password
         if (formData.password !== formData.confirmPassword) {
             setError("As passwords não coincidem!");
             return;
         }
 
         try {
-            // Chamada à API
             await api.post('/Auth/register', {
                 nome: formData.nome,
                 email: formData.email,
