@@ -3,12 +3,12 @@
   "WorkspaceRootPath": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
       "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,11 +18,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "appsettings.json",
               "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\appsettings.json",
               "RelativeDocumentMoniker": "appsettings.json",
@@ -36,7 +36,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
