@@ -23,7 +23,7 @@ namespace SecManagement_API.Services
                     Id = s.Id,
                     Nome = s.Nome,
                     Capacidade = s.Capacidade,
-                    Tipo = s.Tipo
+                    Tipo = s.Tipo.ToString()
                 })
                 .ToListAsync();
         }
@@ -38,17 +38,22 @@ namespace SecManagement_API.Services
                 Id = s.Id,
                 Nome = s.Nome,
                 Capacidade = s.Capacidade,
-                Tipo = s.Tipo
+                Tipo = s.Tipo.ToString()
             };
         }
 
         public async Task<SalaDto> CreateAsync(CreateSalaDto dto)
         {
+            if (!Enum.TryParse<TipoSala>(dto.Tipo, true, out var tipoEnum))
+            {
+                throw new ArgumentException($"Tipo de sala inválido: {dto.Tipo}. Aceites: Teorica, Informatica, Oficina, Reuniao");
+            }
+
             var sala = new Sala
             {
                 Nome = dto.Nome,
                 Capacidade = dto.Capacidade,
-                Tipo = dto.Tipo
+                Tipo = tipoEnum
             };
 
             _context.Salas.Add(sala);
@@ -59,7 +64,7 @@ namespace SecManagement_API.Services
                 Id = sala.Id,
                 Nome = sala.Nome,
                 Capacidade = sala.Capacidade,
-                Tipo = sala.Tipo
+                Tipo = sala.Tipo.ToString()
             };
         }
 
@@ -68,9 +73,14 @@ namespace SecManagement_API.Services
             var sala = await _context.Salas.FindAsync(id);
             if (sala == null) return false;
 
+            if (!Enum.TryParse<TipoSala>(dto.Tipo, true, out var tipoEnum))
+            {
+                throw new ArgumentException($"Tipo de sala inválido: {dto.Tipo}");
+            }
+
             sala.Nome = dto.Nome;
             sala.Capacidade = dto.Capacidade;
-            sala.Tipo = dto.Tipo;
+            sala.Tipo = tipoEnum;
 
             await _context.SaveChangesAsync();
             return true;

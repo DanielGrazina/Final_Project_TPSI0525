@@ -1,28 +1,32 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Npgsql;
 using SecManagement_API.Data;
+using SecManagement_API.Models;
 using SecManagement_API.Services;
 using SecManagement_API.Services.Interfaces;
-using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // DB Context
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var dataSourceBuilder = new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
+dataSourceBuilder.MapEnum<UserRole>("user_role");
+dataSourceBuilder.MapEnum<EstadoTurma>("estado_turma");
+dataSourceBuilder.MapEnum<TipoSala>("tipo_sala");
+dataSourceBuilder.MapEnum<EstadoInscricao>("estado_inscricao");
+
+var dataSource = dataSourceBuilder.Build();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(dataSource));
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<ICursoService, CursoService>();
-builder.Services.AddScoped<IModuloService, ModuloService>();
-builder.Services.AddScoped<IFormandoService, FormandoService>();
-builder.Services.AddScoped<IFormadorService, FormadorService>();
 builder.Services.AddScoped<ISalaService, SalaService>();
-builder.Services.AddScoped<ICursoModuloService, CursoModuloService>();
 builder.Services.AddScoped<IPedagogicoService, PedagogicoService>();
 builder.Services.AddScoped<ITurmaService, TurmaService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();

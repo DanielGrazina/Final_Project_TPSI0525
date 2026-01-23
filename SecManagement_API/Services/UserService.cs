@@ -20,11 +20,11 @@ namespace SecManagement_API.Services
                 .Select(u => new UserDto
                 {
                     Id = u.Id,
-                    Nome = u.Nome,
                     Email = u.Email,
+                    // Nome = u.Nome, // Só descomentar se User tiver Nome
                     Role = u.Role,
                     IsActive = u.IsActive,
-                    // Checks if the ID exists in the other tables
+                    // Verifica se o ID existe nas outras tabelas
                     IsFormador = _context.Formadores.Any(f => f.UserId == u.Id),
                     IsFormando = _context.Formandos.Any(f => f.UserId == u.Id)
                 })
@@ -39,8 +39,8 @@ namespace SecManagement_API.Services
             return new UserDto
             {
                 Id = u.Id,
-                Nome = u.Nome,
                 Email = u.Email,
+                // Nome = u.Nome, 
                 Role = u.Role,
                 IsActive = u.IsActive,
                 IsFormador = await _context.Formadores.AnyAsync(f => f.UserId == u.Id),
@@ -53,8 +53,8 @@ namespace SecManagement_API.Services
             var user = await _context.Users.FindAsync(id);
             if (user == null) return false;
 
-            // We only update secure fields
-            user.Nome = dto.Nome;
+            // Atualizamos apenas campos seguros e existentes
+            // user.Nome = dto.Nome; 
             user.Role = dto.Role;
             user.IsActive = dto.IsActive;
 

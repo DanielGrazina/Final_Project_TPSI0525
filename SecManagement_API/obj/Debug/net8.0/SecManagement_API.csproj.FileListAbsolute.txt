@@ -131,3 +131,10 @@ C:\Users\Vitor\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\New
 C:\Users\Vitor\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\System.CodeDom.dll
 C:\Users\Vitor\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\System.Management.dll
 C:\Users\Vitor\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\runtimes\win\lib\net7.0\System.Management.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\Google.Apis.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\Google.Apis.Auth.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\Google.Apis.Core.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\Newtonsoft.Json.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\System.CodeDom.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\System.Management.dll
+C:\DEV\Final_Project_TPSI0525\SecManagement_API\bin\Debug\net8.0\runtimes\win\lib\net7.0\System.Management.dll
