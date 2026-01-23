@@ -63,6 +63,11 @@ namespace SecManagement_API.Data
                 .WithOne(u => u.FormandoProfile)
                 .HasForeignKey<Formando>(f => f.UserId);
 
+            modelBuilder.Entity<Avaliacao>()
+                .Property(a => a.AvaliacaoValor)
+                .HasColumnName("Avaliacao")
+                .HasPrecision(4, 2);
+
             foreach (var relationship in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
             {
                 relationship.DeleteBehavior = DeleteBehavior.Restrict;

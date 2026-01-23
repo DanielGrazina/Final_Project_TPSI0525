@@ -43,6 +43,16 @@ namespace SecManagement_API.Controllers
             }
         }
 
+        [HttpPut("{id}")]
+        public async Task<ActionResult<CursoDto>> PutCurso(int id, CreateCursoDto dto)
+        {
+            try
+            {
+                return Ok(await _service.UpdateCursoAsync(id, dto));
+            }
+            catch (Exception ex) { return BadRequest(ex.Message); }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCurso(int id)
         {
