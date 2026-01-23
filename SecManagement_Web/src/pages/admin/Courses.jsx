@@ -2,13 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 
-
 function Modal({ title, children, onClose }) {
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div
         className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-xl shadow-lg border dark:border-gray-800"
         onClick={(e) => e.stopPropagation()}
@@ -32,42 +28,47 @@ function Modal({ title, children, onClose }) {
 export default function AdminCourses() {
   const navigate = useNavigate();
 
-  // Data from API
   const [courses, setCourses] = useState([]);
+  const [areas, setAreas] = useState([]);
 
-  // UI state
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  // Form matches CreateCursoDto
+  // Alinhado à BD: Nome, AreaId, NivelCurso, Local
   const [form, setForm] = useState({
     nome: "",
-    area: "",
-    dataInicio: "",
-    dataFim: "",
+    areaId: "",
+    nivelCurso: "",
+    local: "",
   });
 
-  async function loadCourses() {
+  async function loadAll() {
     setLoading(true);
     setError("");
 
     try {
-      // axios baseURL already includes /api
-      const res = await api.get("/Curso");
-      setCourses(Array.isArray(res.data) ? res.data : []);
+      const [cRes, aRes] = await Promise.all([
+        api.get("/Cursos"),
+        api.get("/Areas"),
+      ]);
+
+      setCourses(Array.isArray(cRes.data) ? cRes.data : []);
+      setAreas(Array.isArray(aRes.data) ? aRes.data : []);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to load courses.");
+      const msg = err.response?.data?.message || err.response?.data || "Failed to load data.";
+      setError(typeof msg === "string" ? msg : "Failed to load data.");
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadCourses();
+    loadAll();
   }, []);
 
   const filtered = useMemo(() => {
@@ -75,34 +76,35 @@ export default function AdminCourses() {
     if (!s) return courses;
 
     return courses.filter((c) => {
+      const areaText = (c.areaNome ?? c.area?.nome ?? "").toLowerCase();
       return (
         (c.nome || "").toLowerCase().includes(s) ||
-        (c.area || "").toLowerCase().includes(s) ||
-        (c.isAtivo ? "active" : "inactive").includes(s)
+        areaText.includes(s) ||
+        (c.nivelCurso || "").toLowerCase().includes(s) ||
+        (c.local || "").toLowerCase().includes(s)
       );
     });
   }, [courses, search]);
 
   function openCreate() {
     setEditing(null);
-    setForm({ nome: "", area: "", dataInicio: "", dataFim: "" });
+    setForm({ nome: "", areaId: "", nivelCurso: "", local: "" });
     setShowForm(true);
   }
 
   function openEdit(course) {
     setEditing(course);
-
     setForm({
       nome: course.nome ?? "",
-      area: course.area ?? "",
-      dataInicio: (course.dataInicio ?? "").slice(0, 10),
-      dataFim: (course.dataFim ?? "").slice(0, 10),
+      areaId: String(course.areaId ?? ""),
+      nivelCurso: course.nivelCurso ?? "",
+      local: course.local ?? "",
     });
-
     setShowForm(true);
   }
 
   function closeForm() {
+    if (saving) return;
     setShowForm(false);
     setEditing(null);
   }
@@ -116,54 +118,50 @@ export default function AdminCourses() {
     e.preventDefault();
     setError("");
 
-    if (!form.nome.trim()) return alert("Course name is required.");
-    if (!form.area.trim()) return alert("Area is required.");
+    const nome = form.nome.trim();
+    const areaIdNum = Number(form.areaId);
+    const nivelCurso = form.nivelCurso.trim();
+    const local = form.local.trim();
 
-    // Payload for CreateCursoDto
+    if (!nome) return alert("Name is required.");
+    if (!Number.isFinite(areaIdNum) || areaIdNum <= 0) return alert("Area is required.");
+
     const payload = {
-      nome: form.nome.trim(),
-      area: form.area.trim(),
-      dataInicio: form.dataInicio || null,
-      dataFim: form.dataFim || null,
+      nome,
+      areaId: areaIdNum,
+      nivelCurso: nivelCurso || null,
+      local: local || null,
     };
 
+    setSaving(true);
     try {
       if (editing) {
-        await api.put(`/Curso/${editing.id}`, payload);
+        await api.put(`/Cursos/${editing.id}`, payload);
       } else {
-        await api.post("/Curso", payload);
+        await api.post("/Cursos", payload);
       }
 
       closeForm();
-      await loadCourses();
+      await loadAll();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to save course.");
+      const msg = err.response?.data?.message || err.response?.data || "Failed to save course.";
+      setError(typeof msg === "string" ? msg : "Failed to save course.");
+    } finally {
+      setSaving(false);
     }
   }
 
   async function deleteCourse(id) {
     if (!window.confirm("Are you sure you want to delete this course?")) return;
 
+    setError("");
     try {
-      await api.delete(`/Curso/${id}`);
-      await loadCourses();
+      await api.delete(`/Cursos/${id}`);
+      setCourses((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to delete course.");
+      const msg = err.response?.data?.message || err.response?.data || "Failed to delete course.";
+      setError(typeof msg === "string" ? msg : "Failed to delete course.");
     }
-  }
-
-  function renderStatusBadge(isAtivo) {
-    const label = isAtivo ? "Active" : "Inactive";
-
-    return (
-      <span
-        className="text-xs font-semibold px-2.5 py-0.5 rounded
-                   bg-blue-100 text-blue-800
-                   dark:bg-blue-900/40 dark:text-blue-200"
-      >
-        {label}
-      </span>
-    );
   }
 
   return (
@@ -206,7 +204,7 @@ export default function AdminCourses() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, area or status..."
+                placeholder="Search by name, area, level or location..."
                 className="w-full border rounded px-3 py-2
                            bg-white dark:bg-gray-900 dark:border-gray-800
                            text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
@@ -219,97 +217,76 @@ export default function AdminCourses() {
           </div>
         </div>
 
-        {/* Loading / Error */}
-        {loading && (
-          <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-4 mb-4">
-            <div className="text-sm text-gray-700 dark:text-gray-300">Loading...</div>
-          </div>
-        )}
-
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">
             {error}
           </div>
         )}
 
-        {/* Table */}
-        {!loading && (
-          <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
-            <div className="overflow-auto">
-              <table className="min-w-full">
-                <thead className="bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700">
-                  <tr>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">ID</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Name</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Area</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Start</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">End</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Status</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Actions</th>
-                  </tr>
-                </thead>
+        <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
+          <div className="overflow-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700">
+                <tr>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">ID</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Name</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Area</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Level</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Location</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Actions</th>
+                </tr>
+              </thead>
 
-                <tbody>
-                  {filtered.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" className="py-10 px-4 text-center text-gray-500 dark:text-gray-400">
-                        No courses found.
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="6" className="py-10 px-4 text-center text-gray-500 dark:text-gray-400">
+                      Loading...
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="py-10 px-4 text-center text-gray-500 dark:text-gray-400">
+                      No courses found.
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((c) => (
+                    <tr key={c.id} className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                      <td className="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{c.id}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{c.nome}</td>
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                        {c.areaNome ?? c.area?.nome ?? `#${c.areaId ?? "—"}`}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{c.nivelCurso || "—"}</td>
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{c.local || "—"}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => openEdit(c)}
+                            className="px-3 py-1.5 rounded text-sm font-medium text-yellow-700 hover:bg-yellow-50
+                                       dark:text-yellow-300 dark:hover:bg-yellow-900/20"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteCourse(c.id)}
+                            className="px-3 py-1.5 rounded text-sm font-medium text-red-700 hover:bg-red-50
+                                       dark:text-red-300 dark:hover:bg-red-900/20"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
-                  ) : (
-                    filtered.map((c) => (
-                      <tr
-                        key={c.id}
-                        className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60"
-                      >
-                        <td className="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{c.id}</td>
-                        <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{c.nome}</td>
-                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{c.area}</td>
-                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                          {(c.dataInicio ?? "").slice(0, 10)}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                          {(c.dataFim ?? "").slice(0, 10)}
-                        </td>
-                        <td className="py-3 px-4">{renderStatusBadge(c.isAtivo)}</td>
-                        <td className="py-3 px-4">
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() => navigate(`/dashboard/courses/${c.id}/modules`)}
-                              className="px-3 py-1.5 rounded border text-sm text-gray-700 hover:bg-gray-50
-                                         dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
-                            >
-                              Modules
-                            </button>
-
-                            <button
-                              onClick={() => openEdit(c)}
-                              className="px-3 py-1.5 rounded text-sm font-medium text-yellow-700 hover:bg-yellow-50
-                                         dark:text-yellow-300 dark:hover:bg-yellow-900/20"
-                            >
-                              Edit
-                            </button>
-
-                            <button
-                              onClick={() => deleteCourse(c.id)}
-                              className="px-3 py-1.5 rounded text-sm font-medium text-red-700 hover:bg-red-50
-                                         dark:text-red-300 dark:hover:bg-red-900/20"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Modal Create/Edit */}
       {showForm && (
         <Modal title={editing ? "Edit Course" : "New Course"} onClose={closeForm}>
           <form onSubmit={saveCourse} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -323,45 +300,55 @@ export default function AdminCourses() {
                            bg-white dark:bg-gray-900 dark:border-gray-800
                            text-gray-900 dark:text-gray-100"
                 placeholder="Ex: TPSI 0525"
+                disabled={saving}
               />
             </div>
 
             <div className="md:col-span-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Area</label>
-              <input
-                name="area"
-                value={form.area}
+              <select
+                name="areaId"
+                value={form.areaId}
                 onChange={onChange}
                 className="mt-1 w-full border rounded px-3 py-2
                            bg-white dark:bg-gray-900 dark:border-gray-800
                            text-gray-900 dark:text-gray-100"
-                placeholder="Ex: Software"
+                disabled={saving}
+              >
+                <option value="">Select area...</option>
+                {areas.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Level</label>
+              <input
+                name="nivelCurso"
+                value={form.nivelCurso}
+                onChange={onChange}
+                className="mt-1 w-full border rounded px-3 py-2
+                           bg-white dark:bg-gray-900 dark:border-gray-800
+                           text-gray-900 dark:text-gray-100"
+                placeholder="Ex: Nível 4"
+                disabled={saving}
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Start Date</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Location</label>
               <input
-                type="date"
-                name="dataInicio"
-                value={form.dataInicio}
+                name="local"
+                value={form.local}
                 onChange={onChange}
                 className="mt-1 w-full border rounded px-3 py-2
                            bg-white dark:bg-gray-900 dark:border-gray-800
                            text-gray-900 dark:text-gray-100"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">End Date</label>
-              <input
-                type="date"
-                name="dataFim"
-                value={form.dataFim}
-                onChange={onChange}
-                className="mt-1 w-full border rounded px-3 py-2
-                           bg-white dark:bg-gray-900 dark:border-gray-800
-                           text-gray-900 dark:text-gray-100"
+                placeholder="Ex: ATEC"
+                disabled={saving}
               />
             </div>
 
@@ -371,15 +358,17 @@ export default function AdminCourses() {
                 onClick={closeForm}
                 className="px-4 py-2 rounded border text-gray-700 hover:bg-gray-50
                            dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
+                disabled={saving}
               >
                 Cancel
               </button>
 
               <button
                 type="submit"
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                disabled={saving}
               >
-                Save
+                {saving ? "Saving..." : "Save"}
               </button>
             </div>
           </form>
