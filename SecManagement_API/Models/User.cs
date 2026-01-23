@@ -7,6 +7,9 @@ namespace SecManagement_API.Models
         public int Id { get; set; }
 
         [Required]
+        public string Nome { get; set; } = string.Empty;
+
+        [Required]
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
@@ -25,11 +28,12 @@ namespace SecManagement_API.Models
         public string? ActivationToken { get; set; }
         public string? ResetToken { get; set; }
         public DateTime? ResetTokenExpires { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public string Role { get; set; } = "User";
 
         public string? TwoFactorSecret { get; set; }
-        public bool IsTwoFactorEnabled { get; set; }
+        public bool IsTwoFactorEnabled { get; set; } 
 
         public Formador? FormadorProfile { get; set; }
         public Formando? FormandoProfile { get; set; }
