@@ -12,7 +12,7 @@ namespace SecManagement_API.Models
         public DateTime DataInicio { get; set; }
         public DateTime DataFim { get; set; }
         public string Local { get; set; } = string.Empty; // Ex: "Edifício A"
-        public string Estado { get; set; } = "Aberta"; // Aberta, A Decorrer, Terminada
+        public string Estado { get; set; } = "Planeada"; 
 
         public int CursoId { get; set; }
         public Curso? Curso { get; set; }

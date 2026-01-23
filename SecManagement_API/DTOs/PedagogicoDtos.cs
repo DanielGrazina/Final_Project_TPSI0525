@@ -57,6 +57,9 @@ namespace SecManagement_API.DTOs
         public string Local { get; set; } = string.Empty;
         [Required]
         public int CursoId { get; set; }
+        [Required]
+        [RegularExpression("Planeada|Decorrer|Terminada|Cancelada", ErrorMessage = "O estado deve ser: Planeada, Decorrer, Terminada ou Cancelada.")]
+        public string Estado { get; set; } = "Planeada";
     }
 
     // --- TURMA MODULOS (A Distribuição/Horário Base) ---

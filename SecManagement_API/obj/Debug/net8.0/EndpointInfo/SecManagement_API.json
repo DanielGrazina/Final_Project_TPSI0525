@@ -2175,7 +2175,7 @@
             "minLength": 1,
             "type": "string"
           },
-          "cargaHorariaTotal": {
+          "cargaHoraria": {
             "maximum": 1000,
             "minimum": 1,
             "type": "integer",
@@ -2210,6 +2210,7 @@
       "CreateTurmaDto": {
         "required": [
           "cursoId",
+          "estado",
           "nome"
         ],
         "type": "object",
@@ -2233,6 +2234,11 @@
           "cursoId": {
             "type": "integer",
             "format": "int32"
+          },
+          "estado": {
+            "minLength": 1,
+            "pattern": "Planeada|Decorrer|Terminada|Cancelada",
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -2452,7 +2458,7 @@
             "type": "string",
             "nullable": true
           },
-          "cargaHorariaTotal": {
+          "cargaHoraria": {
             "type": "integer",
             "format": "int32"
           }
