@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
 import { GoogleLogin } from "@react-oauth/google";
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -9,35 +10,66 @@ export default function Login() {
 
   const [error, setError] = useState("");
   const [requires2FA, setRequires2FA] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+
+  function readApiMessage(err, fallback) {
+    const data = err?.response?.data;
+
+    // quando a API devolve string simples (ex: "Credenciais inválidas.")
+    if (typeof data === "string") return data;
+
+    // quando devolve objeto { message: "..." } ou { Message: "..." }
+    return data?.message || data?.Message || fallback;
+  }
 
   async function handleLogin(e) {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      const response = await api.post("/Auth/login", {
+      // Nota: o backend usa dto.TwoFactorCode, mas o binder costuma aceitar camelCase
+      const payload = {
         email,
         password,
-        twoFactorCode,
-      });
+        twoFactorCode: requires2FA ? twoFactorCode : "", // só envia se estiver no passo 2
+      };
 
-      if (response.status === 202 && response.data?.requiresTwoFactor) {
+      const response = await api.post("/Auth/login", payload);
+
+      // Compatível com camelCase e PascalCase
+      const requiresTwoFactor =
+        response.data?.requiresTwoFactor ?? response.data?.RequiresTwoFactor ?? false;
+
+      // O teu backend novo pode devolver 200 com requiresTwoFactor = true
+      if (requiresTwoFactor || response.status === 202) {
         setRequires2FA(true);
+        setTwoFactorCode("");
         return;
       }
 
-      localStorage.setItem("token", response.data.token);
+      const token = response.data?.token || response.data?.Token;
+
+      if (!token) {
+        setError(response.data?.message || response.data?.Message || "Login falhou: token não recebido.");
+        return;
+      }
+
+      localStorage.setItem("token", token);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.message || "Erro no login. Verifica as credenciais.");
+      setError(readApiMessage(err, "Erro no login. Verifica as credenciais."));
       if (requires2FA) setTwoFactorCode("");
+    } finally {
+      setLoading(false);
     }
   }
 
   async function handleGoogleSuccess(credentialResponse) {
     setError("");
+    setLoading(true);
 
     try {
       const idToken = credentialResponse?.credential;
@@ -46,16 +78,24 @@ export default function Login() {
         return;
       }
 
+      // Mantém o teu formato atual
       const response = await api.post("/Auth/google", { IdToken: idToken });
 
-      localStorage.setItem("token", response.data.token);
+      const token = response.data?.token || response.data?.Token;
+      if (!token) {
+        setError(response.data?.message || response.data?.Message || "Login Google falhou: token não recebido.");
+        return;
+      }
+
+      localStorage.setItem("token", token);
       navigate("/dashboard");
     } catch (err) {
-      // Debug útil
       console.log("GOOGLE STATUS:", err.response?.status);
       console.log("GOOGLE DATA:", err.response?.data);
 
-      setError(err.response?.data?.message || "Erro no login Google.");
+      setError(readApiMessage(err, "Erro no login Google."));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -85,6 +125,7 @@ export default function Login() {
                   className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
                 />
               </div>
 
@@ -96,6 +137,7 @@ export default function Login() {
                   className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
                 />
 
                 <div className="text-right mt-1">
@@ -118,18 +160,35 @@ export default function Login() {
                 value={twoFactorCode}
                 onChange={(e) => setTwoFactorCode(e.target.value)}
                 maxLength={6}
+                disabled={loading}
               />
               <p className="text-xs text-gray-500 text-center mt-2">
                 Abre a app no teu telemóvel para ver o código.
               </p>
+
+              <div className="text-center mt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRequires2FA(false);
+                    setTwoFactorCode("");
+                    setError("");
+                  }}
+                  className="text-xs text-blue-600 hover:underline"
+                  disabled={loading}
+                >
+                  Voltar
+                </button>
+              </div>
             </div>
           )}
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:opacity-60"
           >
-            {requires2FA ? "Validar Código" : "Entrar"}
+            {loading ? "A processar..." : requires2FA ? "Validar Código" : "Entrar"}
           </button>
         </form>
 

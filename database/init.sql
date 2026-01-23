@@ -34,7 +34,7 @@ CREATE TABLE "Users" (
     
     "ActivationToken" VARCHAR(255),
     "ResetToken" VARCHAR(255),
-    "ResetTokenExpiry" TIMESTAMP,
+    "ResetTokenExpires" TIMESTAMP,
     "TwoFactorSecret" VARCHAR(255),
     "IsTwoFactorEnabled" BOOLEAN DEFAULT FALSE,
     
