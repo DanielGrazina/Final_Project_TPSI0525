@@ -27,5 +27,26 @@ namespace SecManagement_API.Controllers
             var area = await _service.CreateAreaAsync(dto);
             return Ok(area);
         }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult<AreaDto>> PutArea(int id, CreateAreaDto dto)
+        {
+            try
+            {
+                return Ok(await _service.UpdateAreaAsync(id, dto));
+            }
+            catch (Exception ex) { return BadRequest(ex.Message); }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteArea(int id)
+        {
+            try
+            {
+                if (await _service.DeleteAreaAsync(id)) return NoContent();
+                return NotFound();
+            }
+            catch (Exception ex) { return BadRequest(ex.Message); }
+        }
     }
 }

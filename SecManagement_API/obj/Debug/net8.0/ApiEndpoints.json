@@ -46,6 +46,53 @@
     ]
   },
   {
+    "ContainingType": "SecManagement_API.Controllers.AreasController",
+    "Method": "PutArea",
+    "RelativePath": "api/Areas/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "SecManagement_API.DTOs.CreateAreaDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "SecManagement_API.DTOs.AreaDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.AreasController",
+    "Method": "DeleteArea",
+    "RelativePath": "api/Areas/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "SecManagement_API.Controllers.AuthController",
     "Method": "Activate",
     "RelativePath": "api/Auth/activate",
@@ -168,6 +215,100 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "SecManagement_API.Controllers.AvaliacoesController",
+    "Method": "LancarNota",
+    "RelativePath": "api/Avaliacoes",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "SecManagement_API.DTOs.CreateAvaliacaoDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "SecManagement_API.DTOs.AvaliacaoDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.AvaliacoesController",
+    "Method": "Delete",
+    "RelativePath": "api/Avaliacoes/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.AvaliacoesController",
+    "Method": "GetNotasAluno",
+    "RelativePath": "api/Avaliacoes/aluno/{formandoId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "formandoId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[SecManagement_API.DTOs.AvaliacaoDto, SecManagement_API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.AvaliacoesController",
+    "Method": "GetNotasTurma",
+    "RelativePath": "api/Avaliacoes/turma/{turmaId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "turmaId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[SecManagement_API.DTOs.AvaliacaoDto, SecManagement_API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
     "ContainingType": "SecManagement_API.Controllers.CursosController",
     "Method": "GetCursos",
     "RelativePath": "api/Cursos",
@@ -241,8 +382,158 @@
   },
   {
     "ContainingType": "SecManagement_API.Controllers.CursosController",
+    "Method": "PutCurso",
+    "RelativePath": "api/Cursos/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "SecManagement_API.DTOs.CreateCursoDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "SecManagement_API.DTOs.CursoDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.CursosController",
     "Method": "DeleteCurso",
     "RelativePath": "api/Cursos/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.ModulosController",
+    "Method": "GetModulos",
+    "RelativePath": "api/Modulos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[SecManagement_API.DTOs.ModuloDto, SecManagement_API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.ModulosController",
+    "Method": "PostModulo",
+    "RelativePath": "api/Modulos",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "SecManagement_API.DTOs.CreateModuloDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "SecManagement_API.DTOs.ModuloDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.ModulosController",
+    "Method": "GetModulo",
+    "RelativePath": "api/Modulos/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "SecManagement_API.DTOs.ModuloDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.ModulosController",
+    "Method": "PutModulo",
+    "RelativePath": "api/Modulos/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "SecManagement_API.DTOs.CreateModuloDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "SecManagement_API.DTOs.ModuloDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.ModulosController",
+    "Method": "DeleteModulo",
+    "RelativePath": "api/Modulos/{id}",
     "HttpMethod": "DELETE",
     "IsController": true,
     "Order": 0,
