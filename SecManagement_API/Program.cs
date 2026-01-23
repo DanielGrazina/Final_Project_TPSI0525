@@ -31,6 +31,9 @@ builder.Services.AddScoped<IPedagogicoService, PedagogicoService>();
 builder.Services.AddScoped<ITurmaService, TurmaService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IAvaliacaoService, AvaliacaoService>();
+builder.Services.AddScoped<ISessaoService, SessaoService>();
+builder.Services.AddScoped<IDisponibilidadeService, DisponibilidadeService>();
+builder.Services.AddScoped<IStatsService, StatsService>();
 
 // JWT Auth
 builder.Services.AddAuthentication(options =>
