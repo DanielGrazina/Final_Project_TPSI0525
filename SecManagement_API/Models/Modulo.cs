@@ -9,6 +9,9 @@ namespace SecManagement_API.Models
         [Required]
         public string Nome { get; set; } = string.Empty;
 
-        public int CargaHorariaTotal { get; set; }
+        public int CargaHoraria { get; set; }
+        public string Nivel { get; set; } = string.Empty;
+
+        public ICollection<TurmaModulo> TurmaModulos { get; set; } = new List<TurmaModulo>();
     }
 }

@@ -7,15 +7,13 @@ namespace SecManagement_API.Models
         public int Id { get; set; }
 
         [Required]
-        public string Nome { get; set; } = string.Empty;
+        public string Nome { get; set; } = string.Empty; // Ex: TESP Programação
 
-        public string Area { get; set; } = string.Empty;
-        public DateTime DataInicio { get; set; }
-        public DateTime DataFim { get; set; }
-        public bool IsAtivo { get; set; } = true;
+        public string NivelCurso { get; set; } = string.Empty; // Ex: 5, 4
 
-        // Relações
-        public ICollection<CursoModulo> CursoModulos { get; set; } = new List<CursoModulo>();
-        public ICollection<Formando> Formandos { get; set; } = new List<Formando>();
+        public int AreaId { get; set; }
+        public Area? Area { get; set; }
+
+        public ICollection<Turma> Turmas { get; set; } = new List<Turma>();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SecManagement_API.Models
 {
@@ -6,23 +7,12 @@ namespace SecManagement_API.Models
     {
         public int Id { get; set; }
 
-        [Required]
-        public string Nome { get; set; } = string.Empty;
-
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty;
-
-        public byte[]? FotoContent { get; set; }
-        public string? FotoContentType { get; set; }
-        public string? FotoFileName { get; set; }
-
-        public byte[]? CVContent { get; set; }
-        public string? CVContentType { get; set; }
-        public string? CVFileName { get; set; }
-
-        public int? UserId { get; set; }
+        public int UserId { get; set; }
         public User? User { get; set; }
 
-        public ICollection<CursoModulo> ModulosLecionados { get; set; } = new List<CursoModulo>();
+        public string AreaEspecializacao { get; set; } = string.Empty;
+        public string CorCalendario { get; set; } = "#3788d8"; // Ex: Hex code
+
+        // public ICollection<TurmaModulo> ModulosAtribuidos { get; set; }
     }
 }

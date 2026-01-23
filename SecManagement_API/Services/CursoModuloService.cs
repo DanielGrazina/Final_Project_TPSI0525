@@ -59,7 +59,7 @@ namespace SecManagement_API.Services
 
             if (existe) throw new Exception("Este módulo já está atribuído a este curso.");
 
-            var entidade = new CursoModulo
+            var entidade = new TurmaModulo
             {
                 CursoId = dto.CursoId,
                 ModuloId = dto.ModuloId,
@@ -86,7 +86,7 @@ namespace SecManagement_API.Services
         }
 
         // Auxiliary method to avoid repeating mapping code
-        private static CursoModuloDto MapToDto(CursoModulo cm)
+        private static CursoModuloDto MapToDto(TurmaModulo cm)
         {
             return new CursoModuloDto
             {
