@@ -3,12 +3,44 @@
   "WorkspaceRootPath": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\controllers\\profilescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:controllers\\profilescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\profileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\profileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\interfaces\\iprofileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\interfaces\\iprofileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\controllers\\turmascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:controllers\\turmascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\turmaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\turmaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\interfaces\\iturmaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\interfaces\\iturmaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\controllers\\cursocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:controllers\\cursocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\controllers\\areascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:controllers\\areascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,11 +50,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 9,
               "Title": "appsettings.json",
               "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\appsettings.json",
               "RelativeDocumentMoniker": "appsettings.json",
@@ -36,16 +68,120 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
               "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Program.cs",
               "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAC8AAAARAAAAAAAAAA==",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAACMAAAAYAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-13T17:00:49.012Z",
               "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ProfilesController.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\ProfilesController.cs",
+              "RelativeDocumentMoniker": "Controllers\\ProfilesController.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\ProfilesController.cs",
+              "RelativeToolTip": "Controllers\\ProfilesController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAPAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T19:09:27.444Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ProfileService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\ProfileService.cs",
+              "RelativeDocumentMoniker": "Services\\ProfileService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\ProfileService.cs",
+              "RelativeToolTip": "Services\\ProfileService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAALUAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T19:08:51.175Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "IProfileService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\IProfileService.cs",
+              "RelativeDocumentMoniker": "Services\\Interfaces\\IProfileService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\IProfileService.cs",
+              "RelativeToolTip": "Services\\Interfaces\\IProfileService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T19:08:23.151Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "TurmasController.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\TurmasController.cs",
+              "RelativeDocumentMoniker": "Controllers\\TurmasController.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\TurmasController.cs",
+              "RelativeToolTip": "Controllers\\TurmasController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAIEAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T19:05:53.993Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "TurmaService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\TurmaService.cs",
+              "RelativeDocumentMoniker": "Services\\TurmaService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\TurmaService.cs",
+              "RelativeToolTip": "Services\\TurmaService.cs",
+              "ViewState": "AgIAABsAAAAAAAAAAAAUwIcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T19:05:07.598Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "ITurmaService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\ITurmaService.cs",
+              "RelativeDocumentMoniker": "Services\\Interfaces\\ITurmaService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\ITurmaService.cs",
+              "RelativeToolTip": "Services\\Interfaces\\ITurmaService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T19:04:40.624Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "CursoController.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\CursoController.cs",
+              "RelativeDocumentMoniker": "Controllers\\CursoController.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\CursoController.cs",
+              "RelativeToolTip": "Controllers\\CursoController.cs",
+              "ViewState": "AgIAABsAAAAAAAAAAAAwwDwAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T19:03:08.033Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "AreasController.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\AreasController.cs",
+              "RelativeDocumentMoniker": "Controllers\\AreasController.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\AreasController.cs",
+              "RelativeToolTip": "Controllers\\AreasController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB4AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T19:02:20.24Z",
               "EditorCaption": ""
             }
           ]

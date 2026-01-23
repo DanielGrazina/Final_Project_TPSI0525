@@ -6,60 +6,56 @@ namespace SecManagement_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ModulosController : ControllerBase
+    public class CursosController : ControllerBase
     {
-        private readonly IModuloService _moduloService;
+        private readonly IPedagogicoService _service;
 
-        public ModulosController(IModuloService moduloService)
+        public CursosController(IPedagogicoService service)
         {
-            _moduloService = moduloService;
+            _service = service;
         }
 
-        // GET: api/Modulos
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ModuloDto>>> GetModulos()
+        public async Task<ActionResult<IEnumerable<CursoDto>>> GetCursos()
         {
-            var modulos = await _moduloService.GetAllAsync();
-            return Ok(modulos);
+            return Ok(await _service.GetCursosAsync());
         }
 
-        // GET: api/Modulos/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<ModuloDto>> GetModulo(int id)
+        public async Task<ActionResult<CursoDto>> GetCurso(int id)
         {
-            var modulo = await _moduloService.GetByIdAsync(id);
-
-            if (modulo == null)
-            {
-                return NotFound("Módulo não encontrado.");
-            }
-
-            return Ok(modulo);
+            var curso = await _service.GetCursoByIdAsync(id);
+            if (curso == null) return NotFound("Curso não encontrado.");
+            return Ok(curso);
         }
 
-        // POST: api/Modulos
         [HttpPost]
-        public async Task<ActionResult<ModuloDto>> PostModulo(CreateModuloDto dto)
+        public async Task<ActionResult<CursoDto>> PostCurso(CreateCursoDto dto)
         {
-            var novoModulo = await _moduloService.CreateAsync(dto);
-
-            // Return 201 Created and the cabeçalho Location header pointing to GetModule
-            return CreatedAtAction(nameof(GetModulo), new { id = novoModulo.Id }, novoModulo);
-        }
-
-        // DELETE: api/Modulos/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteModulo(int id)
-        {
-            var sucesso = await _moduloService.DeleteAsync(id);
-
-            if (!sucesso)
+            try
             {
-                return NotFound("Módulo não encontrado ou não foi possível apagar.");
+                var novoCurso = await _service.CreateCursoAsync(dto);
+                return CreatedAtAction(nameof(GetCurso), new { id = novoCurso.Id }, novoCurso);
             }
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCurso(int id)
+        {
+            try
+            {
+                var sucesso = await _service.DeleteCursoAsync(id);
+                if (!sucesso) return NotFound();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }
