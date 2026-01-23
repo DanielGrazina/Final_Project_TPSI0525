@@ -769,6 +769,175 @@
         }
       }
     },
+    "/api/Disponibilidades": {
+      "post": {
+        "tags": [
+          "Disponibilidades"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDisponibilidadeDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDisponibilidadeDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDisponibilidadeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisponibilidadeDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisponibilidadeDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisponibilidadeDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Disponibilidades/formador/{id}": {
+      "get": {
+        "tags": [
+          "Disponibilidades"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DisponibilidadeDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DisponibilidadeDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DisponibilidadeDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Disponibilidades/sala/{id}": {
+      "get": {
+        "tags": [
+          "Disponibilidades"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DisponibilidadeDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DisponibilidadeDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DisponibilidadeDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Disponibilidades/{id}": {
+      "delete": {
+        "tags": [
+          "Disponibilidades"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Modulos": {
       "get": {
         "tags": [
@@ -1439,6 +1608,236 @@
         }
       }
     },
+    "/api/Sessoes": {
+      "post": {
+        "tags": [
+          "Sessoes"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessaoDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessaoDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessaoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessaoDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessaoDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessaoDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Sessoes/turma/{turmaId}": {
+      "get": {
+        "tags": [
+          "Sessoes"
+        ],
+        "parameters": [
+          {
+            "name": "turmaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessaoDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessaoDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessaoDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Sessoes/formador/{formadorId}": {
+      "get": {
+        "tags": [
+          "Sessoes"
+        ],
+        "parameters": [
+          {
+            "name": "formadorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessaoDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessaoDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessaoDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Sessoes/{id}": {
+      "delete": {
+        "tags": [
+          "Sessoes"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Stats/dashboard": {
+      "get": {
+        "tags": [
+          "Stats"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardStatsDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardStatsDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardStatsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Turmas": {
       "get": {
         "tags": [
@@ -2104,6 +2503,43 @@
         },
         "additionalProperties": false
       },
+      "CreateDisponibilidadeDto": {
+        "required": [
+          "dataFim",
+          "dataInicio",
+          "tipoEntidade"
+        ],
+        "type": "object",
+        "properties": {
+          "tipoEntidade": {
+            "minLength": 1,
+            "pattern": "Formador|Sala",
+            "type": "string"
+          },
+          "formadorId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "salaId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "dataInicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dataFim": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "disponivel": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateFormadorProfileDto": {
         "required": [
           "userId"
@@ -2207,6 +2643,34 @@
         },
         "additionalProperties": false
       },
+      "CreateSessaoDto": {
+        "required": [
+          "horarioFim",
+          "horarioInicio",
+          "salaId",
+          "turmaModuloId"
+        ],
+        "type": "object",
+        "properties": {
+          "turmaModuloId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "salaId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "horarioInicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "horarioFim": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateTurmaDto": {
         "required": [
           "cursoId",
@@ -2292,6 +2756,95 @@
           "areaNome": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CursosPorAreaDto": {
+        "type": "object",
+        "properties": {
+          "area": {
+            "type": "string",
+            "nullable": true
+          },
+          "quantidade": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardStatsDto": {
+        "type": "object",
+        "properties": {
+          "totalCursosTerminados": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCursosDecorrer": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalFormandosAtivos": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cursosPorArea": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CursosPorAreaDto"
+            },
+            "nullable": true
+          },
+          "topFormadores": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopFormadorDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DisponibilidadeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tipoEntidade": {
+            "type": "string",
+            "nullable": true
+          },
+          "formadorId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "formadorNome": {
+            "type": "string",
+            "nullable": true
+          },
+          "salaId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "salaNome": {
+            "type": "string",
+            "nullable": true
+          },
+          "dataInicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dataFim": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "disponivel": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -2525,6 +3078,48 @@
         },
         "additionalProperties": false
       },
+      "SessaoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "turmaModuloId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "moduloNome": {
+            "type": "string",
+            "nullable": true
+          },
+          "formadorNome": {
+            "type": "string",
+            "nullable": true
+          },
+          "turmaNome": {
+            "type": "string",
+            "nullable": true
+          },
+          "salaId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "salaNome": {
+            "type": "string",
+            "nullable": true
+          },
+          "horarioInicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "horarioFim": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
       "SocialLoginDto": {
         "type": "object",
         "properties": {
@@ -2543,6 +3138,20 @@
           "nome": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TopFormadorDto": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalHoras": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false

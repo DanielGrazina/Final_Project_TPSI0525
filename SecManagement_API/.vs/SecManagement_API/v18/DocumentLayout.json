@@ -3,6 +3,7 @@
   "WorkspaceRootPath": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\",
   "Documents": [
     {
+<<<<<<< HEAD
       "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\models\\turma.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:models\\turma.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -109,6 +110,62 @@
     {
       "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\interfaces\\iturmaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\interfaces\\iturmaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+=======
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\statsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\statsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\disponibilidadeservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\disponibilidadeservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\controllers\\disponibilidadescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:controllers\\disponibilidadescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\models\\disponibilidade.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:models\\disponibilidade.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\interfaces\\idisponibilidadeservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\interfaces\\idisponibilidadeservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\controllers\\statscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:controllers\\statscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\interfaces\\istatsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\interfaces\\istatsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\dashboarddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\dashboarddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\disponibilidadedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\disponibilidadedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\controllers\\sessoescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:controllers\\sessoescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\sessaoservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\sessaoservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\interfaces\\isessaoservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\interfaces\\isessaoservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\dtos\\sessaodto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:dtos\\sessaodto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+>>>>>>> 580a405a74ad59c769d62f4ac008c8b6a424678f
     },
     {
       "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\users\\vitor\\dev\\final_project_tpsi0525\\secmanagement_api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
@@ -122,18 +179,27 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
+<<<<<<< HEAD
           "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Document",
               "DocumentIndex": 27,
+=======
+          "SelectedChildIndex": 4,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+>>>>>>> 580a405a74ad59c769d62f4ac008c8b6a424678f
               "Title": "appsettings.json",
               "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\appsettings.json",
               "RelativeDocumentMoniker": "appsettings.json",
               "ToolTip": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\appsettings.json",
               "RelativeToolTip": "appsettings.json",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+<<<<<<< HEAD
               "WhenOpened": "2026-01-13T16:59:38.263Z",
               "IsPinned": true
             },
@@ -149,10 +215,56 @@
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-13T17:00:49.012Z",
               "IsPinned": true
+=======
+              "WhenOpened": "2026-01-23T22:16:04.777Z",
+              "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAAACQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:16:16.874Z",
+              "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Disponibilidade.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Models\\Disponibilidade.cs",
+              "RelativeDocumentMoniker": "Models\\Disponibilidade.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Models\\Disponibilidade.cs",
+              "RelativeToolTip": "Models\\Disponibilidade.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAA8wBUAAAA1AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:26:21.388Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "StatsController.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\StatsController.cs",
+              "RelativeDocumentMoniker": "Controllers\\StatsController.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\StatsController.cs",
+              "RelativeToolTip": "Controllers\\StatsController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:24:30.944Z",
+              "EditorCaption": ""
+>>>>>>> 580a405a74ad59c769d62f4ac008c8b6a424678f
             },
             {
               "$type": "Document",
               "DocumentIndex": 0,
+<<<<<<< HEAD
               "Title": "Turma.cs",
               "DocumentMoniker": "C:\\Users\\Vitor\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Models\\Turma.cs",
               "RelativeDocumentMoniker": "Models\\Turma.cs",
@@ -462,6 +574,147 @@
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAcAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-23T19:04:40.624Z"
+=======
+              "Title": "StatsService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\StatsService.cs",
+              "RelativeDocumentMoniker": "Services\\StatsService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\StatsService.cs",
+              "RelativeToolTip": "Services\\StatsService.cs",
+              "ViewState": "AgIAADEAAAAAAAAAAAAwwEcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:23:50.155Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "IStatsService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\IStatsService.cs",
+              "RelativeDocumentMoniker": "Services\\Interfaces\\IStatsService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\IStatsService.cs",
+              "RelativeToolTip": "Services\\Interfaces\\IStatsService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:23:34.115Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "DisponibilidadesController.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\DisponibilidadesController.cs",
+              "RelativeDocumentMoniker": "Controllers\\DisponibilidadesController.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\DisponibilidadesController.cs",
+              "RelativeToolTip": "Controllers\\DisponibilidadesController.cs",
+              "ViewState": "AgIAABAAAAAAAAAAAAAgwC8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:21:36.967Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "DisponibilidadeService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\DisponibilidadeService.cs",
+              "RelativeDocumentMoniker": "Services\\DisponibilidadeService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\DisponibilidadeService.cs",
+              "RelativeToolTip": "Services\\DisponibilidadeService.cs",
+              "ViewState": "AgIAAEgAAAAAAAAAAAAQwFgAAAAxAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:20:45.929Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "IDisponibilidadeService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\IDisponibilidadeService.cs",
+              "RelativeDocumentMoniker": "Services\\Interfaces\\IDisponibilidadeService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\IDisponibilidadeService.cs",
+              "RelativeToolTip": "Services\\Interfaces\\IDisponibilidadeService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:20:11.861Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "DashboardDto.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\DashboardDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\DashboardDto.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\DashboardDto.cs",
+              "RelativeToolTip": "DTOs\\DashboardDto.cs",
+              "ViewState": "AgIAAAQAAAAAAAAAAAA1wBYAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:23:04.387Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "DisponibilidadeDto.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\DisponibilidadeDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\DisponibilidadeDto.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\DisponibilidadeDto.cs",
+              "RelativeToolTip": "DTOs\\DisponibilidadeDto.cs",
+              "ViewState": "AgIAABMAAAAAAAAAAAAYwBgAAABAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:19:30.33Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "SessoesController.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\SessoesController.cs",
+              "RelativeDocumentMoniker": "Controllers\\SessoesController.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Controllers\\SessoesController.cs",
+              "RelativeToolTip": "Controllers\\SessoesController.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAA5wBoAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:18:56.227Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "SessaoService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\SessaoService.cs",
+              "RelativeDocumentMoniker": "Services\\SessaoService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\SessaoService.cs",
+              "RelativeToolTip": "Services\\SessaoService.cs",
+              "ViewState": "AgIAAGoAAAAAAAAAAAAcwH8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:18:13.511Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "ISessaoService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\ISessaoService.cs",
+              "RelativeDocumentMoniker": "Services\\Interfaces\\ISessaoService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\Interfaces\\ISessaoService.cs",
+              "RelativeToolTip": "Services\\Interfaces\\ISessaoService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:17:19.995Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "SessaoDto.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\SessaoDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\SessaoDto.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\DTOs\\SessaoDto.cs",
+              "RelativeToolTip": "DTOs\\SessaoDto.cs",
+              "ViewState": "AgIAAA4AAAAAAAAAAAAkwBcAAAAuAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T22:16:57.239Z",
+              "EditorCaption": ""
+>>>>>>> 580a405a74ad59c769d62f4ac008c8b6a424678f
             }
           ]
         }

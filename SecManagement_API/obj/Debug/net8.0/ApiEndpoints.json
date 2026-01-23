@@ -428,6 +428,100 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "SecManagement_API.Controllers.DisponibilidadesController",
+    "Method": "Create",
+    "RelativePath": "api/Disponibilidades",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "SecManagement_API.DTOs.CreateDisponibilidadeDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "SecManagement_API.DTOs.DisponibilidadeDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.DisponibilidadesController",
+    "Method": "Delete",
+    "RelativePath": "api/Disponibilidades/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.DisponibilidadesController",
+    "Method": "GetByFormador",
+    "RelativePath": "api/Disponibilidades/formador/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[SecManagement_API.DTOs.DisponibilidadeDto, SecManagement_API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.DisponibilidadesController",
+    "Method": "GetBySala",
+    "RelativePath": "api/Disponibilidades/sala/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[SecManagement_API.DTOs.DisponibilidadeDto, SecManagement_API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
     "ContainingType": "SecManagement_API.Controllers.ModulosController",
     "Method": "GetModulos",
     "RelativePath": "api/Modulos",
@@ -821,6 +915,140 @@
       }
     ],
     "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.SessoesController",
+    "Method": "Agendar",
+    "RelativePath": "api/Sessoes",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "SecManagement_API.DTOs.CreateSessaoDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "SecManagement_API.DTOs.SessaoDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.SessoesController",
+    "Method": "Delete",
+    "RelativePath": "api/Sessoes/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.SessoesController",
+    "Method": "GetHorarioFormador",
+    "RelativePath": "api/Sessoes/formador/{formadorId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "formadorId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "start",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "end",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[SecManagement_API.DTOs.SessaoDto, SecManagement_API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.SessoesController",
+    "Method": "GetHorarioTurma",
+    "RelativePath": "api/Sessoes/turma/{turmaId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "turmaId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "start",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "end",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[SecManagement_API.DTOs.SessaoDto, SecManagement_API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SecManagement_API.Controllers.StatsController",
+    "Method": "GetDashboard",
+    "RelativePath": "api/Stats/dashboard",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "SecManagement_API.DTOs.DashboardStatsDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
     "ContainingType": "SecManagement_API.Controllers.TurmasController",

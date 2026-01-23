@@ -14,7 +14,11 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SecManagement_API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
+<<<<<<< HEAD
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b1e9121e8fc9a7177c5e8ab52de97e2bf0ee0d28")]
+=======
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c6036c6c32204d134141f59264b020c18dad7099")]
+>>>>>>> 580a405a74ad59c769d62f4ac008c8b6a424678f
 [assembly: System.Reflection.AssemblyProductAttribute("SecManagement_API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SecManagement_API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
