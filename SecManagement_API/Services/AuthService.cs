@@ -36,14 +36,14 @@ namespace SecManagement_API.Services
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
             string activationToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
 
-            // Criar o Utilizador
+            // Create Users
             var user = new User
             {
                 Nome = dto.Nome,
                 Email = dto.Email,
                 PasswordHash = passwordHash,
                 Role = "Formando",
-                IsActive = false, // Começa inativo
+                IsActive = false, // Start inative
                 ResetToken = activationToken,
                 ResetTokenExpiry = DateTime.UtcNow.AddHours(24),
                 CreatedAt = DateTime.UtcNow
@@ -52,7 +52,7 @@ namespace SecManagement_API.Services
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            // Enviar Email de Ativação
+            // Send Activation Email
             string link = $"http://localhost:5173/activate?email={dto.Email}&token={activationToken}";
 
             try
@@ -64,7 +64,7 @@ namespace SecManagement_API.Services
 
                 await _emailService.SendEmailAsync(dto.Email, "Ativar Conta", body);
             }
-            catch { /* Log erro */ }
+            catch { /* error log */ }
 
             return "Utilizador registado com sucesso! Verifique o email.";
         }
@@ -77,7 +77,7 @@ namespace SecManagement_API.Services
                 throw new Exception("Token de ativação inválido.");
 
             user.IsActive = true;
-            user.ResetToken = null; // Limpa o token
+            user.ResetToken = null; // Clean token
             user.ResetTokenExpiry = null;
 
             await _context.SaveChangesAsync();
@@ -94,16 +94,16 @@ namespace SecManagement_API.Services
 
             if (!user.IsActive) throw new Exception("Conta inativa. Verifique o seu email.");
 
-            // --- LÓGICA 2FA ---
+            // --- 2FA Logic ---
             if (user.TwoFactorEnabled)
             {
-                // Se o utilizador ainda não enviou o código
+                // If the user has not yet submitted the code
                 if (string.IsNullOrEmpty(dto.TwoFactorCode))
                 {
                     return new AuthResponseDto { RequiresTwoFactor = true, Message = "Insira o código 2FA" };
                 }
 
-                // Validar o código enviado
+                // Validate the submitted code
                 var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
 
                 if (!totp.VerifyTotp(dto.TwoFactorCode, out long timeStepMatched))
@@ -112,12 +112,11 @@ namespace SecManagement_API.Services
                 }
             }
 
-            // Se passou tudo, gera o token
             string token = CreateToken(user);
             return new AuthResponseDto { Token = token, Message = "Login com sucesso" };
         }
 
-        // --- LÓGICA RECUPERAÇÃO PASSWORD ---
+        // --- LOGIC PASSWORD RECOVERY ---
         public async Task<string> ForgotPasswordAsync(string email)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
@@ -127,7 +126,6 @@ namespace SecManagement_API.Services
             user.ResetTokenExpiry = DateTime.UtcNow.AddMinutes(30);
             await _context.SaveChangesAsync();
 
-            // --- ENVIO REAL ---
             string link = $"http://localhost:5173/reset-password?token={user.ResetToken}";
 
             string body = $@"
@@ -157,13 +155,13 @@ namespace SecManagement_API.Services
             return "Password alterada com sucesso.";
         }
 
-        // --- LÓGICA ATIVAR 2FA ---
+        // --- LOGIC ACTIVATE 2FA ---
         public async Task<string> EnableTwoFactorAsync(int userId)
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null) throw new Exception("User não encontrado.");
 
-            // Gerar Key
+            // Generate Key
             var key = KeyGeneration.GenerateRandomKey(20);
             var secret = Base32Encoding.ToString(key);
 
@@ -171,13 +169,13 @@ namespace SecManagement_API.Services
             user.TwoFactorEnabled = true;
             await _context.SaveChangesAsync();
 
-            // Retorna URL para QR Code (Compatível com Google Auth)
+            // Returns URL to QR Code (Compatible with Google Auth)
             return $"otpauth://totp/ATEC:{user.Email}?secret={secret}&issuer=ATEC_FinalProject";
         }
 
         private string CreateToken(User user)
         {
-            // Definir as "Claims" (informações que vão dentro do token)
+            // Define the "Claims" (information that goes inside the token)
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -186,7 +184,7 @@ namespace SecManagement_API.Services
                 new Claim(ClaimTypes.Role, user.Role)
             };
 
-            // Ler a chave do appsettings
+            // Read the appsettings key
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
                 _configuration.GetSection("JwtSettings:Key").Value!));
 
@@ -204,17 +202,17 @@ namespace SecManagement_API.Services
 
         public async Task<AuthResponseDto> SocialLoginAsync(string email, string provider, string providerKey, string nome)
         {
-            // Tenta encontrar o user pelo email
+            // Try to find the user by email
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
             if (user == null)
             {
-                // SE NÃO EXISTE: Cria automaticamente (Sem password)
+                // IF IT DOES NOT EXIST: Create it automatically (No password required)
                 user = new User
                 {
                     Nome = nome,
                     Email = email,
-                    IsActive = true, // Redes sociais já validam o email
+                    IsActive = true, // Social media platforms validate email addresses
                     Role = "Formando",
                     CreatedAt = DateTime.UtcNow
                 };
@@ -226,12 +224,12 @@ namespace SecManagement_API.Services
             }
             else
             {
-                // SE JÁ EXISTE: Atualiza o ID da rede social
+                // IF IT ALREADY EXISTS: Update the social network ID.
                 if (provider == "Google") user.GoogleId = providerKey;
                 await _context.SaveChangesAsync();
             }
 
-            // Gera o Token JWT para ele entrar
+            // Generate the JWT Token for him to log in.
             string token = CreateToken(user);
             return new AuthResponseDto { Token = token, Message = "Login Social Efetuado" };
         }

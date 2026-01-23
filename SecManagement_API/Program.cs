@@ -17,8 +17,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ICursoService, CursoService>();
+builder.Services.AddScoped<IModuloService, ModuloService>();
+builder.Services.AddScoped<IFormandoService, FormandoService>();
+builder.Services.AddScoped<IFormadorService, FormadorService>();
+builder.Services.AddScoped<ISalaService, SalaService>();
+builder.Services.AddScoped<ICursoModuloService, CursoModuloService>();
 
-// Autenticação JWT
+// JWT Auth
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -39,7 +45,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Configurar Swagger para aceitar o cadeado de Autenticação
+// Swagger config
 builder.Services.AddSwaggerGen(option =>
 {
     option.SwaggerDoc("v1", new OpenApiInfo { Title = "SecManagement API", Version = "v1" });

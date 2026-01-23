@@ -18,6 +18,7 @@ namespace SecManagement_API.Controllers
             _authService = authService;
         }
 
+        // POST: api/Auth/register
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto request)
         {
@@ -32,6 +33,7 @@ namespace SecManagement_API.Controllers
             }
         }
 
+        // POST: api/Auth/login
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto request)
         {
@@ -39,7 +41,7 @@ namespace SecManagement_API.Controllers
             {
                 var result = await _authService.LoginAsync(request);
 
-                // Se pedir 2FA, retorna 202 Accepted para o frontend saber que tem de mudar de ecrã
+                // If ask fot 2FA, return 202 Accepted for frontend change page
                 if (result.RequiresTwoFactor)
                 {
                     return Accepted(result);
@@ -53,6 +55,7 @@ namespace SecManagement_API.Controllers
             }
         }
 
+        // POST: api/Auth/forgot-password
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto request)
         {
@@ -64,6 +67,7 @@ namespace SecManagement_API.Controllers
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
+        // POST: api/Auth/reset-password
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto request)
         {
@@ -75,6 +79,7 @@ namespace SecManagement_API.Controllers
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
+        // POST: api/Auth/activate
         [HttpPost("activate")]
         public async Task<IActionResult> Activate([FromBody] ActivateDto request)
         {
@@ -86,6 +91,7 @@ namespace SecManagement_API.Controllers
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
+        // POST: api/Auth/enable-2fa
         [Authorize]
         [HttpPost("enable-2fa")]
         public async Task<IActionResult> Enable2FA()
@@ -99,7 +105,8 @@ namespace SecManagement_API.Controllers
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
-        // Login via Google
+        // POST: api/Auth/google
+        // Login with google
         [HttpPost("google")]
         public async Task<IActionResult> Google([FromBody] GoogleLoginDto request)
         {
@@ -108,14 +115,14 @@ namespace SecManagement_API.Controllers
                 if (string.IsNullOrWhiteSpace(request.IdToken))
                     return BadRequest(new { message = "IdToken em falta." });
 
-                // Valida o ID Token do Google
+                // Validates the Google Token ID 
                 var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
 
                 // Cria/atualiza o user e devolve JWT
                 var result = await _authService.SocialLoginAsync(
                     payload.Email,
                     "Google",
-                    payload.Subject, // ID único do Google
+                    payload.Subject, // Unique Google ID
                     payload.Name ?? payload.Email
                 );
 
@@ -127,6 +134,7 @@ namespace SecManagement_API.Controllers
             }
         }
 
+        // POST: api/Auth/social-login
         [HttpPost("social-login")]
         public async Task<IActionResult> SocialLogin([FromBody] SocialLoginDto request)
         {

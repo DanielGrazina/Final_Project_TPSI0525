@@ -34,7 +34,6 @@ namespace SecManagement_API.Models
         [Column("avatarurl")]
         public string? AvatarUrl { get; set; }
 
-        // Dados Pessoais
         [Column("nome")]
         public string Nome { get; set; } = string.Empty;
 
@@ -56,7 +55,6 @@ namespace SecManagement_API.Models
         [Column("resettokenexpiry")]
         public DateTime? ResetTokenExpiry { get; set; }
 
-        // Segurança 2FA
         [Column("twofactorsecret")]
         public string? TwoFactorSecret { get; set; }
 

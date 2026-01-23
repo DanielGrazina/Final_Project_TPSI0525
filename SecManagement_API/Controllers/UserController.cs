@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SecManagement_API.Data;
-using SecManagement_API.Models;
 using SecManagement_API.DTOs;
+using SecManagement_API.Services.Interfaces;
 
 namespace SecManagement_API.Controllers
 {
@@ -12,82 +10,60 @@ namespace SecManagement_API.Controllers
     [Authorize]
     public class UsersController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IUserService _userService;
 
-        public UsersController(AppDbContext context)
+        public UsersController(IUserService userService)
         {
-            _context = context;
+            _userService = userService;
         }
 
-        // LISTAR TODOS
+        // GET: api/Users
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
         {
-            return await _context.Users.ToListAsync();
+            return Ok(await _userService.GetAllAsync());
         }
 
-        // OBTER UM POR ID
+        // GET: api/Users/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
+        public async Task<ActionResult<UserDto>> GetUser(int id)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _userService.GetByIdAsync(id);
 
             if (user == null)
             {
-                return NotFound();
+                return NotFound("Utilizador não encontrado.");
             }
 
-            return user;
+            return Ok(user);
         }
 
-        // ATUALIZAR UTILIZADOR
+        // PUT: api/Users/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(int id, [FromBody] User userUpdates)
+        public async Task<IActionResult> PutUser(int id, [FromBody] UpdateUserDto dto)
         {
-            if (id != userUpdates.Id)
-            {
-                return BadRequest("O ID no URL não coincide com o corpo do pedido.");
-            }
+            var sucesso = await _userService.UpdateAsync(id, dto);
 
-            _context.Entry(userUpdates).State = EntityState.Modified;
-
-            if (string.IsNullOrEmpty(userUpdates.PasswordHash))
+            if (!sucesso)
             {
-                _context.Entry(userUpdates).Property(x => x.PasswordHash).IsModified = false;
-            }
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id)) return NotFound();
-                else throw;
+                return NotFound("Utilizador não encontrado.");
             }
 
             return NoContent();
         }
 
-        // APAGAR UTILIZADOR
+        // DELETE: api/Users/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
+            var sucesso = await _userService.DeleteAsync(id);
+
+            if (!sucesso)
             {
-                return NotFound();
+                return NotFound("Utilizador não encontrado.");
             }
 
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-
             return NoContent();
-        }
-
-        private bool UserExists(int id)
-        {
-            return _context.Users.Any(e => e.Id == id);
         }
     }
 }

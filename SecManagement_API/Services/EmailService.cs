@@ -19,35 +19,35 @@ namespace SecManagement_API.Services
         {
             var email = new MimeMessage();
 
-            // Quem envia
+            // Who sends
             email.From.Add(new MailboxAddress(
                 _config["EmailSettings:SenderName"],
                 _config["EmailSettings:SenderEmail"]));
 
-            // Quem recebe
+            // Who receives
             email.To.Add(MailboxAddress.Parse(toEmail));
 
             email.Subject = subject;
 
-            // Corpo do email (HTML)
+            // Email body (HTML)
             email.Body = new TextPart(TextFormat.Html) { Text = messageBody };
 
-            // Enviar via SMTP
+            // Send via SMTP
             using var smtp = new SmtpClient();
             try
             {
-                // Ligar ao servidor
+                // Connect to server
                 await smtp.ConnectAsync(
                     _config["EmailSettings:Server"],
                     int.Parse(_config["EmailSettings:Port"]!),
                     SecureSocketOptions.StartTls);
 
-                // Autenticar
+                // Authenticate
                 await smtp.AuthenticateAsync(
                     _config["EmailSettings:Username"],
                     _config["EmailSettings:Password"]);
 
-                // Enviar
+                // Send
                 await smtp.SendAsync(email);
             }
             catch (Exception ex)

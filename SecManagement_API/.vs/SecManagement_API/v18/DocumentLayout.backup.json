@@ -3,12 +3,48 @@
   "WorkspaceRootPath": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\userservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\userservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\salaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\salaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\moduloservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\moduloservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\formandoservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\formandoservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\formadorservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\formadorservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\emailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\emailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\cursoservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\cursoservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\cursomoduloservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\cursomoduloservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
       "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|c:\\dev\\final_project_tpsi0525\\secmanagement_api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0A42A0CD-9EB5-3B41-AA8C-2CB73DA47BC7}|SecManagement_API.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,11 +54,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 9,
               "Title": "appsettings.json",
               "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\appsettings.json",
               "RelativeDocumentMoniker": "appsettings.json",
@@ -36,16 +72,133 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 10,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
               "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Program.cs",
               "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAC8AAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-13T17:00:49.012Z",
               "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "UserService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\UserService.cs",
+              "RelativeDocumentMoniker": "Services\\UserService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\UserService.cs",
+              "RelativeToolTip": "Services\\UserService.cs",
+              "ViewState": "AgIAADIAAAAAAAAAAAAwwDcAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T17:02:47.447Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "SalaService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\SalaService.cs",
+              "RelativeDocumentMoniker": "Services\\SalaService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\SalaService.cs",
+              "RelativeToolTip": "Services\\SalaService.cs",
+              "ViewState": "AgIAAEMAAAAAAAAAAAAcwFEAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T17:02:35.752Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ModuloService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\ModuloService.cs",
+              "RelativeDocumentMoniker": "Services\\ModuloService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\ModuloService.cs",
+              "RelativeToolTip": "Services\\ModuloService.cs",
+              "ViewState": "AgIAABoAAAAAAAAAAAAwwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T17:02:32.687Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "FormandoService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\FormandoService.cs",
+              "RelativeDocumentMoniker": "Services\\FormandoService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\FormandoService.cs",
+              "RelativeToolTip": "Services\\FormandoService.cs",
+              "ViewState": "AgIAAHgAAAAAAAAAAAAmwGsAAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T17:01:03.452Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "FormadorService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\FormadorService.cs",
+              "RelativeDocumentMoniker": "Services\\FormadorService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\FormadorService.cs",
+              "RelativeToolTip": "Services\\FormadorService.cs",
+              "ViewState": "AgIAAHUAAAAAAAAAAAAmwGEAAABeAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T17:00:05.827Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "EmailService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\EmailService.cs",
+              "RelativeDocumentMoniker": "Services\\EmailService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\EmailService.cs",
+              "RelativeToolTip": "Services\\EmailService.cs",
+              "ViewState": "AgIAACEAAAAAAAAAAAAowDEAAAAXAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T16:58:57.901Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "CursoService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\CursoService.cs",
+              "RelativeDocumentMoniker": "Services\\CursoService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\CursoService.cs",
+              "RelativeToolTip": "Services\\CursoService.cs",
+              "ViewState": "AgIAAE8AAAAAAAAAAAAcwF4AAAA0AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T16:58:33.684Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "CursoModuloService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\CursoModuloService.cs",
+              "RelativeDocumentMoniker": "Services\\CursoModuloService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\CursoModuloService.cs",
+              "RelativeToolTip": "Services\\CursoModuloService.cs",
+              "ViewState": "AgIAAEkAAAAAAAAAAAAcwFcAAAA7AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T16:57:49.63Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "AuthService.cs",
+              "DocumentMoniker": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\AuthService.cs",
+              "RelativeDocumentMoniker": "Services\\AuthService.cs",
+              "ToolTip": "C:\\DEV\\Final_Project_TPSI0525\\SecManagement_API\\Services\\AuthService.cs",
+              "RelativeToolTip": "Services\\AuthService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAOcAAAA4AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-23T16:52:40.942Z",
               "EditorCaption": ""
             }
           ]
