@@ -107,12 +107,12 @@ export default function Home() {
           {/* Quick links */}
           <div className="mt-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             <NavCard title="Cursos" desc="Criar/editar cursos e gerir distribuição de módulos." onClick={() => navigate("/admin/Courses")} />
-            <NavCard title="Módulos" desc="Catálogo de módulos (CRUD)." onClick={() => navigate("/admin/modulos")} />
-            <NavCard title="Turmas" desc="Gestão de turmas (CRUD)." onClick={() => navigate("/admin/turmas")} />
+            <NavCard title="Módulos" desc="Catálogo de módulos (CRUD)." onClick={() => navigate("/admin/Modules")} />
+            <NavCard title="Turmas" desc="Gestão de turmas (CRUD)." onClick={() => navigate("/admin/Turmas")} />
 
             <NavCard title="Sessões" desc="Planeamento de aulas/sessões (CRUD)." onClick={() => navigate("/admin/sessoes")} />
             <NavCard title="Salas" desc="Gestão de salas e recursos (CRUD)." onClick={() => navigate("/admin/Rooms")} />
-            <NavCard title="Alias" desc="Gestão de mapeamentos/alias (CRUD)." onClick={() => navigate("/admin/alias")} />
+            <NavCard title="Areas" desc="Gestão de mapeamentos/alias (CRUD)." onClick={() => navigate("/admin/Areas")} />
 
             <NavCard title="Formadores" desc="Registo de formadores e anexos (em breve)." onClick={() => navigate("/admin/formadores")} />
             <NavCard title="Formandos" desc="Registo de formandos e anexos (em breve)." onClick={() => navigate("/admin/formandos")} />

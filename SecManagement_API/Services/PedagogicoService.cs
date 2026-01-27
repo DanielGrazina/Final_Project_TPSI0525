@@ -174,7 +174,7 @@ namespace SecManagement_API.Services
                 {
                     Id = m.Id,
                     Nome = m.Nome,
-                    CargaHorariaTotal = m.CargaHoraria
+                    CargaHoraria = m.CargaHoraria
                 })
                 .ToListAsync();
         }
@@ -188,7 +188,7 @@ namespace SecManagement_API.Services
             {
                 Id = m.Id,
                 Nome = m.Nome,
-                CargaHorariaTotal = m.CargaHoraria
+                CargaHoraria = m.CargaHoraria
             };
         }
 
@@ -197,7 +197,7 @@ namespace SecManagement_API.Services
             var modulo = new Modulo
             {
                 Nome = dto.Nome,
-                CargaHoraria = dto.CargaHorariaTotal,
+                CargaHoraria = dto.CargaHoraria,
                 Nivel = "1"
             };
 
@@ -208,7 +208,7 @@ namespace SecManagement_API.Services
             {
                 Id = modulo.Id,
                 Nome = modulo.Nome,
-                CargaHorariaTotal = modulo.CargaHoraria
+                CargaHoraria = modulo.CargaHoraria
             };
         }
 
@@ -218,7 +218,7 @@ namespace SecManagement_API.Services
             if (modulo == null) throw new Exception("Módulo não encontrado.");
 
             modulo.Nome = dto.Nome;
-            modulo.CargaHoraria = dto.CargaHorariaTotal;
+            modulo.CargaHoraria = dto.CargaHoraria;
             // modulo.Nivel = dto.Nivel;
 
             await _context.SaveChangesAsync();
@@ -227,7 +227,7 @@ namespace SecManagement_API.Services
             {
                 Id = modulo.Id,
                 Nome = modulo.Nome,
-                CargaHorariaTotal = modulo.CargaHoraria
+                CargaHoraria = modulo.CargaHoraria
             };
         }
 

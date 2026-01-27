@@ -6,7 +6,7 @@ namespace SecManagement_API.DTOs
     {
         public int Id { get; set; }
         public string Nome { get; set; } = string.Empty;
-        public int CargaHorariaTotal { get; set; }
+        public int CargaHoraria { get; set; }
     }
 
     public class CreateModuloDto
@@ -15,6 +15,6 @@ namespace SecManagement_API.DTOs
         public string Nome { get; set; } = string.Empty;
 
         [Range(1, 1000)]
-        public int CargaHorariaTotal { get; set; }
+        public int CargaHoraria { get; set; }
     }
 }
