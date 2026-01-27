@@ -1,0 +1,54 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sw?
+
+
+# .NET & Visual Studio Additions
+
+# Build Results
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio cache
+.vs/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+
+# Configurações com Segredos (Base de Dados/API Keys)
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/secrets.json
+
+# Docker
+docker-compose.override.yml
+
+# Test Results
+TestResult.xml
+[Tt]est[Rr]esult*/
+
+# Postgres data
+postgres-data/
+pgdata/
