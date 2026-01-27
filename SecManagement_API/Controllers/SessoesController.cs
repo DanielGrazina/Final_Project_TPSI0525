@@ -43,6 +43,19 @@ namespace SecManagement_API.Controllers
             return Ok(await _service.GetHorarioFormadorAsync(formadorId, start, end));
         }
 
+        [HttpGet("sala/{salaId}")]
+        public async Task<ActionResult<IEnumerable<SessaoDto>>> GetHorarioSala(int salaId, DateTime start, DateTime end)
+        {
+            try
+            {
+                return Ok(await _service.GetHorarioSalaAsync(salaId, start, end));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {

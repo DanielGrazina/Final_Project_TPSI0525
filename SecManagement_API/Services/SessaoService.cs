@@ -29,6 +29,21 @@ namespace SecManagement_API.Services
                 .FirstOrDefaultAsync(tm => tm.Id == dto.TurmaModuloId);
 
             if (turmaModulo == null) throw new Exception("Módulo da turma não encontrado.");
+            if (turmaModulo.Modulo == null) throw new Exception("Erro de integridade: Módulo não existe.");
+
+            double horasNovaSessao = (dto.HorarioFim - dto.HorarioInicio).TotalHours;
+
+            var sessoesExistentes = await _context.Sessoes
+                .Where(s => s.TurmaModuloId == dto.TurmaModuloId)
+                .ToListAsync();
+
+            double horasUsadas = sessoesExistentes.Sum(s => (s.HorarioFim - s.HorarioInicio).TotalHours);
+
+            if (horasUsadas + horasNovaSessao > turmaModulo.Modulo.CargaHoraria)
+            {
+                double horasRestantes = turmaModulo.Modulo.CargaHoraria - horasUsadas;
+                throw new Exception($"Não é possível agendar. O módulo tem {turmaModulo.Modulo.CargaHoraria}h, já foram agendadas {horasUsadas}h. Só restam {horasRestantes}h.");
+            }
 
             int formadorId = turmaModulo.FormadorId;
 
@@ -123,6 +138,21 @@ namespace SecManagement_API.Services
                 HorarioInicio = s.HorarioInicio,
                 HorarioFim = s.HorarioFim
             };
+        }
+
+        public async Task<IEnumerable<SessaoDto>> GetHorarioSalaAsync(int salaId, DateTime start, DateTime end)
+        {
+            var sessoes = await _context.Sessoes
+                .Include(s => s.Sala)
+                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Modulo)
+                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Formador).ThenInclude(f => f.User)
+                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Turma)
+                .Where(s => s.SalaId == salaId &&
+                            s.HorarioInicio >= start && s.HorarioInicio <= end)
+                .OrderBy(s => s.HorarioInicio)
+                .ToListAsync();
+
+            return sessoes.Select(s => MapToDto(s, s.TurmaModulo, s.Sala));
         }
     }
 }
