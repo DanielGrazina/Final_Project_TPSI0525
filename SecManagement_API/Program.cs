@@ -38,6 +38,8 @@ builder.Services.AddScoped<ISessaoService, SessaoService>();
 builder.Services.AddScoped<IDisponibilidadeService, DisponibilidadeService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
+builder.Services.AddScoped<IUserService, UserService>();
+
 
 // JWT Auth
 builder.Services.AddAuthentication(options =>
