@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
+using QuestPDF.Infrastructure;
 using SecManagement_API.Data;
 using SecManagement_API.Models;
 using SecManagement_API.Services;
@@ -10,6 +11,8 @@ using SecManagement_API.Services.Interfaces;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 // DB Context
 var dataSourceBuilder = new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
@@ -34,6 +37,7 @@ builder.Services.AddScoped<IAvaliacaoService, AvaliacaoService>();
 builder.Services.AddScoped<ISessaoService, SessaoService>();
 builder.Services.AddScoped<IDisponibilidadeService, DisponibilidadeService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
+builder.Services.AddScoped<IPdfService, PdfService>();
 
 // JWT Auth
 builder.Services.AddAuthentication(options =>
@@ -98,6 +102,21 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        DbInitializer.Initialize(context);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Ocorreu um erro ao popular a base de dados.");
+    }
+}
 
 // --- PIPELINE ---
 
