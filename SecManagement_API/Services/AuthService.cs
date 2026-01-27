@@ -41,7 +41,7 @@ namespace SecManagement_API.Services
                 Nome = dto.Nome,
                 Email = dto.Email,
                 PasswordHash = passwordHash,
-                Role = "Formando", // Role por defeito
+                Role = "User", // Role por defeito
                 IsActive = false,
                 ActivationToken = activationToken, // Usamos o campo correto do Model
                 CreatedAt = DateTime.UtcNow
@@ -192,7 +192,7 @@ namespace SecManagement_API.Services
                     Nome = nome,
                     Email = email,
                     IsActive = true, // Emails sociais são validados
-                    Role = "Formando",
+                    Role = "Admin", // Role por defeito
                     CreatedAt = DateTime.UtcNow
                 };
 
