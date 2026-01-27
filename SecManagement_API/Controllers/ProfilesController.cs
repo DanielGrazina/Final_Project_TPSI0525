@@ -12,10 +12,12 @@ namespace SecManagement_API.Controllers
     public class ProfilesController : ControllerBase
     {
         private readonly IProfileService _service;
+        private readonly IPdfService _pdfService;
 
-        public ProfilesController(IProfileService service)
+        public ProfilesController(IProfileService service, IPdfService pdfService)
         {
             _service = service;
+            _pdfService = pdfService;
         }
 
         // --- FORMADORES ---
@@ -43,6 +45,21 @@ namespace SecManagement_API.Controllers
             catch (Exception ex) { return BadRequest(ex.Message); }
         }
 
+        // GET: api/Profiles/formador/5/pdf
+        [HttpGet("formador/{userId}/pdf")]
+        public async Task<IActionResult> DownloadFormadorPdf(int userId)
+        {
+            try
+            {
+                var pdfBytes = await _pdfService.GenerateFormadorReportAsync(userId);
+                return File(pdfBytes, "application/pdf", $"relatorio_formador_{userId}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         // --- FORMANDOS ---
 
         // GET: api/Profiles/formando/5 (Passar o UserID)
@@ -66,6 +83,21 @@ namespace SecManagement_API.Controllers
                 return Ok(res);
             }
             catch (Exception ex) { return BadRequest(ex.Message); }
+        }
+
+        // GET: api/Profiles/formando/5/pdf
+        [HttpGet("formando/{userId}/pdf")]
+        public async Task<IActionResult> DownloadFormandoPdf(int userId)
+        {
+            try
+            {
+                var pdfBytes = await _pdfService.GenerateFormandoReportAsync(userId);
+                return File(pdfBytes, "application/pdf", $"relatorio_formando_{userId}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // --- FICHEIROS ---
