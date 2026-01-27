@@ -1,10 +1,14 @@
+// src/pages/admin/Turmas.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 
-function Modal({ title, children, onClose }) {
+function Modal({ title, children, onClose, disableClose }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+      onClick={() => !disableClose && onClose()}
+    >
       <div
         className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-xl shadow-lg border dark:border-gray-800"
         onClick={(e) => e.stopPropagation()}
@@ -13,10 +17,11 @@ function Modal({ title, children, onClose }) {
           <h3 className="font-bold text-gray-900 dark:text-gray-100">{title}</h3>
           <button
             onClick={onClose}
-            className="px-3 py-1 rounded border text-gray-700 hover:bg-gray-50
+            disabled={disableClose}
+            className="px-3 py-1 rounded border text-gray-700 hover:bg-gray-50 disabled:opacity-60
                        dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
           >
-            Close
+            Fechar
           </button>
         </div>
         <div className="p-5">{children}</div>
@@ -27,9 +32,40 @@ function Modal({ title, children, onClose }) {
 
 const ESTADOS = ["Planeada", "Decorrer", "Terminada", "Cancelada"];
 
+// Para inputs <input type="date"> precisamos de "YYYY-MM-DD"
 function toDateInputValue(dateLike) {
   if (!dateLike) return "";
+  // Se vier ISO (ex: 2026-01-27T00:00:00.000Z), fica "2026-01-27"
   return String(dateLike).slice(0, 10);
+}
+
+// "YYYY-MM-DD" -> ISO UTC com Z (evita erro do Npgsql com timestamp with time zone)
+function toIsoUtcAtMidnight(dateStr) {
+  if (!dateStr) return null;
+  // Gera sempre uma data UTC consistente (Kind=UTC no backend)
+  return new Date(`${dateStr}T00:00:00Z`).toISOString();
+}
+
+function extractError(err, fallback) {
+  const data = err?.response?.data;
+
+  if (!data) return fallback;
+  if (typeof data === "string") return data;
+  if (typeof data?.message === "string") return data.message;
+
+  // ValidationProblemDetails
+  if (data?.errors && typeof data.errors === "object") {
+    const k = Object.keys(data.errors)[0];
+    const arr = data.errors[k];
+    if (Array.isArray(arr) && arr.length) return arr[0];
+    return "Dados inválidos.";
+  }
+
+  try {
+    return JSON.stringify(data);
+  } catch {
+    return fallback;
+  }
 }
 
 export default function AdminTurmas() {
@@ -46,7 +82,6 @@ export default function AdminTurmas() {
   const [estadoFilter, setEstadoFilter] = useState("Todos");
 
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
 
   const [form, setForm] = useState({
     nome: "",
@@ -54,7 +89,6 @@ export default function AdminTurmas() {
     dataInicio: "",
     dataFim: "",
     local: "",
-    // UI apenas (backend ainda não recebe estado no CreateTurmaDto atual)
     estado: "Planeada",
   });
 
@@ -67,8 +101,7 @@ export default function AdminTurmas() {
       setTurmas(Array.isArray(tRes.data) ? tRes.data : []);
       setCursos(Array.isArray(cRes.data) ? cRes.data : []);
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data || "Failed to load data.";
-      setError(typeof msg === "string" ? msg : "Failed to load data.");
+      setError(extractError(err, "Erro ao carregar dados."));
     } finally {
       setLoading(false);
     }
@@ -91,43 +124,28 @@ export default function AdminTurmas() {
         (t.local || "").toLowerCase().includes(s) ||
         String(t.id ?? "").includes(s);
 
-      const matchesEstado = estadoFilter === "Todos" ? true : (t.estado === estadoFilter);
+      const matchesEstado = estadoFilter === "Todos" ? true : t.estado === estadoFilter;
 
       return matchesSearch && matchesEstado;
     });
   }, [turmas, search, estadoFilter]);
 
   function openCreate() {
-    setEditing(null);
     setForm({
       nome: "",
       cursoId: "",
       dataInicio: "",
       dataFim: "",
       local: "",
-      estado: "Planeada", // UI default
+      estado: "Planeada",
     });
+    setError("");
     setShowForm(true);
   }
 
-  function openEdit(turma) {
-    setEditing(turma);
-    setForm({
-      nome: turma.nome ?? "",
-      cursoId: String(turma.cursoId ?? ""),
-      dataInicio: toDateInputValue(turma.dataInicio),
-      dataFim: toDateInputValue(turma.dataFim),
-      local: turma.local ?? "",
-      // UI: mostra o estado atual (vem no TurmaDto)
-      estado: turma.estado ?? "Planeada",
-    });
-    setShowForm(true);
-  }
-
-  function closeForm() {
-    if (saving) return;
+  function closeForm(force = false) {
+    if (!force && saving) return;
     setShowForm(false);
-    setEditing(null);
   }
 
   function onChange(e) {
@@ -139,72 +157,78 @@ export default function AdminTurmas() {
     e.preventDefault();
     setError("");
 
-    const nome = form.nome.trim();
+    const nome = (form.nome ?? "").trim();
     const cursoIdNum = Number(form.cursoId);
-    const local = form.local.trim();
+    const local = (form.local ?? "").trim();
+    const estado = (form.estado ?? "").trim();
 
-    if (!nome) return alert("Name is required.");
-    if (!Number.isFinite(cursoIdNum) || cursoIdNum <= 0) return alert("Course is required.");
+    if (!nome) return alert("O nome é obrigatório.");
+    if (!Number.isFinite(cursoIdNum) || cursoIdNum <= 0) return alert("Seleciona um curso.");
+    if (!form.dataInicio) return alert("Data de início é obrigatória.");
+    if (!form.dataFim) return alert("Data de fim é obrigatória.");
+    if (!ESTADOS.includes(estado)) return alert("Estado inválido.");
 
-    // ✅ Com o DTO atual, DataInicio e DataFim são DateTime (obrigatórios)
-    if (!form.dataInicio) return alert("Start date is required.");
-    if (!form.dataFim) return alert("End date is required.");
+    const dataInicioIso = toIsoUtcAtMidnight(form.dataInicio);
+    const dataFimIso = toIsoUtcAtMidnight(form.dataFim);
 
-    const dataInicio = `${form.dataInicio}T00:00:00`;
-    const dataFim = `${form.dataFim}T00:00:00`;
+    if (!dataInicioIso || !dataFimIso) return alert("Datas inválidas.");
 
-    if (new Date(dataFim) < new Date(dataInicio)) {
-      return alert("End date cannot be before start date.");
+    if (new Date(dataFimIso) < new Date(dataInicioIso)) {
+      return alert("A data de fim não pode ser anterior à data de início.");
     }
 
-    // ✅ Payload 100% compatível com CreateTurmaDto atual (SEM estado)
+    // Payload em PascalCase (melhor para DTOs C#) + datas em UTC (com Z)
     const payload = {
-      nome,
-      cursoId: cursoIdNum,
-      dataInicio,
-      dataFim,
-      local: local || "",
+      Nome: nome,
+      CursoId: cursoIdNum,
+      DataInicio: dataInicioIso,
+      DataFim: dataFimIso,
+      Local: local,
+      Estado: estado,
     };
 
     setSaving(true);
     try {
-      if (editing) {
-        // ⚠️ Só funciona se tiveres PUT no backend
-        await api.put(`/Turmas/${editing.id}`, payload);
-      } else {
-        await api.post("/Turmas", payload);
-      }
+      await api.post("/Turmas", payload);
 
-      closeForm();
+      // fecha mesmo enquanto saving=true
+      closeForm(true);
+
       await loadAll();
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data || "Failed to save class.";
-      setError(typeof msg === "string" ? msg : "Failed to save class.");
+      console.log("POST /Turmas FAIL", {
+        status: err.response?.status,
+        data: err.response?.data,
+        payloadSent: payload,
+      });
+      setError(extractError(err, "Erro ao criar turma."));
     } finally {
       setSaving(false);
     }
   }
 
   async function deleteTurma(id) {
-    if (!window.confirm("Are you sure you want to delete this class?")) return;
+    if (!window.confirm("Tens a certeza que queres apagar esta turma?")) return;
 
     setError("");
     try {
       await api.delete(`/Turmas/${id}`);
       setTurmas((prev) => prev.filter((t) => t.id !== id));
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data || "Failed to delete class.";
-      setError(typeof msg === "string" ? msg : "Failed to delete class.");
+      setError(extractError(err, "Erro ao apagar turma."));
     }
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* Header */}
       <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-800">
         <div className="container mx-auto px-4 py-5 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Classes (Turmas)</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Classes management (CRUD) connected to API.</p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Turmas</h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Gestão de turmas (GET / POST / DELETE).
+            </p>
           </div>
 
           <div className="flex gap-2">
@@ -213,24 +237,29 @@ export default function AdminTurmas() {
               className="px-4 py-2 rounded border text-gray-700 hover:bg-gray-50
                          dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
             >
-              Back
+              Voltar
             </button>
 
-            <button onClick={openCreate} className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
-              + New Class
+            <button
+              onClick={openCreate}
+              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            >
+              + Nova Turma
             </button>
           </div>
         </div>
       </div>
 
+      {/* Content */}
       <div className="container mx-auto px-4 py-6">
+        {/* Toolbar */}
         <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-4 mb-4">
           <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:justify-between">
             <div className="flex-1">
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, course, location or id..."
+                placeholder="Pesquisar por nome, curso, local ou ID..."
                 className="w-full border rounded px-3 py-2
                            bg-white dark:bg-gray-900 dark:border-gray-800
                            text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
@@ -238,7 +267,7 @@ export default function AdminTurmas() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Status:</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Estado:</span>
               <select
                 value={estadoFilter}
                 onChange={(e) => setEstadoFilter(e.target.value)}
@@ -246,7 +275,7 @@ export default function AdminTurmas() {
                            bg-white dark:bg-gray-900 dark:border-gray-800
                            text-gray-900 dark:text-gray-100"
               >
-                <option value="Todos">All</option>
+                <option value="Todos">Todos</option>
                 {ESTADOS.map((x) => (
                   <option key={x} value={x}>
                     {x}
@@ -262,24 +291,41 @@ export default function AdminTurmas() {
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm whitespace-pre-wrap">
             {error}
           </div>
         )}
 
+        {/* Table */}
         <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-auto">
             <table className="min-w-full">
               <thead className="bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700">
                 <tr>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">ID</th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Name</th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Course</th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Start</th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">End</th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Location</th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Status</th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Actions</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
+                    ID
+                  </th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
+                    Nome
+                  </th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
+                    Curso
+                  </th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
+                    Início
+                  </th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
+                    Fim
+                  </th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
+                    Local
+                  </th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
+                    Estado
+                  </th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
+                    Ações
+                  </th>
                 </tr>
               </thead>
 
@@ -287,22 +333,27 @@ export default function AdminTurmas() {
                 {loading ? (
                   <tr>
                     <td colSpan="8" className="py-10 px-4 text-center text-gray-500 dark:text-gray-400">
-                      Loading...
+                      A carregar...
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td colSpan="8" className="py-10 px-4 text-center text-gray-500 dark:text-gray-400">
-                      No classes found.
+                      Sem turmas para mostrar.
                     </td>
                   </tr>
                 ) : (
                   filtered.map((t) => (
-                    <tr key={t.id} className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                    <tr
+                      key={t.id}
+                      className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                    >
                       <td className="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{t.id}</td>
-                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{t.nome}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">
+                        {t.nome}
+                      </td>
                       <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                        {t.cursoNome ?? `#${t.cursoId ?? "—"}`}
+                        {t.cursoNome || `#${t.cursoId}`}
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
                         {toDateInputValue(t.dataInicio) || "—"}
@@ -315,18 +366,11 @@ export default function AdminTurmas() {
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-2">
                           <button
-                            onClick={() => openEdit(t)}
-                            className="px-3 py-1.5 rounded text-sm font-medium text-yellow-700 hover:bg-yellow-50
-                                       dark:text-yellow-300 dark:hover:bg-yellow-900/20"
-                          >
-                            Edit
-                          </button>
-                          <button
                             onClick={() => deleteTurma(t.id)}
                             className="px-3 py-1.5 rounded text-sm font-medium text-red-700 hover:bg-red-50
                                        dark:text-red-300 dark:hover:bg-red-900/20"
                           >
-                            Delete
+                            Apagar
                           </button>
                         </div>
                       </td>
@@ -339,11 +383,12 @@ export default function AdminTurmas() {
         </div>
       </div>
 
+      {/* Modal Create */}
       {showForm && (
-        <Modal title={editing ? "Edit Class" : "New Class"} onClose={closeForm}>
+        <Modal title="Nova Turma" onClose={() => closeForm(false)} disableClose={saving}>
           <form onSubmit={saveTurma} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Name</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Nome</label>
               <input
                 name="nome"
                 value={form.nome}
@@ -351,12 +396,13 @@ export default function AdminTurmas() {
                 className="mt-1 w-full border rounded px-3 py-2
                            bg-white dark:bg-gray-900 dark:border-gray-800
                            text-gray-900 dark:text-gray-100"
+                placeholder="Ex: TPSI 0525"
                 disabled={saving}
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Course</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Curso</label>
               <select
                 name="cursoId"
                 value={form.cursoId}
@@ -366,7 +412,7 @@ export default function AdminTurmas() {
                            text-gray-900 dark:text-gray-100"
                 disabled={saving}
               >
-                <option value="">Select course...</option>
+                <option value="">Seleciona um curso...</option>
                 {cursos.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.nome}
@@ -376,7 +422,7 @@ export default function AdminTurmas() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Start Date</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Data Início</label>
               <input
                 type="date"
                 name="dataInicio"
@@ -390,7 +436,7 @@ export default function AdminTurmas() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">End Date</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Data Fim</label>
               <input
                 type="date"
                 name="dataFim"
@@ -404,7 +450,7 @@ export default function AdminTurmas() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Location</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Local</label>
               <input
                 name="local"
                 value={form.local}
@@ -412,13 +458,13 @@ export default function AdminTurmas() {
                 className="mt-1 w-full border rounded px-3 py-2
                            bg-white dark:bg-gray-900 dark:border-gray-800
                            text-gray-900 dark:text-gray-100"
+                placeholder="Ex: ATEC"
                 disabled={saving}
               />
             </div>
 
-            {/* UI only (backend ainda não aceita no CreateTurmaDto atual) */}
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Status</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Estado</label>
               <select
                 name="estado"
                 value={form.estado}
@@ -435,20 +481,19 @@ export default function AdminTurmas() {
                 ))}
               </select>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Nota: o backend ainda não recebe Estado no CreateTurmaDto, por isso este campo só vai funcionar
-                depois de atualizares o DTO/service.
+                Tem de ser exatamente um destes valores.
               </p>
             </div>
 
             <div className="md:col-span-2 flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={closeForm}
-                className="px-4 py-2 rounded border text-gray-700 hover:bg-gray-50
+                onClick={() => closeForm(false)}
+                className="px-4 py-2 rounded border text-gray-700 hover:bg-gray-50 disabled:opacity-60
                            dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
                 disabled={saving}
               >
-                Cancel
+                Cancelar
               </button>
 
               <button
@@ -456,7 +501,7 @@ export default function AdminTurmas() {
                 className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
                 disabled={saving}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? "A guardar..." : "Guardar"}
               </button>
             </div>
           </form>

@@ -69,7 +69,11 @@ namespace SecManagement_API.Services
                 DataFim = dto.DataFim,
                 Local = dto.Local,
                 CursoId = dto.CursoId,
+<<<<<<< HEAD
                 Estado = "Planeada"
+=======
+                Estado = dto.Estado
+>>>>>>> origin/main
             };
 
             _context.Turmas.Add(turma);
