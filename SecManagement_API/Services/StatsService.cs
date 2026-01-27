@@ -32,8 +32,7 @@ namespace SecManagement_API.Services
 
             // Cursos por Área
             stats.CursosPorArea = await _context.Cursos
-                .Include(c => c.Area)
-                .GroupBy(c => c.Area.Nome)
+                .GroupBy(c => c.Area != null ? c.Area.Nome : "Sem Área")
                 .Select(g => new CursosPorAreaDto
                 {
                     Area = g.Key,
@@ -42,33 +41,19 @@ namespace SecManagement_API.Services
                 .ToListAsync();
 
 
-            // Top 10 Formadores (Cálculo em Memória para evitar erro de SQL)
-            // Buscar todas as sessões com os formadores
-            var todasSessoes = await _context.Sessoes
-                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Formador).ThenInclude(f => f.User)
-                .ToListAsync(); // Traz para a memória do servidor
-
-            // Agrupar e Calcular em C# (Muito mais seguro)
-            var topCalc = todasSessoes
-                // Filtro de segurança para não dar erro se faltar user
-                .Where(s => s.TurmaModulo?.Formador?.User?.Nome != null)
-                .GroupBy(s => s.TurmaModulo!.Formador!.User!.Nome)
-                .Select(g => new
-                {
+            // Top 10 Formadores (Cálculo Otimizado DB)
+            // Agrupa por nome e soma a diferenla de horas diretamente no SQL
+            stats.TopFormadores = await _context.Sessoes
+                .Where(s => s.TurmaModulo.Formador.User.Nome != null)
+                .GroupBy(s => s.TurmaModulo.Formador.User.Nome)
+                .Select(g => new TopFormadorDto
+                { 
                     Nome = g.Key,
-                    // Subtração simples de datas em C#
-                    Horas = g.Sum(s => (s.HorarioFim - s.HorarioInicio).TotalHours)
+                    TotalHoras = g.Sum(s => (s.HorarioFim - s.HorarioInicio).TotalHours)
                 })
-                .OrderByDescending(x => x.Horas)
+                .OrderByDescending(x => x.TotalHoras)
                 .Take(10)
-                .ToList();
-
-            // Mapear para o DTO final
-            stats.TopFormadores = topCalc.Select(t => new TopFormadorDto
-            {
-                Nome = t.Nome,
-                TotalHoras = t.Horas
-            }).ToList();
+                .ToListAsync();
 
             return stats;
         }
