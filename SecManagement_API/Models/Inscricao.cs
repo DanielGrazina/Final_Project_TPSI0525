@@ -14,7 +14,7 @@ namespace SecManagement_API.Models
 
         public int CursoId { get; set; }
 
-        public DateTime DataInscricao { get; set; } = DateTime.Now;
+        public DateTime DataInscricao { get; set; } = DateTime.UtcNow;
         public string Estado { get; set; } = "Ativo"; // Ativo, Desistiu, Concluido, Reserva
     }
 }

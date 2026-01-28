@@ -111,13 +111,15 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     try
     {
-        var context = services.GetRequiredService<AppDbContext>();
-        DbInitializer.Initialize(context);
+        var context = services.GetRequiredService<SecManagement_API.Data.AppDbContext>();
+
+        // Esta linha é que chama o teu código de criação de users
+        SecManagement_API.Data.DbInitializer.Initialize(context);
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Ocorreu um erro ao popular a base de dados.");
+        logger.LogError(ex, "Ocorreu um erro ao fazer seed da BD.");
     }
 }
 
