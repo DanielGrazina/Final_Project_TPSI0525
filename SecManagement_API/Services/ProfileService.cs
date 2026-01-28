@@ -63,7 +63,7 @@ namespace SecManagement_API.Services
             _context.Formadores.Add(formador);
 
             // Atualizar Role do user se necessário
-            if (user.Role == "User") user.Role = "Formador";
+            user.Role = "Formador";
 
             await _context.SaveChangesAsync();
 
@@ -112,11 +112,30 @@ namespace SecManagement_API.Services
             };
 
             _context.Formandos.Add(formando);
-            if (user.Role == "User") user.Role = "Formando";
+            user.Role = "Formando";
 
             await _context.SaveChangesAsync();
 
             return await GetFormandoProfileAsync(dto.UserId);
+        }
+
+        public async Task<FormandoProfileDto> UpdateNumeroAlunoAsync(int userId, string novoNumero)
+        {
+            var formando = await _context.Formandos
+                .Include(f => f.User)
+                .FirstOrDefaultAsync(f => f.UserId == userId);
+
+            if (formando == null) throw new Exception("Perfil não encontrado.");
+
+            // Validar unicidade
+            if (await _context.Formandos.AnyAsync(f => f.NumeroAluno == novoNumero && f.Id != formando.Id))
+                throw new Exception("Esse número de aluno já existe.");
+
+            formando.NumeroAluno = novoNumero;
+            await _context.SaveChangesAsync();
+
+            // Como estamos dentro do ProfileService, este método JÁ existe aqui
+            return await GetFormandoProfileAsync(userId);
         }
 
         // --- FICHEIROS ---

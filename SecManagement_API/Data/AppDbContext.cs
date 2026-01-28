@@ -47,8 +47,7 @@ namespace SecManagement_API.Data
                 .HasConversion<string>();
 
             modelBuilder.Entity<User>()
-                .Property(u => u.Role)
-                .HasConversion<string>(); 
+                .Property(u => u.Role); 
 
             modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
             modelBuilder.Entity<Formando>().HasIndex(f => f.NumeroAluno).IsUnique();

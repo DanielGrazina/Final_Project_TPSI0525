@@ -132,5 +132,25 @@ namespace SecManagement_API.Controllers
             if (await _service.DeleteFileAsync(fileId)) return NoContent();
             return NotFound();
         }
+
+        // --- SECRETARIA ---
+
+        // PUT: api/Profiles/formando/5/numero
+        // Body: { "novoNumero": "A2026001" }
+        [HttpPut("formando/{userId}/numero")]
+        // [Authorize(Roles = "Secretaria, Admin")] // Descomenta se quiseres restringir
+        public async Task<ActionResult<FormandoProfileDto>> UpdateNumeroAluno(int userId, [FromBody] UpdateNumeroDto request)
+        {
+            try
+            {
+                // Este método foi o que adicionámos ao ProfileService na resposta anterior
+                var result = await _service.UpdateNumeroAlunoAsync(userId, request.NovoNumero);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
