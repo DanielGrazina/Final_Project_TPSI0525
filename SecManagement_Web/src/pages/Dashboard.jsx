@@ -146,9 +146,7 @@ function NavCard({ title, desc, onClick, badge, disabled, icon, accent = "blue" 
         disabled ? "opacity-50 cursor-not-allowed" : "hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
       ].join(" ")}
     >
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-      />
+      <div className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
 
       <div className="relative">
         <div className="flex items-start justify-between gap-3 mb-4">
@@ -157,16 +155,20 @@ function NavCard({ title, desc, onClick, badge, disabled, icon, accent = "blue" 
           >
             <Icon name={icon} />
           </div>
-          {badge && <Badge tone={badge.tone}>{badge.text}</Badge>}
+
+          {/* BADGE SEMPRE PRESENTE */}
+          {badge ? (
+            <Badge tone={badge.tone}>{badge.text}</Badge>
+          ) : (
+            <Badge tone="neutral">Disponível</Badge>
+          )}
         </div>
 
         <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-1.5">{title}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{desc}</p>
 
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-            {disabled ? "Indisponível" : "Clique para abrir"}
-          </span>
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{disabled ? "Indisponível" : "Clique para abrir"}</span>
           <span
             className={[
               "text-sm font-semibold",
@@ -228,9 +230,7 @@ function QuickAccessCard({ title, count, enabled, onClick, color = "blue" }) {
                   bg-white dark:bg-gray-900 ${c.border}
                   hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95`}
     >
-      <div
-        className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${c.bg} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`}
-      />
+      <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${c.bg} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`} />
       <div className="relative">
         <div className={`text-xs font-medium ${c.text} mb-1`}>Acesso rápido</div>
         <div className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{title}</div>
@@ -285,7 +285,6 @@ export default function Dashboard() {
       canEvaluations: isAdmin || isFormador || isFormando,
 
       canInscricoes: isAdmin || isFormando || isUser,
-
       canSessoes: isAdmin || isFormador,
     };
   }, [role]);
@@ -295,7 +294,6 @@ export default function Dashboard() {
     navigate("/", { replace: true });
   };
 
-  // Rotas (mantive o teu padrão)
   const R = {
     users: "/admin/Users",
     areas: "/admin/Areas",
@@ -443,39 +441,16 @@ export default function Dashboard() {
 
         {/* Quick Access Cards */}
         <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <QuickAccessCard
-            title="Sessões"
-            count="—"
-            enabled={perms.canSessoes}
-            onClick={() => navigate(R.sessoes)}
-            color="green"
-          />
-          <QuickAccessCard
-            title="Avaliações"
-            count="—"
-            enabled={perms.canEvaluations}
-            onClick={() => navigate(R.evaluations)}
-            color="purple"
-          />
-          <QuickAccessCard
-            title="Inscrições"
-            count="—"
-            enabled={perms.canInscricoes}
-            onClick={() => navigate(R.inscricoes)}
-            color="blue"
-          />
-          <QuickAccessCard
-            title="Salas"
-            count="—"
-            enabled={perms.canRooms}
-            onClick={() => navigate(R.rooms)}
-            color="amber"
-          />
+          <QuickAccessCard title="Sessões" count="—" enabled={perms.canSessoes} onClick={() => navigate(R.sessoes)} color="green" />
+          <QuickAccessCard title="Avaliações" count="—" enabled={perms.canEvaluations} onClick={() => navigate(R.evaluations)} color="purple" />
+          <QuickAccessCard title="Inscrições" count="—" enabled={perms.canInscricoes} onClick={() => navigate(R.inscricoes)} color="blue" />
+          <QuickAccessCard title="Salas" count="—" enabled={perms.canRooms} onClick={() => navigate(R.rooms)} color="amber" />
         </div>
 
         {/* Main Navigation Cards */}
         <div className="mt-8">
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Navegação Principal</h2>
+
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {perms.canUsers && (
               <NavCard
@@ -495,6 +470,7 @@ export default function Dashboard() {
                 onClick={() => navigate(R.areas)}
                 icon="areas"
                 accent="blue"
+                badge={{ text: "Admin", tone: "green" }}
               />
             )}
 
@@ -505,6 +481,7 @@ export default function Dashboard() {
                 onClick={() => navigate(R.courses)}
                 icon="courses"
                 accent="purple"
+                badge={{ text: "Admin", tone: "green" }}
               />
             )}
 
@@ -515,6 +492,7 @@ export default function Dashboard() {
                 onClick={() => navigate(R.modules)}
                 icon="modules"
                 accent="blue"
+                badge={{ text: "Admin", tone: "green" }}
               />
             )}
 
@@ -525,6 +503,7 @@ export default function Dashboard() {
                 onClick={() => navigate(R.turmas)}
                 icon="turmas"
                 accent="amber"
+                badge={{ text: "Admin", tone: "green" }}
               />
             )}
 
@@ -577,7 +556,10 @@ export default function Dashboard() {
                 onClick={() => navigate(R.inscricoes)}
                 icon="inscr"
                 accent="blue"
-                badge={{ text: "Disponível", tone: "green" }}
+                badge={{
+                  text: perms.isAdmin ? "Admin" : perms.isFormando ? "Formando" : "User",
+                  tone: perms.isAdmin ? "green" : perms.isFormando ? "amber" : "neutral",
+                }}
               />
             )}
           </div>

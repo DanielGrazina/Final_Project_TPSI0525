@@ -1,3 +1,4 @@
+// src/pages/admin/Evaluations.jsx  (ou AdminEvaluations.jsx)
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
@@ -19,6 +20,7 @@ function Modal({ title, children, onClose, disabled }) {
             disabled={disabled}
             className="p-2 rounded-lg border hover:bg-gray-100 disabled:opacity-60 transition-colors
                        dark:border-gray-700 dark:hover:bg-gray-800"
+            type="button"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -35,6 +37,27 @@ function safeStr(x) {
   return (x ?? "").toString();
 }
 
+function extractError(err, fallback) {
+  const data = err?.response?.data;
+
+  if (!data) return fallback;
+  if (typeof data === "string") return data;
+  if (typeof data?.message === "string") return data.message;
+
+  if (data?.errors && typeof data.errors === "object") {
+    const k = Object.keys(data.errors)[0];
+    const arr = data.errors[k];
+    if (Array.isArray(arr) && arr.length) return arr[0];
+    return "Dados inválidos.";
+  }
+
+  try {
+    return JSON.stringify(data);
+  } catch {
+    return fallback;
+  }
+}
+
 function Gradebadge({ grade }) {
   if (grade === null || grade === undefined || grade === "") {
     return <span className="text-gray-400 dark:text-gray-600">—</span>;
@@ -42,11 +65,13 @@ function Gradebadge({ grade }) {
 
   const numGrade = Number(grade);
   let color = "gray";
-  
-  if (numGrade >= 18) color = "green";
-  else if (numGrade >= 14) color = "blue";
-  else if (numGrade >= 10) color = "amber";
-  else color = "red";
+
+  if (Number.isFinite(numGrade)) {
+    if (numGrade >= 18) color = "green";
+    else if (numGrade >= 14) color = "blue";
+    else if (numGrade >= 10) color = "amber";
+    else color = "red";
+  }
 
   const colors = {
     green: "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
@@ -66,11 +91,11 @@ function Gradebadge({ grade }) {
 export default function AdminEvaluations() {
   const navigate = useNavigate();
 
+  // Se no Swagger estiver /Evaluations em vez de /Avaliacoes, muda só esta linha:
   const BASE = "/Avaliacoes";
 
   const [avaliacoes, setAvaliacoes] = useState([]);
   const [turmas, setTurmas] = useState([]);
-
   const [inscricoes, setInscricoes] = useState([]);
   const [turmaModulos, setTurmaModulos] = useState([]);
 
@@ -92,28 +117,44 @@ export default function AdminEvaluations() {
     observacoes: "",
   });
 
+  // ✅ Carrega avaliações + turmas sem bloquear (mesmo que um endpoint falhe)
   async function loadAll() {
     setLoading(true);
     setError("");
 
-    try {
-      const [aRes, tRes] = await Promise.all([
-        api.get(BASE),
-        api.get("/Turmas"),
-      ]);
+    const results = await Promise.allSettled([api.get(BASE), api.get("/Turmas")]);
+    const [aRes, tRes] = results;
 
-      setAvaliacoes(Array.isArray(aRes.data) ? aRes.data : []);
-      setTurmas(Array.isArray(tRes.data) ? tRes.data : []);
-    } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data || "Falha ao carregar dados.";
-      setError(typeof msg === "string" ? msg : "Falha ao carregar dados.");
-    } finally {
-      setLoading(false);
+    // Turmas
+    if (tRes.status === "fulfilled") {
+      setTurmas(Array.isArray(tRes.value.data) ? tRes.value.data : []);
+    } else {
+      console.log("GET /Turmas FAIL", {
+        status: tRes.reason?.response?.status,
+        data: tRes.reason?.response?.data,
+      });
+      setTurmas([]);
+      setError((prev) => prev || extractError(tRes.reason, "Falha ao carregar turmas."));
     }
+
+    // Avaliações
+    if (aRes.status === "fulfilled") {
+      setAvaliacoes(Array.isArray(aRes.value.data) ? aRes.value.data : []);
+    } else {
+      console.log(`GET ${BASE} FAIL`, {
+        status: aRes.reason?.response?.status,
+        data: aRes.reason?.response?.data,
+      });
+      setAvaliacoes([]);
+      setError((prev) => prev || extractError(aRes.reason, `Falha ao carregar avaliações (${BASE}).`));
+    }
+
+    setLoading(false);
   }
 
   useEffect(() => {
     loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadTurmaDependencias(turmaId) {
@@ -123,6 +164,7 @@ export default function AdminEvaluations() {
     if (!turmaId) return;
 
     try {
+      // Se estes endpoints forem diferentes no teu backend, ajusta aqui:
       const [iRes, mRes] = await Promise.all([
         api.get(`/Turmas/${turmaId}/alunos`),
         api.get(`/Turmas/${turmaId}/modulos`),
@@ -131,21 +173,28 @@ export default function AdminEvaluations() {
       setInscricoes(Array.isArray(iRes.data) ? iRes.data : []);
       setTurmaModulos(Array.isArray(mRes.data) ? mRes.data : []);
     } catch (err) {
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data ||
-        "Falha a carregar alunos/módulos da turma.";
-      setError(typeof msg === "string" ? msg : "Falha a carregar alunos/módulos da turma.");
+      console.log("GET dependências FAIL", {
+        turmaId,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+      setError(extractError(err, "Falha a carregar alunos/módulos da turma."));
     }
   }
 
+  // ✅ Stats robustos (sem dividir por zero)
   const stats = useMemo(() => {
     const total = avaliacoes.length;
-    const withGrades = avaliacoes.filter(a => a.avaliacao !== null && a.avaliacao !== undefined).length;
-    const avgGrade = avaliacoes.length > 0 
-      ? (avaliacoes.reduce((sum, a) => sum + (Number(a.avaliacao) || 0), 0) / avaliacoes.filter(a => a.avaliacao).length).toFixed(1)
-      : "—";
-    
+    const onlyWithGrade = avaliacoes.filter(
+      (a) => a.avaliacao !== null && a.avaliacao !== undefined && a.avaliacao !== ""
+    );
+    const withGrades = onlyWithGrade.length;
+
+    const avgGrade =
+      withGrades > 0
+        ? (onlyWithGrade.reduce((sum, a) => sum + Number(a.avaliacao), 0) / withGrades).toFixed(1)
+        : "—";
+
     return { total, withGrades, avgGrade };
   }, [avaliacoes]);
 
@@ -154,13 +203,12 @@ export default function AdminEvaluations() {
 
     return avaliacoes.filter((a) => {
       const turmaNome =
-        (turmas.find((t) => t.id === a.turmaId)?.nome ?? a.turmaNome ?? "").toLowerCase();
+        (turmas.find((t) => Number(t.id) === Number(a.turmaId))?.nome ?? a.turmaNome ?? "").toLowerCase();
 
       const alunoNome =
         (a.formandoNome ?? a.alunoNome ?? a.userNome ?? a.nome ?? "").toLowerCase();
 
-      const moduloNome =
-        (a.moduloNome ?? "").toLowerCase();
+      const moduloNome = (a.moduloNome ?? "").toLowerCase();
 
       const matchesSearch =
         !s ||
@@ -173,8 +221,7 @@ export default function AdminEvaluations() {
         moduloNome.includes(s) ||
         safeStr(a.avaliacao).toLowerCase().includes(s);
 
-      const matchesTurma =
-        turmaFilter === "Todos" ? true : Number(turmaFilter) === Number(a.turmaId);
+      const matchesTurma = turmaFilter === "Todos" ? true : Number(turmaFilter) === Number(a.turmaId);
 
       return matchesSearch && matchesTurma;
     });
@@ -252,7 +299,7 @@ export default function AdminEvaluations() {
 
   function getTurmaModuloLabel(tm) {
     const id = tm.id ?? "";
-    const mod = tm.moduloNome ?? `Módulo`;
+    const mod = tm.moduloNome ?? tm.modulo?.nome ?? "Módulo";
     const formador = tm.formadorNome ? ` — ${tm.formadorNome}` : "";
     const seq = (tm.sequencia ?? null) !== null ? ` (Seq ${tm.sequencia})` : "";
     return `${mod}${seq}${formador} [ID ${id}]`;
@@ -298,11 +345,13 @@ export default function AdminEvaluations() {
       closeForm();
       await loadAll();
     } catch (err) {
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data ||
-        "Falha ao guardar avaliação.";
-      setError(typeof msg === "string" ? msg : "Falha ao guardar avaliação.");
+      console.log("SAVE avaliação FAIL", {
+        endpoint: editing ? `${BASE}/${editing.id}` : BASE,
+        status: err.response?.status,
+        data: err.response?.data,
+        payloadSent: payload,
+      });
+      setError(extractError(err, "Falha ao guardar avaliação."));
     } finally {
       setSaving(false);
     }
@@ -316,11 +365,12 @@ export default function AdminEvaluations() {
       await api.delete(`${BASE}/${id}`);
       setAvaliacoes((prev) => prev.filter((x) => x.id !== id));
     } catch (err) {
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data ||
-        "Falha ao apagar avaliação.";
-      setError(typeof msg === "string" ? msg : "Falha ao apagar avaliação.");
+      console.log("DELETE avaliação FAIL", {
+        endpoint: `${BASE}/${id}`,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+      setError(extractError(err, "Falha ao apagar avaliação."));
     }
   }
 
@@ -334,7 +384,7 @@ export default function AdminEvaluations() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
                   <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                   </svg>
                 </div>
                 <div>
@@ -351,6 +401,7 @@ export default function AdminEvaluations() {
                 onClick={() => navigate("/dashboard")}
                 className="px-4 py-2 rounded-lg border hover:bg-gray-100 transition-colors
                            dark:border-gray-700 dark:hover:bg-gray-800"
+                type="button"
               >
                 ← Voltar
               </button>
@@ -361,6 +412,7 @@ export default function AdminEvaluations() {
                            hover:from-purple-700 hover:to-pink-700 transition-all
                            shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40
                            active:scale-95"
+                type="button"
               >
                 + Nova Avaliação
               </button>
@@ -380,7 +432,7 @@ export default function AdminEvaluations() {
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</div>
             </div>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 opacity-50" />
             <div className="relative">
@@ -388,7 +440,7 @@ export default function AdminEvaluations() {
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.withGrades}</div>
             </div>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-green-600/5 dark:from-green-500/20 dark:to-green-600/10 opacity-50" />
             <div className="relative">
@@ -438,7 +490,7 @@ export default function AdminEvaluations() {
 
               <div className="px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50">
                 <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">
-                  {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
+                  {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
                 </span>
               </div>
             </div>
@@ -491,6 +543,7 @@ export default function AdminEvaluations() {
                         <button
                           onClick={openCreate}
                           className="mt-2 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors text-sm"
+                          type="button"
                         >
                           Criar primeira avaliação
                         </button>
@@ -499,10 +552,7 @@ export default function AdminEvaluations() {
                   </tr>
                 ) : (
                   filtered.map((a) => (
-                    <tr
-                      key={a.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                    >
+                    <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="py-4 px-6">
                         <span className="text-sm font-mono text-gray-600 dark:text-gray-400">#{a.id}</span>
                       </td>
@@ -512,21 +562,19 @@ export default function AdminEvaluations() {
                         </span>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          #{a.inscricaoId}
-                        </span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">#{a.inscricaoId}</span>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          #{a.turmaModuloId}
-                        </span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">#{a.turmaModuloId}</span>
                       </td>
                       <td className="py-4 px-6">
                         <Gradebadge grade={a.avaliacao} />
                       </td>
                       <td className="py-4 px-6">
                         {a.observacoes ? (
-                          <span className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{a.observacoes}</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
+                            {a.observacoes}
+                          </span>
                         ) : (
                           <span className="text-sm text-gray-400">—</span>
                         )}
@@ -539,6 +587,7 @@ export default function AdminEvaluations() {
                                        bg-amber-100 text-amber-700 hover:bg-amber-200
                                        dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50
                                        transition-colors"
+                            type="button"
                           >
                             ✏ Editar
                           </button>
@@ -549,6 +598,7 @@ export default function AdminEvaluations() {
                                        bg-red-100 text-red-700 hover:bg-red-200
                                        dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50
                                        transition-colors"
+                            type="button"
                           >
                             🗑 Apagar
                           </button>
@@ -590,7 +640,9 @@ export default function AdminEvaluations() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Aluno / Inscrição</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Aluno / Inscrição
+                </label>
                 <select
                   name="inscricaoId"
                   value={form.inscricaoId}
@@ -613,7 +665,9 @@ export default function AdminEvaluations() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Módulo da Turma</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Módulo da Turma
+                </label>
                 <select
                   name="turmaModuloId"
                   value={form.turmaModuloId}
@@ -636,7 +690,9 @@ export default function AdminEvaluations() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avaliação (0-20)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Avaliação (0-20)
+                </label>
                 <input
                   name="avaliacao"
                   type="number"

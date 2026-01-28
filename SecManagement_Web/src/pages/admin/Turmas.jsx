@@ -10,7 +10,7 @@ function Modal({ title, children, onClose, disableClose }) {
       onClick={() => !disableClose && onClose()}
     >
       <div
-        className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-xl shadow-lg border dark:border-gray-800"
+        className="w-full max-w-4xl bg-white dark:bg-gray-900 rounded-xl shadow-lg border dark:border-gray-800"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-800">
@@ -32,17 +32,14 @@ function Modal({ title, children, onClose, disableClose }) {
 
 const ESTADOS = ["Planeada", "Decorrer", "Terminada", "Cancelada"];
 
-// Para inputs <input type="date"> precisamos de "YYYY-MM-DD"
 function toDateInputValue(dateLike) {
   if (!dateLike) return "";
-  // Se vier ISO (ex: 2026-01-27T00:00:00.000Z), fica "2026-01-27"
   return String(dateLike).slice(0, 10);
 }
 
-// "YYYY-MM-DD" -> ISO UTC com Z (evita erro do Npgsql com timestamp with time zone)
+// "YYYY-MM-DD" -> ISO UTC com Z (evita Npgsql timestamp with time zone)
 function toIsoUtcAtMidnight(dateStr) {
   if (!dateStr) return null;
-  // Gera sempre uma data UTC consistente (Kind=UTC no backend)
   return new Date(`${dateStr}T00:00:00Z`).toISOString();
 }
 
@@ -68,6 +65,26 @@ function extractError(err, fallback) {
   }
 }
 
+// tenta apanhar role e name/email em diferentes formatos de DTO
+function getUserRole(u) {
+  return String(u?.role ?? u?.Role ?? u?.perfil ?? u?.Perfil ?? "").trim();
+}
+function getUserDisplay(u) {
+  return (
+    u?.nome ||
+    u?.Nome ||
+    u?.name ||
+    u?.Name ||
+    u?.email ||
+    u?.Email ||
+    (u?.userName ?? u?.UserName) ||
+    `User #${u?.id ?? u?.Id ?? "?"}`
+  );
+}
+function getUserId(u) {
+  return Number(u?.id ?? u?.Id);
+}
+
 export default function AdminTurmas() {
   const navigate = useNavigate();
 
@@ -81,8 +98,8 @@ export default function AdminTurmas() {
   const [search, setSearch] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("Todos");
 
+  // Modal criar turma
   const [showForm, setShowForm] = useState(false);
-
   const [form, setForm] = useState({
     nome: "",
     cursoId: "",
@@ -90,6 +107,24 @@ export default function AdminTurmas() {
     dataFim: "",
     local: "",
     estado: "Planeada",
+  });
+
+  // ===== Modal Turma -> Módulos (TurmaModulo) =====
+  const [showModulos, setShowModulos] = useState(false);
+  const [selectedTurma, setSelectedTurma] = useState(null);
+
+  const [modulosDisponiveis, setModulosDisponiveis] = useState([]);
+  const [formadores, setFormadores] = useState([]);
+  const [associados, setAssociados] = useState([]);
+
+  const [modLoading, setModLoading] = useState(false);
+  const [modSaving, setModSaving] = useState(false);
+  const [modError, setModError] = useState("");
+
+  const [assocForm, setAssocForm] = useState({
+    moduloId: "",
+    formadorId: "",
+    sequencia: 1,
   });
 
   async function loadAll() {
@@ -177,7 +212,6 @@ export default function AdminTurmas() {
       return alert("A data de fim não pode ser anterior à data de início.");
     }
 
-    // Payload em PascalCase (melhor para DTOs C#) + datas em UTC (com Z)
     const payload = {
       Nome: nome,
       CursoId: cursoIdNum,
@@ -190,10 +224,7 @@ export default function AdminTurmas() {
     setSaving(true);
     try {
       await api.post("/Turmas", payload);
-
-      // fecha mesmo enquanto saving=true
       closeForm(true);
-
       await loadAll();
     } catch (err) {
       console.log("POST /Turmas FAIL", {
@@ -219,6 +250,134 @@ export default function AdminTurmas() {
     }
   }
 
+  // ======= MODAL: MÓDULOS DA TURMA =======
+
+  async function openModulosModal(turma) {
+    setSelectedTurma(turma);
+    setShowModulos(true);
+
+    setModError("");
+    setModLoading(true);
+    setAssociados([]);
+    setModulosDisponiveis([]);
+    setFormadores([]);
+    setAssocForm({ moduloId: "", formadorId: "", sequencia: 1 });
+
+    try {
+      // ✅ módulos vêm de /Modulos
+      // ✅ formadores vêm de /Users (role=Formador)
+      // ✅ associados vêm de /Turmas/{id}/modulos
+      const [mRes, uRes, aRes] = await Promise.all([
+        api.get("/Modulos"),
+        api.get("/Users"),
+        api.get(`/Turmas/${turma.id}/modulos`),
+      ]);
+
+      setModulosDisponiveis(Array.isArray(mRes.data) ? mRes.data : []);
+
+      const users = Array.isArray(uRes.data) ? uRes.data : [];
+      const onlyFormadores = users.filter((u) => getUserRole(u).toLowerCase() === "formador");
+      setFormadores(onlyFormadores);
+
+      setAssociados(Array.isArray(aRes.data) ? aRes.data : []);
+    } catch (err) {
+      setModError(extractError(err, "Erro ao carregar dados do modal."));
+    } finally {
+      setModLoading(false);
+    }
+  }
+
+  function closeModulosModal(force = false) {
+    if (!force && modSaving) return;
+    setShowModulos(false);
+    setSelectedTurma(null);
+    setModError("");
+  }
+
+  async function refreshAssociados(turmaId) {
+    const aRes = await api.get(`/Turmas/${turmaId}/modulos`);
+    setAssociados(Array.isArray(aRes.data) ? aRes.data : []);
+  }
+
+  async function associarModulo(e) {
+    e.preventDefault();
+    if (!selectedTurma) return;
+
+    setModError("");
+
+    const turmaId = Number(selectedTurma.id);
+    const moduloId = Number(assocForm.moduloId);
+    const formadorId = Number(assocForm.formadorId);
+    const sequencia = Number(assocForm.sequencia);
+
+    if (!Number.isFinite(moduloId) || moduloId <= 0) return alert("Seleciona um módulo.");
+    if (!Number.isFinite(formadorId) || formadorId <= 0) return alert("Seleciona um formador.");
+    if (!Number.isFinite(sequencia) || sequencia <= 0) return alert("Sequência inválida.");
+
+    const jaExiste = (associados || []).some((x) => Number(x.moduloId) === moduloId);
+    if (jaExiste) return alert("Este módulo já está associado a esta turma.");
+
+    const payload = {
+      TurmaId: turmaId,
+      ModuloId: moduloId,
+      FormadorId: formadorId,
+      Sequencia: sequencia,
+    };
+
+    setModSaving(true);
+    try {
+      // ✅ POST para criar TurmaModulo
+      await api.post("/Turmas/modulos", payload);
+
+      // refresh
+      await refreshAssociados(turmaId);
+
+      // limpa só o módulo (mantém formador/seq)
+      setAssocForm((p) => ({ ...p, moduloId: "" }));
+    } catch (err) {
+      console.log("POST /Turmas/modulos FAIL", {
+        status: err.response?.status,
+        data: err.response?.data,
+        payloadSent: payload,
+      });
+      setModError(extractError(err, "Erro ao associar módulo."));
+    } finally {
+      setModSaving(false);
+    }
+  }
+
+  async function removerAssociacao(turmaModuloId) {
+    if (!window.confirm("Remover este módulo da turma?")) return;
+
+    setModError("");
+    try {
+      await api.delete(`/Turmas/modulos/${turmaModuloId}`);
+      if (selectedTurma) await refreshAssociados(selectedTurma.id);
+    } catch (err) {
+      setModError(extractError(err, "Erro ao remover associação."));
+    }
+  }
+
+  const associadosOrdenados = useMemo(() => {
+    const arr = Array.isArray(associados) ? [...associados] : [];
+    arr.sort((a, b) => {
+      const sa = Number(a.sequencia ?? 0);
+      const sb = Number(b.sequencia ?? 0);
+      if (sa !== sb) return sa - sb;
+      return Number(a.id ?? 0) - Number(b.id ?? 0);
+    });
+    return arr;
+  }, [associados]);
+
+  const associadosSet = useMemo(() => {
+    const s = new Set();
+    (associados || []).forEach((x) => {
+      const mid = Number(x.moduloId);
+      if (Number.isFinite(mid)) s.add(mid);
+    });
+    return s;
+  }, [associados]);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
@@ -227,7 +386,7 @@ export default function AdminTurmas() {
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Turmas</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Gestão de turmas (GET / POST / DELETE).
+              Gestão de turmas + associação de módulos (TurmaModulo).
             </p>
           </div>
 
@@ -240,10 +399,7 @@ export default function AdminTurmas() {
               Voltar
             </button>
 
-            <button
-              onClick={openCreate}
-              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-            >
+            <button onClick={openCreate} className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
               + Nova Turma
             </button>
           </div>
@@ -302,30 +458,14 @@ export default function AdminTurmas() {
             <table className="min-w-full">
               <thead className="bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700">
                 <tr>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
-                    ID
-                  </th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
-                    Nome
-                  </th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
-                    Curso
-                  </th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
-                    Início
-                  </th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
-                    Fim
-                  </th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
-                    Local
-                  </th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
-                    Estado
-                  </th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
-                    Ações
-                  </th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">ID</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Nome</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Curso</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Início</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Fim</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Local</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Estado</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Ações</th>
                 </tr>
               </thead>
 
@@ -349,9 +489,7 @@ export default function AdminTurmas() {
                       className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60"
                     >
                       <td className="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{t.id}</td>
-                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">
-                        {t.nome}
-                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{t.nome}</td>
                       <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
                         {t.cursoNome || `#${t.cursoId}`}
                       </td>
@@ -365,6 +503,14 @@ export default function AdminTurmas() {
                       <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{t.estado || "Planeada"}</td>
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => openModulosModal(t)}
+                            className="px-3 py-1.5 rounded text-sm font-medium text-blue-700 hover:bg-blue-50
+                                       dark:text-blue-300 dark:hover:bg-blue-900/20"
+                          >
+                            Módulos
+                          </button>
+
                           <button
                             onClick={() => deleteTurma(t.id)}
                             className="px-3 py-1.5 rounded text-sm font-medium text-red-700 hover:bg-red-50
@@ -480,9 +626,7 @@ export default function AdminTurmas() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Tem de ser exatamente um destes valores.
-              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Tem de ser exatamente um destes valores.</p>
             </div>
 
             <div className="md:col-span-2 flex justify-end gap-2 pt-2">
@@ -505,6 +649,170 @@ export default function AdminTurmas() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Modal Turma -> Módulos */}
+      {showModulos && selectedTurma && (
+        <Modal
+          title={`Módulos da Turma — ${selectedTurma.nome} (#${selectedTurma.id})`}
+          onClose={() => closeModulosModal(false)}
+          disableClose={modSaving}
+        >
+          {modError && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm whitespace-pre-wrap">
+              {modError}
+            </div>
+          )}
+
+          {modLoading ? (
+            <div className="py-10 text-center text-gray-500 dark:text-gray-400">A carregar...</div>
+          ) : (
+            <>
+              <form onSubmit={associarModulo} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Módulo</label>
+                  <select
+                    value={assocForm.moduloId}
+                    onChange={(e) => setAssocForm((p) => ({ ...p, moduloId: e.target.value }))}
+                    className="mt-1 w-full border rounded px-3 py-2
+                               bg-white dark:bg-gray-900 dark:border-gray-800
+                               text-gray-900 dark:text-gray-100"
+                    disabled={modSaving}
+                  >
+                    <option value="">Seleciona um módulo...</option>
+                    {modulosDisponiveis.map((m) => {
+                      const disabled = associadosSet.has(Number(m.id));
+                      return (
+                        <option key={m.id} value={m.id} disabled={disabled}>
+                          {m.nome} ({m.cargaHoraria}h){disabled ? " — já associado" : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Lista vem de <code>/api/Modulos</code>.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Formador</label>
+                  <select
+                    value={assocForm.formadorId}
+                    onChange={(e) => setAssocForm((p) => ({ ...p, formadorId: e.target.value }))}
+                    className="mt-1 w-full border rounded px-3 py-2
+                               bg-white dark:bg-gray-900 dark:border-gray-800
+                               text-gray-900 dark:text-gray-100"
+                    disabled={modSaving}
+                  >
+                    <option value="">Seleciona...</option>
+                    {formadores.map((u) => (
+                      <option key={getUserId(u)} value={getUserId(u)}>
+                        {getUserDisplay(u)}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Lista vem de <code>/api/Users</code> filtrado por role <strong>Formador</strong>.
+                  </p>
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Sequência</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={assocForm.sequencia}
+                    onChange={(e) => setAssocForm((p) => ({ ...p, sequencia: e.target.value }))}
+                    className="mt-1 w-full border rounded px-3 py-2
+                               bg-white dark:bg-gray-900 dark:border-gray-800
+                               text-gray-900 dark:text-gray-100"
+                    disabled={modSaving}
+                  />
+
+                  <button
+                    type="submit"
+                    className="mt-3 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                    disabled={modSaving}
+                  >
+                    {modSaving ? "A associar..." : "Associar módulo"}
+                  </button>
+                </div>
+              </form>
+
+              <div className="bg-gray-50 dark:bg-gray-950/40 border dark:border-gray-800 rounded-xl overflow-hidden">
+                <div className="px-4 py-3 border-b dark:border-gray-800 flex items-center justify-between">
+                  <div className="font-semibold text-gray-900 dark:text-gray-100">
+                    Módulos associados ({associadosOrdenados.length})
+                  </div>
+                </div>
+
+                {associadosOrdenados.length === 0 ? (
+                  <div className="px-4 py-6 text-sm text-gray-600 dark:text-gray-400">
+                    Ainda não há módulos associados a esta turma.
+                  </div>
+                ) : (
+                  <div className="overflow-auto">
+                    <table className="min-w-full">
+                      <thead className="bg-gray-100 dark:bg-gray-900 border-b dark:border-gray-800">
+                        <tr>
+                          <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
+                            Seq
+                          </th>
+                          <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
+                            Módulo
+                          </th>
+                          <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
+                            Formador
+                          </th>
+                          <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
+                            Ações
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {associadosOrdenados.map((tm) => (
+                          <tr
+                            key={tm.id}
+                            className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                          >
+                            <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                              {tm.sequencia ?? "—"}
+                            </td>
+
+                            <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">
+                              {tm.moduloNome || `#${tm.moduloId}`}
+                            </td>
+
+                            <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                              {tm.formadorNome || `#${tm.formadorId}`}
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <button
+                                onClick={() => removerAssociacao(tm.id)}
+                                className="px-3 py-1.5 rounded text-sm font-medium text-red-700 hover:bg-red-50
+                                           dark:text-red-300 dark:hover:bg-red-900/20"
+                                disabled={modSaving}
+                              >
+                                Remover
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                Endpoints usados: <code>/api/Modulos</code>, <code>/api/Users</code>,{" "}
+                <code>/api/Turmas/{selectedTurma.id}/modulos</code>, <code>/api/Turmas/modulos</code>.
+              </div>
+            </>
+          )}
         </Modal>
       )}
     </div>

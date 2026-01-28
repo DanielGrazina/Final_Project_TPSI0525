@@ -1,10 +1,8 @@
-// src/pages/admin/Sessoes.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import RequireRole from "../../components/RequireRole";
 
-// Modal simples (igual ao teu estilo)
 function Modal({ title, children, onClose, disableClose }) {
   return (
     <div
@@ -32,14 +30,12 @@ function Modal({ title, children, onClose, disableClose }) {
   );
 }
 
-// Helpers iguais ao teu padrão
 function extractError(err, fallback) {
   const data = err?.response?.data;
   if (!data) return fallback;
   if (typeof data === "string") return data;
   if (typeof data?.message === "string") return data.message;
 
-  // ValidationProblemDetails
   if (data?.errors && typeof data.errors === "object") {
     const k = Object.keys(data.errors)[0];
     const arr = data.errors[k];
@@ -54,37 +50,6 @@ function extractError(err, fallback) {
   }
 }
 
-// <input type="date"> => "YYYY-MM-DD"
-function toDateInputValue(dateLike) {
-  if (!dateLike) return "";
-  return String(dateLike).slice(0, 10);
-}
-
-// <input type="datetime-local"> => "YYYY-MM-DDTHH:mm"
-function toDateTimeLocalValue(dateLike) {
-  if (!dateLike) return "";
-  const s = String(dateLike);
-  // se vier ISO completo, cortamos até minutos
-  // ex: 2026-01-27T10:30:00Z -> 2026-01-27T10:30
-  return s.slice(0, 16);
-}
-
-// "YYYY-MM-DD" -> ISO UTC (00:00Z)
-function toIsoUtcAtMidnight(dateStr) {
-  if (!dateStr) return null;
-  return new Date(`${dateStr}T00:00:00Z`).toISOString();
-}
-
-// "YYYY-MM-DDTHH:mm" (datetime-local) -> ISO com Z (UTC)
-// Nota: datetime-local não tem timezone, então tratamos como "hora local" e convertemos para ISO.
-// É consistente para API, mas se quiseres "tratar como UTC", diz e eu ajusto.
-function toIsoFromDateTimeLocal(dtLocal) {
-  if (!dtLocal) return null;
-  const d = new Date(dtLocal);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString();
-}
-
 function fmtDateTime(dateLike) {
   if (!dateLike) return "—";
   const d = new Date(dateLike);
@@ -92,42 +57,76 @@ function fmtDateTime(dateLike) {
   return d.toLocaleString();
 }
 
-export default function AdminSessoes() {
+// Para a tua BD (TIMESTAMP sem timezone), evita "Z".
+function toApiStartOfDay(dateStr) {
+  if (!dateStr) return null;
+  return `${dateStr}T00:00:00`;
+}
+function toApiEndOfDay(dateStr) {
+  if (!dateStr) return null;
+  return `${dateStr}T23:59:59`;
+}
+
+// datetime-local "YYYY-MM-DDTHH:mm" -> "YYYY-MM-DDTHH:mm:00" (sem timezone)
+function toApiDateTime(dtLocal) {
+  if (!dtLocal) return null;
+  // garante segundos
+  return dtLocal.length === 16 ? `${dtLocal}:00` : dtLocal;
+}
+
+function turmaModuloLabel(tm) {
+  // Tentativas comuns (não sei o teu TurmaModuloDto exato)
+  const id = tm?.id ?? tm?.Id;
+  const moduloNome = tm?.moduloNome ?? tm?.ModuloNome ?? tm?.modulo?.nome ?? tm?.Modulo?.Nome;
+  const formadorNome = tm?.formadorNome ?? tm?.FormadorNome ?? tm?.formador?.user?.nome ?? tm?.Formador?.User?.Nome;
+  const sequencia = tm?.sequencia ?? tm?.Sequencia;
+
+  const parts = [];
+  if (moduloNome) parts.push(moduloNome);
+  if (formadorNome) parts.push(formadorNome);
+  if (sequencia !== undefined && sequencia !== null && String(sequencia) !== "") parts.push(`Seq ${sequencia}`);
+
+  if (parts.length) return `#${id} — ${parts.join(" | ")}`;
+  return `TurmaMódulo #${id}`;
+}
+
+export default function Sessions() {
   const navigate = useNavigate();
 
   // lookups
   const [turmas, setTurmas] = useState([]);
   const [salas, setSalas] = useState([]);
 
-  // query state
+  // filtro
   const [modo, setModo] = useState("turma"); // "turma" | "formador" | "sala"
   const [turmaId, setTurmaId] = useState("");
   const [formadorId, setFormadorId] = useState("");
   const [salaId, setSalaId] = useState("");
 
-  const [start, setStart] = useState(() => {
-    const today = new Date();
-    const s = today.toISOString().slice(0, 10);
-    return s;
-  });
+  const [start, setStart] = useState(() => new Date().toISOString().slice(0, 10));
   const [end, setEnd] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 7);
     return d.toISOString().slice(0, 10);
   });
 
-  // data
+  // dados
   const [sessoes, setSessoes] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [loadingHorario, setLoadingHorario] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   // modal agendar
   const [showCreate, setShowCreate] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [tmLoading, setTmLoading] = useState(false);
+  const [tmList, setTmList] = useState([]);
+
   const [form, setForm] = useState({
-    turmaModuloId: "", // idealmente dropdown quando tiveres endpoint de Turma_Modulos
+    turmaId: "",
+    turmaModuloId: "",
     salaId: "",
     horarioInicio: "",
     horarioFim: "",
@@ -138,11 +137,7 @@ export default function AdminSessoes() {
     setError("");
 
     try {
-      const [tRes, sRes] = await Promise.all([
-        api.get("/Turmas"),
-        api.get("/Salas").catch(() => ({ data: [] })), // se endpoint for /Rooms em vez de /Salas, depois ajustamos
-      ]);
-
+      const [tRes, sRes] = await Promise.all([api.get("/Turmas"), api.get("/Salas")]);
       setTurmas(Array.isArray(tRes.data) ? tRes.data : []);
       setSalas(Array.isArray(sRes.data) ? sRes.data : []);
     } catch (err) {
@@ -156,14 +151,39 @@ export default function AdminSessoes() {
     loadLookups();
   }, []);
 
+  async function loadTurmaModulos(tId) {
+    const id = Number(tId);
+    if (!Number.isFinite(id) || id <= 0) {
+      setTmList([]);
+      return;
+    }
+
+    setTmLoading(true);
+    try {
+      const res = await api.get(`/Turmas/${id}/modulos`);
+      setTmList(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      setTmList([]);
+      setError(extractError(err, "Erro ao carregar módulos da turma."));
+    } finally {
+      setTmLoading(false);
+    }
+  }
+
   function openCreate() {
     setError("");
+    setTmList([]);
     setForm({
+      turmaId: turmaId || "",
       turmaModuloId: "",
       salaId: "",
       horarioInicio: "",
       horarioFim: "",
     });
+
+    // se já houver turma selecionada no filtro, carrega logo os módulos
+    if (turmaId) loadTurmaModulos(turmaId);
+
     setShowCreate(true);
   }
 
@@ -174,31 +194,40 @@ export default function AdminSessoes() {
 
   function onFormChange(e) {
     const { name, value } = e.target;
+
+    // Quando muda turma no modal -> carrega módulos
+    if (name === "turmaId") {
+      setForm((p) => ({ ...p, turmaId: value, turmaModuloId: "" }));
+      setError("");
+      loadTurmaModulos(value);
+      return;
+    }
+
     setForm((p) => ({ ...p, [name]: value }));
   }
 
   async function loadHorario() {
     setError("");
 
-    const startIso = toIsoUtcAtMidnight(start);
-    const endIso = toIsoUtcAtMidnight(end);
+    const startApi = toApiStartOfDay(start);
+    const endApi = toApiEndOfDay(end);
 
-    if (!startIso || !endIso) return setError("Datas inválidas.");
-    if (new Date(endIso) < new Date(startIso)) return setError("A data de fim não pode ser anterior à data de início.");
+    if (!startApi || !endApi) return setError("Datas inválidas.");
+    if (new Date(endApi) < new Date(startApi)) return setError("A data de fim não pode ser anterior à data de início.");
 
     let url = "";
     if (modo === "turma") {
       const id = Number(turmaId);
       if (!Number.isFinite(id) || id <= 0) return setError("Seleciona uma turma.");
-      url = `/Sessoes/turma/${id}?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}`;
+      url = `/Sessoes/turma/${id}?start=${encodeURIComponent(startApi)}&end=${encodeURIComponent(endApi)}`;
     } else if (modo === "formador") {
       const id = Number(formadorId);
       if (!Number.isFinite(id) || id <= 0) return setError("Indica um FormadorId válido.");
-      url = `/Sessoes/formador/${id}?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}`;
+      url = `/Sessoes/formador/${id}?start=${encodeURIComponent(startApi)}&end=${encodeURIComponent(endApi)}`;
     } else {
       const id = Number(salaId);
       if (!Number.isFinite(id) || id <= 0) return setError("Seleciona uma sala.");
-      url = `/Sessoes/sala/${id}?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}`;
+      url = `/Sessoes/sala/${id}?start=${encodeURIComponent(startApi)}&end=${encodeURIComponent(endApi)}`;
     }
 
     setLoadingHorario(true);
@@ -220,32 +249,28 @@ export default function AdminSessoes() {
     const turmaModuloIdNum = Number(form.turmaModuloId);
     const salaIdNum = Number(form.salaId);
 
-    if (!Number.isFinite(turmaModuloIdNum) || turmaModuloIdNum <= 0) return alert("TurmaModuloId inválido.");
+    if (!Number.isFinite(turmaModuloIdNum) || turmaModuloIdNum <= 0) return alert("Seleciona um Módulo da turma.");
     if (!Number.isFinite(salaIdNum) || salaIdNum <= 0) return alert("Seleciona uma sala.");
     if (!form.horarioInicio) return alert("Seleciona horário de início.");
     if (!form.horarioFim) return alert("Seleciona horário de fim.");
 
-    const hiIso = toIsoFromDateTimeLocal(form.horarioInicio);
-    const hfIso = toIsoFromDateTimeLocal(form.horarioFim);
-    if (!hiIso || !hfIso) return alert("Horários inválidos.");
+    const hiApi = toApiDateTime(form.horarioInicio);
+    const hfApi = toApiDateTime(form.horarioFim);
+    if (!hiApi || !hfApi) return alert("Horários inválidos.");
 
-    if (new Date(hfIso) <= new Date(hiIso)) return alert("A hora de fim tem de ser superior à de início.");
+    if (new Date(hfApi) <= new Date(hiApi)) return alert("A hora de fim tem de ser superior à de início.");
 
-    // Payload PascalCase (igual ao teu padrão)
     const payload = {
       TurmaModuloId: turmaModuloIdNum,
       SalaId: salaIdNum,
-      HorarioInicio: hiIso,
-      HorarioFim: hfIso,
+      HorarioInicio: hiApi,
+      HorarioFim: hfApi,
     };
 
     setSaving(true);
     try {
       await api.post("/Sessoes", payload);
-
       closeCreate(true);
-
-      // opcional: recarrega horário se já estavas a ver alguma coisa
       await loadHorario().catch(() => {});
     } catch (err) {
       setError(extractError(err, "Erro ao agendar sessão."));
@@ -275,7 +300,7 @@ export default function AdminSessoes() {
   }, [modo]);
 
   return (
-    <RequireRole roles={["Admin", "Formador"]}>
+    <RequireRole allow={["Admin", "Formador"]}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
         {/* Header */}
         <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-800">
@@ -363,9 +388,6 @@ export default function AdminSessoes() {
                                  text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
                       disabled={loading}
                     />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      (Aqui falta-te um endpoint de listagem de formadores, para eu trocar por dropdown.)
-                    </p>
                   </div>
                 )}
 
@@ -446,20 +468,12 @@ export default function AdminSessoes() {
                   <tr>
                     <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">ID</th>
                     <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Turma</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
-                      Módulo
-                    </th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
-                      Formador
-                    </th>
+                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Módulo</th>
+                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Formador</th>
                     <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Sala</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
-                      Início
-                    </th>
+                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Início</th>
                     <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Fim</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">
-                      Ações
-                    </th>
+                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Ações</th>
                   </tr>
                 </thead>
 
@@ -467,7 +481,7 @@ export default function AdminSessoes() {
                   {loading ? (
                     <tr>
                       <td colSpan="8" className="py-10 px-4 text-center text-gray-500 dark:text-gray-400">
-                        A carregar lookups...
+                        A carregar...
                       </td>
                     </tr>
                   ) : loadingHorario ? (
@@ -489,21 +503,10 @@ export default function AdminSessoes() {
                         className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60"
                       >
                         <td className="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{s.id}</td>
-
-                        <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">
-                          {s.turmaNome || "—"}
-                        </td>
-
-                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                          {s.moduloNome || `TurmaModulo #${s.turmaModuloId}`}
-                        </td>
-
+                        <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{s.turmaNome || "—"}</td>
+                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{s.moduloNome || `#${s.turmaModuloId}`}</td>
                         <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{s.formadorNome || "—"}</td>
-
-                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                          {s.salaNome || `#${s.salaId}`}
-                        </td>
-
+                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{s.salaNome || `#${s.salaId}`}</td>
                         <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{fmtDateTime(s.horarioInicio)}</td>
                         <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{fmtDateTime(s.horarioFim)}</td>
 
@@ -530,20 +533,58 @@ export default function AdminSessoes() {
           <Modal title="Agendar Sessão" onClose={() => closeCreate(false)} disableClose={saving}>
             <form onSubmit={saveSessao} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-200">TurmaModuloId</label>
-                <input
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Turma</label>
+                <select
+                  name="turmaId"
+                  value={form.turmaId}
+                  onChange={onFormChange}
+                  className="mt-1 w-full border rounded px-3 py-2
+                             bg-white dark:bg-gray-900 dark:border-gray-800
+                             text-gray-900 dark:text-gray-100"
+                  disabled={saving}
+                >
+                  <option value="">Seleciona...</option>
+                  {turmas.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      #{t.id} — {t.nome} {t.cursoNome ? `(${t.cursoNome})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Módulo da Turma</label>
+                <select
                   name="turmaModuloId"
                   value={form.turmaModuloId}
                   onChange={onFormChange}
                   className="mt-1 w-full border rounded px-3 py-2
                              bg-white dark:bg-gray-900 dark:border-gray-800
-                             text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
-                  placeholder="Ex: 12"
-                  disabled={saving}
-                />
+                             text-gray-900 dark:text-gray-100"
+                  disabled={saving || tmLoading || !form.turmaId}
+                >
+                  {!form.turmaId ? (
+                    <option value="">Seleciona primeiro uma turma...</option>
+                  ) : tmLoading ? (
+                    <option value="">A carregar módulos...</option>
+                  ) : tmList.length === 0 ? (
+                    <option value="">Sem módulos nesta turma.</option>
+                  ) : (
+                    <>
+                      <option value="">Seleciona...</option>
+                      {tmList.map((tm) => {
+                        const id = tm?.id ?? tm?.Id;
+                        return (
+                          <option key={id} value={id}>
+                            {turmaModuloLabel(tm)}
+                          </option>
+                        );
+                      })}
+                    </>
+                  )}
+                </select>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Quando me deres o endpoint de listagem de Turma_Modulos, eu troco isto por um dropdown com Turma + Módulo
-                  + Formador.
+                  Fonte: <span className="font-medium">GET /Turmas/{`{turmaId}`}/modulos</span>
                 </p>
               </div>
 
