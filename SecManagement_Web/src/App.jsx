@@ -14,6 +14,7 @@ import Turmas from "./pages/admin/Turmas.jsx";
 import Areas from "./pages/admin/Areas.jsx";
 import Evaluations from "./pages/admin/Evaluations.jsx";
 import Users from "./pages/admin/Users.jsx";
+import Sessions from "./pages/admin/Sessions.jsx";
 
 import RequireRole from "./components/RequireRole";
 
@@ -80,7 +81,7 @@ function App() {
           }
         />
 
-        {/* FORMADOR: Salas + Avaliações | FORMANDO: Avaliações (read-only depois) | ADMIN: tudo */}
+        {/* Admin + Formador */}
         <Route
           path="/admin/Rooms"
           element={
@@ -90,11 +91,22 @@ function App() {
           }
         />
 
+        {/* Admin + Formador + Formando */}
         <Route
           path="/admin/Evaluations"
           element={
             <RequireRole allow={["Admin", "Formador", "Formando"]}>
               <Evaluations />
+            </RequireRole>
+          }
+        />
+
+        {/* Sessões: Admin + Formador (como disseste) */}
+        <Route
+          path="/admin/Sessions"
+          element={
+            <RequireRole allow={["Admin", "Formador"]}>
+              <Sessions />
             </RequireRole>
           }
         />
