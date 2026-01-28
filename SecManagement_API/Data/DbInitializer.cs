@@ -15,7 +15,7 @@ namespace SecManagement_API.Data
                 context.Database.EnsureCreated();
                 Console.WriteLine(">> Base de Dados criada/verificada com sucesso.");
 
-                string passwordHash = "$2a$11$Z8z.u.u.u.u.u.u.u.u.u.u.u.u.u.u.u.u.u.u.u.u.u.u.u.u.u";
+                string passwordHash = BCrypt.Net.BCrypt.HashPassword("123456");
 
                 // ==========================================
                 // 2. USERS & PERFIS
@@ -30,7 +30,7 @@ namespace SecManagement_API.Data
                         Nome = "Secretaria ATEC",
                         Email = "admin@123.pt",
                         PasswordHash = passwordHash,
-                        Role = "Secretaria",
+                        Role = "Admin",
                         IsActive = true
                     });
                 }
@@ -103,12 +103,12 @@ namespace SecManagement_API.Data
                     {
                         User = userPedro,
                         NumeroAluno = "A001",
-                        DataNascimento = new DateTime(2000, 1, 1)
+                        DataNascimento = DateTime.SpecifyKind(new DateTime(2000, 1, 1), DateTimeKind.Utc)
                     });
                 }
                 else if (!context.Formandos.Any(f => f.UserId == userPedro.Id))
                 {
-                    context.Formandos.Add(new Formando { UserId = userPedro.Id, NumeroAluno = "A001", DataNascimento = new DateTime(2000, 1, 1) });
+                    context.Formandos.Add(new Formando { UserId = userPedro.Id, NumeroAluno = "A001", DataNascimento = DateTime.SpecifyKind(new DateTime(2000, 1, 1), DateTimeKind.Utc) });
                 }
 
                 // Salvar Users
@@ -146,8 +146,8 @@ namespace SecManagement_API.Data
                     var turma = new Turma
                     {
                         Nome = "TPSI-PAL-0525",
-                        DataInicio = DateTime.Now.AddDays(-10),
-                        DataFim = DateTime.Now.AddDays(300),
+                        DataInicio = DateTime.UtcNow.AddDays(-10),
+                        DataFim = DateTime.UtcNow.AddDays(300),
                         Local = "Palmela",
                         Estado = "Decorrer",
                         CursoId = curso.Id
