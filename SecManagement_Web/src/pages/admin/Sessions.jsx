@@ -1,664 +1,434 @@
+// src/pages/admin/Salas.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
-import RequireRole from "../../components/RequireRole";
 
-function Modal({ title, children, onClose, disableClose }) {
+function Modal({ title, children, onClose }) {
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-      onClick={() => !disableClose && onClose()}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
     >
       <div
-        className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-xl shadow-lg border dark:border-gray-800"
+        className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-800">
-          <h3 className="font-bold text-gray-900 dark:text-gray-100">{title}</h3>
+        <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight">{title}</h3>
           <button
             onClick={onClose}
-            disabled={disableClose}
-            className="px-3 py-1 rounded border text-gray-700 hover:bg-gray-50 disabled:opacity-60
-                       dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
+            className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 
+                       hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
           >
             Fechar
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
 }
 
-function extractError(err, fallback) {
-  const data = err?.response?.data;
-  if (!data) return fallback;
-  if (typeof data === "string") return data;
-  if (typeof data?.message === "string") return data.message;
+const TIPOS = ["Teorica", "Informatica", "Oficina", "Reuniao"];
 
-  if (data?.errors && typeof data.errors === "object") {
-    const k = Object.keys(data.errors)[0];
-    const arr = data.errors[k];
-    if (Array.isArray(arr) && arr.length) return arr[0];
-    return "Dados inválidos.";
-  }
+const tipoColors = {
+  Teorica: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+  Informatica: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+  Oficina: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
+  Reuniao: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+};
 
-  try {
-    return JSON.stringify(data);
-  } catch {
-    return fallback;
-  }
-}
+const tipoIcons = {
+  Teorica: "📖",
+  Informatica: "💻",
+  Oficina: "🔧",
+  Reuniao: "👥",
+};
 
-function fmtDateTime(dateLike) {
-  if (!dateLike) return "—";
-  const d = new Date(dateLike);
-  if (Number.isNaN(d.getTime())) return String(dateLike);
-  return d.toLocaleString();
-}
-
-// Para a tua BD (TIMESTAMP sem timezone), evita "Z".
-function toApiStartOfDay(dateStr) {
-  if (!dateStr) return null;
-  return `${dateStr}T00:00:00`;
-}
-function toApiEndOfDay(dateStr) {
-  if (!dateStr) return null;
-  return `${dateStr}T23:59:59`;
-}
-
-// datetime-local "YYYY-MM-DDTHH:mm" -> "YYYY-MM-DDTHH:mm:00" (sem timezone)
-function toApiDateTime(dtLocal) {
-  if (!dtLocal) return null;
-  // garante segundos
-  return dtLocal.length === 16 ? `${dtLocal}:00` : dtLocal;
-}
-
-function turmaModuloLabel(tm) {
-  // Tentativas comuns (não sei o teu TurmaModuloDto exato)
-  const id = tm?.id ?? tm?.Id;
-  const moduloNome = tm?.moduloNome ?? tm?.ModuloNome ?? tm?.modulo?.nome ?? tm?.Modulo?.Nome;
-  const formadorNome = tm?.formadorNome ?? tm?.FormadorNome ?? tm?.formador?.user?.nome ?? tm?.Formador?.User?.Nome;
-  const sequencia = tm?.sequencia ?? tm?.Sequencia;
-
-  const parts = [];
-  if (moduloNome) parts.push(moduloNome);
-  if (formadorNome) parts.push(formadorNome);
-  if (sequencia !== undefined && sequencia !== null && String(sequencia) !== "") parts.push(`Seq ${sequencia}`);
-
-  if (parts.length) return `#${id} — ${parts.join(" | ")}`;
-  return `TurmaMódulo #${id}`;
-}
-
-export default function Sessions() {
+export default function AdminSalas() {
   const navigate = useNavigate();
 
-  // lookups
-  const [turmas, setTurmas] = useState([]);
   const [salas, setSalas] = useState([]);
-
-  // filtro
-  const [modo, setModo] = useState("turma"); // "turma" | "formador" | "sala"
-  const [turmaId, setTurmaId] = useState("");
-  const [formadorId, setFormadorId] = useState("");
-  const [salaId, setSalaId] = useState("");
-
-  const [start, setStart] = useState(() => new Date().toISOString().slice(0, 10));
-  const [end, setEnd] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 7);
-    return d.toISOString().slice(0, 10);
-  });
-
-  // dados
-  const [sessoes, setSessoes] = useState([]);
+  const [search, setSearch] = useState("");
 
   const [loading, setLoading] = useState(true);
-  const [loadingHorario, setLoadingHorario] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // modal agendar
-  const [showCreate, setShowCreate] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const [tmLoading, setTmLoading] = useState(false);
-  const [tmList, setTmList] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
 
   const [form, setForm] = useState({
-    turmaId: "",
-    turmaModuloId: "",
-    salaId: "",
-    horarioInicio: "",
-    horarioFim: "",
+    nome: "",
+    capacidade: 1,
+    tipo: "Teorica",
   });
 
-  async function loadLookups() {
+  useEffect(() => {
+    loadSalas();
+  }, []);
+
+  async function loadSalas() {
     setLoading(true);
     setError("");
 
     try {
-      const [tRes, sRes] = await Promise.all([api.get("/Turmas"), api.get("/Salas")]);
-      setTurmas(Array.isArray(tRes.data) ? tRes.data : []);
-      setSalas(Array.isArray(sRes.data) ? sRes.data : []);
+      const res = await api.get("/Salas");
+      setSalas(res.data || []);
     } catch (err) {
-      setError(extractError(err, "Erro ao carregar Turmas/Salas."));
+      const msg = err?.response?.data?.message || err?.response?.data || "Falha ao carregar salas.";
+      setError(typeof msg === "string" ? msg : "Falha ao carregar salas.");
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    loadLookups();
-  }, []);
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    if (!s) return salas;
 
-  async function loadTurmaModulos(tId) {
-    const id = Number(tId);
-    if (!Number.isFinite(id) || id <= 0) {
-      setTmList([]);
-      return;
-    }
-
-    setTmLoading(true);
-    try {
-      const res = await api.get(`/Turmas/${id}/modulos`);
-      setTmList(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      setTmList([]);
-      setError(extractError(err, "Erro ao carregar módulos da turma."));
-    } finally {
-      setTmLoading(false);
-    }
-  }
+    return salas.filter((r) => {
+      return (
+        String(r.id).includes(s) ||
+        (r.nome || "").toLowerCase().includes(s) ||
+        (r.tipo || "").toLowerCase().includes(s) ||
+        String(r.capacidade ?? "").includes(s)
+      );
+    });
+  }, [salas, search]);
 
   function openCreate() {
+    setEditing(null);
+    setForm({ nome: "", capacidade: 1, tipo: "Teorica" });
     setError("");
-    setTmList([]);
+    setShowForm(true);
+  }
+
+  function openEdit(sala) {
+    setEditing(sala);
     setForm({
-      turmaId: turmaId || "",
-      turmaModuloId: "",
-      salaId: "",
-      horarioInicio: "",
-      horarioFim: "",
+      nome: sala.nome ?? "",
+      capacidade: Number(sala.capacidade ?? 1),
+      tipo: sala.tipo ?? "Teorica",
     });
-
-    // se já houver turma selecionada no filtro, carrega logo os módulos
-    if (turmaId) loadTurmaModulos(turmaId);
-
-    setShowCreate(true);
+    setError("");
+    setShowForm(true);
   }
 
-  function closeCreate(force = false) {
-    if (!force && saving) return;
-    setShowCreate(false);
+  function closeForm() {
+    if (saving) return;
+    setShowForm(false);
+    setEditing(null);
   }
 
-  function onFormChange(e) {
+  function onChange(e) {
     const { name, value } = e.target;
-
-    // Quando muda turma no modal -> carrega módulos
-    if (name === "turmaId") {
-      setForm((p) => ({ ...p, turmaId: value, turmaModuloId: "" }));
-      setError("");
-      loadTurmaModulos(value);
-      return;
-    }
-
     setForm((p) => ({ ...p, [name]: value }));
   }
 
-  async function loadHorario() {
-    setError("");
-
-    const startApi = toApiStartOfDay(start);
-    const endApi = toApiEndOfDay(end);
-
-    if (!startApi || !endApi) return setError("Datas inválidas.");
-    if (new Date(endApi) < new Date(startApi)) return setError("A data de fim não pode ser anterior à data de início.");
-
-    let url = "";
-    if (modo === "turma") {
-      const id = Number(turmaId);
-      if (!Number.isFinite(id) || id <= 0) return setError("Seleciona uma turma.");
-      url = `/Sessoes/turma/${id}?start=${encodeURIComponent(startApi)}&end=${encodeURIComponent(endApi)}`;
-    } else if (modo === "formador") {
-      const id = Number(formadorId);
-      if (!Number.isFinite(id) || id <= 0) return setError("Indica um FormadorId válido.");
-      url = `/Sessoes/formador/${id}?start=${encodeURIComponent(startApi)}&end=${encodeURIComponent(endApi)}`;
-    } else {
-      const id = Number(salaId);
-      if (!Number.isFinite(id) || id <= 0) return setError("Seleciona uma sala.");
-      url = `/Sessoes/sala/${id}?start=${encodeURIComponent(startApi)}&end=${encodeURIComponent(endApi)}`;
-    }
-
-    setLoadingHorario(true);
-    try {
-      const res = await api.get(url);
-      setSessoes(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      setError(extractError(err, "Erro ao carregar sessões."));
-      setSessoes([]);
-    } finally {
-      setLoadingHorario(false);
-    }
-  }
-
-  async function saveSessao(e) {
+  async function saveSala(e) {
     e.preventDefault();
     setError("");
 
-    const turmaModuloIdNum = Number(form.turmaModuloId);
-    const salaIdNum = Number(form.salaId);
+    const nome = form.nome.trim();
+    const capacidade = Number(form.capacidade);
+    const tipo = form.tipo;
 
-    if (!Number.isFinite(turmaModuloIdNum) || turmaModuloIdNum <= 0) return alert("Seleciona um Módulo da turma.");
-    if (!Number.isFinite(salaIdNum) || salaIdNum <= 0) return alert("Seleciona uma sala.");
-    if (!form.horarioInicio) return alert("Seleciona horário de início.");
-    if (!form.horarioFim) return alert("Seleciona horário de fim.");
+    if (!nome) return alert("O nome da sala é obrigatório.");
+    if (!Number.isFinite(capacidade) || capacidade < 1) return alert("Capacidade tem de ser >= 1.");
+    if (!TIPOS.includes(tipo)) return alert("Tipo inválido.");
 
-    const hiApi = toApiDateTime(form.horarioInicio);
-    const hfApi = toApiDateTime(form.horarioFim);
-    if (!hiApi || !hfApi) return alert("Horários inválidos.");
-
-    if (new Date(hfApi) <= new Date(hiApi)) return alert("A hora de fim tem de ser superior à de início.");
-
-    const payload = {
-      TurmaModuloId: turmaModuloIdNum,
-      SalaId: salaIdNum,
-      HorarioInicio: hiApi,
-      HorarioFim: hfApi,
-    };
+    const payload = { nome, capacidade, tipo };
 
     setSaving(true);
     try {
-      await api.post("/Sessoes", payload);
-      closeCreate(true);
-      await loadHorario().catch(() => {});
+      if (editing) {
+        await api.put(`/Salas/${editing.id}`, payload);
+      } else {
+        await api.post("/Salas", payload);
+      }
+
+      await loadSalas();
+      setShowForm(false);
+      setEditing(null);
     } catch (err) {
-      setError(extractError(err, "Erro ao agendar sessão."));
+      const msg = err?.response?.data?.message || err?.response?.data || "Erro ao guardar sala.";
+      setError(typeof msg === "string" ? msg : "Erro ao guardar sala.");
     } finally {
       setSaving(false);
     }
   }
 
-  async function deleteSessao(id) {
-    if (!window.confirm("Tens a certeza que queres apagar esta sessão?")) return;
+  async function deleteSala(id) {
+    if (!window.confirm("Tens a certeza que queres apagar esta sala?")) return;
 
     setError("");
     try {
-      await api.delete(`/Sessoes/${id}`);
-      setSessoes((prev) => prev.filter((x) => x.id !== id));
+      await api.delete(`/Salas/${id}`);
+      setSalas((prev) => prev.filter((s) => s.id !== id));
     } catch (err) {
-      setError(extractError(err, "Erro ao apagar sessão."));
+      const msg = err?.response?.data?.message || err?.response?.data || "Erro ao apagar sala.";
+      setError(typeof msg === "string" ? msg : "Erro ao apagar sala.");
     }
   }
 
-  const total = sessoes.length;
-
-  const titleRight = useMemo(() => {
-    if (modo === "turma") return "por Turma";
-    if (modo === "formador") return "por Formador";
-    return "por Sala";
-  }, [modo]);
-
   return (
-    <RequireRole allow={["Admin", "Formador"]}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-800">
-          <div className="container mx-auto px-4 py-5 flex flex-wrap items-center justify-between gap-3">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50/30 to-pink-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+      {/* Header */}
+      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                Sessões <span className="text-gray-500 dark:text-gray-400 font-normal">{titleRight}</span>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
+                Gestão de Salas
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Agendar e consultar horários (GET / POST / DELETE).
+                Administre as salas disponíveis na instituição
               </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={() => navigate("/dashboard")}
-                className="px-4 py-2 rounded border text-gray-700 hover:bg-gray-50
-                           dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
+                className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 
+                           hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium"
               >
-                Voltar
+                ← Voltar
               </button>
 
               <button
                 onClick={openCreate}
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white 
+                           hover:from-purple-700 hover:to-pink-700 transition-all duration-200 font-medium shadow-lg shadow-purple-500/30"
               >
-                + Agendar Sessão
+                + Nova Sala
               </button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Content */}
-        <div className="container mx-auto px-4 py-6">
-          {/* Toolbar */}
-          <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-4 mb-4">
-            <div className="flex flex-col xl:flex-row xl:items-end gap-3 xl:justify-between">
-              <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
-                <div>
-                  <label className="text-sm text-gray-600 dark:text-gray-400">Modo</label>
-                  <select
-                    value={modo}
-                    onChange={(e) => setModo(e.target.value)}
-                    className="mt-1 border rounded px-3 py-2
-                               bg-white dark:bg-gray-900 dark:border-gray-800
-                               text-gray-900 dark:text-gray-100"
-                    disabled={loading}
-                  >
-                    <option value="turma">Turma</option>
-                    <option value="formador">Formador</option>
-                    <option value="sala">Sala</option>
-                  </select>
-                </div>
-
-                {modo === "turma" && (
-                  <div>
-                    <label className="text-sm text-gray-600 dark:text-gray-400">Turma</label>
-                    <select
-                      value={turmaId}
-                      onChange={(e) => setTurmaId(e.target.value)}
-                      className="mt-1 border rounded px-3 py-2 w-72
-                                 bg-white dark:bg-gray-900 dark:border-gray-800
-                                 text-gray-900 dark:text-gray-100"
-                      disabled={loading}
-                    >
-                      <option value="">Seleciona...</option>
-                      {turmas.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          #{t.id} — {t.nome} {t.cursoNome ? `(${t.cursoNome})` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {modo === "formador" && (
-                  <div>
-                    <label className="text-sm text-gray-600 dark:text-gray-400">FormadorId</label>
-                    <input
-                      value={formadorId}
-                      onChange={(e) => setFormadorId(e.target.value)}
-                      placeholder="Ex: 10"
-                      className="mt-1 border rounded px-3 py-2 w-48
-                                 bg-white dark:bg-gray-900 dark:border-gray-800
-                                 text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
-                      disabled={loading}
-                    />
-                  </div>
-                )}
-
-                {modo === "sala" && (
-                  <div>
-                    <label className="text-sm text-gray-600 dark:text-gray-400">Sala</label>
-                    <select
-                      value={salaId}
-                      onChange={(e) => setSalaId(e.target.value)}
-                      className="mt-1 border rounded px-3 py-2 w-72
-                                 bg-white dark:bg-gray-900 dark:border-gray-800
-                                 text-gray-900 dark:text-gray-100"
-                      disabled={loading}
-                    >
-                      <option value="">Seleciona...</option>
-                      {salas.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          #{s.id} — {s.nome} {s.tipo ? `(${s.tipo})` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 items-end">
-                <div>
-                  <label className="text-sm text-gray-600 dark:text-gray-400">Início</label>
-                  <input
-                    type="date"
-                    value={start}
-                    onChange={(e) => setStart(e.target.value)}
-                    className="mt-1 border rounded px-3 py-2
-                               bg-white dark:bg-gray-900 dark:border-gray-800
-                               text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm text-gray-600 dark:text-gray-400">Fim</label>
-                  <input
-                    type="date"
-                    value={end}
-                    onChange={(e) => setEnd(e.target.value)}
-                    className="mt-1 border rounded px-3 py-2
-                               bg-white dark:bg-gray-900 dark:border-gray-800
-                               text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-
-                <button
-                  onClick={loadHorario}
-                  disabled={loading || loadingHorario}
-                  className="px-4 py-2 rounded bg-gray-900 text-white hover:bg-black disabled:opacity-60
-                             dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-white"
-                >
-                  {loadingHorario ? "A carregar..." : "Ver Horário"}
-                </button>
-
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Total: <span className="font-semibold">{total}</span>
-                </div>
-              </div>
+      {/* Content */}
+      <div className="container mx-auto px-6 py-8">
+        {/* Toolbar */}
+        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center gap-4 md:justify-between">
+            <div className="flex-1">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="🔍 Pesquisar por nome, tipo, capacidade ou ID..."
+                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5
+                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
+                           focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              />
             </div>
-          </div>
 
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm whitespace-pre-wrap">
-              {error}
-            </div>
-          )}
-
-          {/* Table */}
-          <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
-            <div className="overflow-auto">
-              <table className="min-w-full">
-                <thead className="bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700">
-                  <tr>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">ID</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Turma</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Módulo</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Formador</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Sala</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Início</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Fim</th>
-                    <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Ações</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan="8" className="py-10 px-4 text-center text-gray-500 dark:text-gray-400">
-                        A carregar...
-                      </td>
-                    </tr>
-                  ) : loadingHorario ? (
-                    <tr>
-                      <td colSpan="8" className="py-10 px-4 text-center text-gray-500 dark:text-gray-400">
-                        A carregar sessões...
-                      </td>
-                    </tr>
-                  ) : sessoes.length === 0 ? (
-                    <tr>
-                      <td colSpan="8" className="py-10 px-4 text-center text-gray-500 dark:text-gray-400">
-                        Sem sessões para mostrar.
-                      </td>
-                    </tr>
-                  ) : (
-                    sessoes.map((s) => (
-                      <tr
-                        key={s.id}
-                        className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60"
-                      >
-                        <td className="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{s.id}</td>
-                        <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{s.turmaNome || "—"}</td>
-                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{s.moduloNome || `#${s.turmaModuloId}`}</td>
-                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{s.formadorNome || "—"}</td>
-                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{s.salaNome || `#${s.salaId}`}</td>
-                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{fmtDateTime(s.horarioInicio)}</td>
-                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{fmtDateTime(s.horarioFim)}</td>
-
-                        <td className="py-3 px-4">
-                          <button
-                            onClick={() => deleteSessao(s.id)}
-                            className="px-3 py-1.5 rounded text-sm font-medium text-red-700 hover:bg-red-50
-                                       dark:text-red-300 dark:hover:bg-red-900/20"
-                          >
-                            Apagar
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className="px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 
+                            rounded-lg border border-purple-200 dark:border-purple-800">
+              <span className="text-sm font-semibold text-purple-900 dark:text-purple-300">
+                {filtered.length} {filtered.length === 1 ? 'sala' : 'salas'}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Modal: Agendar */}
-        {showCreate && (
-          <Modal title="Agendar Sessão" onClose={() => closeCreate(false)} disableClose={saving}>
-            <form onSubmit={saveSessao} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Turma</label>
-                <select
-                  name="turmaId"
-                  value={form.turmaId}
-                  onChange={onFormChange}
-                  className="mt-1 w-full border rounded px-3 py-2
-                             bg-white dark:bg-gray-900 dark:border-gray-800
-                             text-gray-900 dark:text-gray-100"
-                  disabled={saving}
-                >
-                  <option value="">Seleciona...</option>
-                  {turmas.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      #{t.id} — {t.nome} {t.cursoNome ? `(${t.cursoNome})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Módulo da Turma</label>
-                <select
-                  name="turmaModuloId"
-                  value={form.turmaModuloId}
-                  onChange={onFormChange}
-                  className="mt-1 w-full border rounded px-3 py-2
-                             bg-white dark:bg-gray-900 dark:border-gray-800
-                             text-gray-900 dark:text-gray-100"
-                  disabled={saving || tmLoading || !form.turmaId}
-                >
-                  {!form.turmaId ? (
-                    <option value="">Seleciona primeiro uma turma...</option>
-                  ) : tmLoading ? (
-                    <option value="">A carregar módulos...</option>
-                  ) : tmList.length === 0 ? (
-                    <option value="">Sem módulos nesta turma.</option>
-                  ) : (
-                    <>
-                      <option value="">Seleciona...</option>
-                      {tmList.map((tm) => {
-                        const id = tm?.id ?? tm?.Id;
-                        return (
-                          <option key={id} value={id}>
-                            {turmaModuloLabel(tm)}
-                          </option>
-                        );
-                      })}
-                    </>
-                  )}
-                </select>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Fonte: <span className="font-medium">GET /Turmas/{`{turmaId}`}/modulos</span>
-                </p>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Sala</label>
-                <select
-                  name="salaId"
-                  value={form.salaId}
-                  onChange={onFormChange}
-                  className="mt-1 w-full border rounded px-3 py-2
-                             bg-white dark:bg-gray-900 dark:border-gray-800
-                             text-gray-900 dark:text-gray-100"
-                  disabled={saving}
-                >
-                  <option value="">Seleciona uma sala...</option>
-                  {salas.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      #{s.id} — {s.nome} {s.tipo ? `(${s.tipo})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Início</label>
-                <input
-                  type="datetime-local"
-                  name="horarioInicio"
-                  value={form.horarioInicio}
-                  onChange={onFormChange}
-                  className="mt-1 w-full border rounded px-3 py-2
-                             bg-white dark:bg-gray-900 dark:border-gray-800
-                             text-gray-900 dark:text-gray-100"
-                  disabled={saving}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Fim</label>
-                <input
-                  type="datetime-local"
-                  name="horarioFim"
-                  value={form.horarioFim}
-                  onChange={onFormChange}
-                  className="mt-1 w-full border rounded px-3 py-2
-                             bg-white dark:bg-gray-900 dark:border-gray-800
-                             text-gray-900 dark:text-gray-100"
-                  disabled={saving}
-                />
-              </div>
-
-              <div className="md:col-span-2 flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => closeCreate(false)}
-                  className="px-4 py-2 rounded border text-gray-700 hover:bg-gray-50 disabled:opacity-60
-                             dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
-                  disabled={saving}
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
-                  disabled={saving}
-                >
-                  {saving ? "A guardar..." : "Agendar"}
-                </button>
-              </div>
-            </form>
-          </Modal>
+        {error && (
+          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 
+                          px-5 py-4 rounded-xl text-sm shadow-sm">
+            {error}
+          </div>
         )}
+
+        {/* Table */}
+        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden">
+          <div className="overflow-auto">
+            <table className="min-w-full">
+              <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    ID
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Nome
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Tipo
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Capacidade
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Ações
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="py-16 px-6 text-center">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                      <p className="mt-3 text-gray-500 dark:text-gray-400">A carregar salas...</p>
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
+                      <div className="text-4xl mb-2">🏫</div>
+                      Nenhuma sala encontrada
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((r) => (
+                    <tr
+                      key={r.id}
+                      className="hover:bg-purple-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150"
+                    >
+                      <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">
+                        #{r.id}
+                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">
+                        {r.nome}
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${tipoColors[r.tipo] || tipoColors.Teorica}`}>
+                          <span>{tipoIcons[r.tipo] || "📍"}</span>
+                          {r.tipo}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span>👤</span>
+                          <span className="font-semibold">{r.capacidade}</span>
+                          {r.capacidade === 1 ? 'pessoa' : 'pessoas'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => openEdit(r)}
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-yellow-700 dark:text-yellow-400 
+                                       bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 
+                                       transition-all duration-200"
+                          >
+                            ✏️ Editar
+                          </button>
+
+                          <button
+                            onClick={() => deleteSala(r.id)}
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-red-700 dark:text-red-400 
+                                       bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 
+                                       transition-all duration-200"
+                          >
+                            🗑️ Apagar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </RequireRole>
+
+      {/* Modal Create/Edit */}
+      {showForm && (
+        <Modal title={editing ? "✏️ Editar Sala" : "✨ Nova Sala"} onClose={closeForm}>
+          <form onSubmit={saveSala} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="md:col-span-2">
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
+                Nome da Sala
+              </label>
+              <input
+                name="nome"
+                value={form.nome}
+                onChange={onChange}
+                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
+                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                           focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                placeholder="Ex: Sala A1"
+                disabled={saving}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
+                Tipo de Sala
+              </label>
+              <select
+                name="tipo"
+                value={form.tipo}
+                onChange={onChange}
+                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
+                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                           focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                disabled={saving}
+              >
+                {TIPOS.map((t) => (
+                  <option key={t} value={t}>
+                    {tipoIcons[t]} {t}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Escolha o tipo que melhor descreve esta sala
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
+                Capacidade
+              </label>
+              <input
+                type="number"
+                name="capacidade"
+                value={form.capacidade}
+                onChange={onChange}
+                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
+                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                           focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                min="1"
+                disabled={saving}
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Número máximo de pessoas
+              </p>
+            </div>
+
+            {error && (
+              <div className="md:col-span-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 
+                              text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="md:col-span-2 flex justify-end gap-3 pt-4">
+              <button
+                type="button"
+                onClick={closeForm}
+                className="px-6 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 
+                           hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-all duration-200 font-medium"
+                disabled={saving}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white 
+                           hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all duration-200 font-medium
+                           shadow-lg shadow-purple-500/30"
+                disabled={saving}
+              >
+                {saving ? "A guardar..." : editing ? "Guardar Alterações" : "Criar Sala"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </div>
   );
 }

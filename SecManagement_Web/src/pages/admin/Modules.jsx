@@ -4,22 +4,24 @@ import api from "../../api/axios";
 
 function Modal({ title, children, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-xl shadow-lg border dark:border-gray-800"
+        className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border dark:border-gray-800 animate-in fade-in zoom-in duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-800">
-          <h3 className="font-bold text-gray-900 dark:text-gray-100">{title}</h3>
+        <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800 bg-gradient-to-r from-cyan-50/50 to-blue-50/50 dark:from-cyan-950/20 dark:to-blue-950/20 rounded-t-2xl">
+          <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{title}</h3>
           <button
             onClick={onClose}
-            className="px-3 py-1 rounded border text-gray-700 hover:bg-gray-50
-                       dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
+            className="p-2 rounded-lg border hover:bg-gray-100 transition-colors
+                       dark:border-gray-700 dark:hover:bg-gray-800"
           >
-            Close
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
@@ -38,7 +40,6 @@ export default function AdminModules() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  // Alinhado à BD: Nome, CargaHoraria, Nivel
   const [form, setForm] = useState({
     nome: "",
     cargaHoraria: "",
@@ -50,12 +51,11 @@ export default function AdminModules() {
     setError("");
 
     try {
-      // se o teu endpoint for singular, muda para "/Modulo"
       const res = await api.get("/Modulos");
       setModules(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data || "Failed to load modules.";
-      setError(typeof msg === "string" ? msg : "Failed to load modules.");
+      const msg = err.response?.data?.message || err.response?.data || "Falha ao carregar módulos.";
+      setError(typeof msg === "string" ? msg : "Falha ao carregar módulos.");
     } finally {
       setLoading(false);
     }
@@ -64,6 +64,14 @@ export default function AdminModules() {
   useEffect(() => {
     loadModules();
   }, []);
+
+  const stats = useMemo(() => {
+    const total = modules.length;
+    const totalHoras = modules.reduce((sum, m) => sum + (Number(m.cargaHoraria) || 0), 0);
+    const niveis = new Set(modules.map(m => m.nivel).filter(Boolean)).size;
+    
+    return { total, totalHoras, niveis };
+  }, [modules]);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -113,8 +121,8 @@ export default function AdminModules() {
     const carga = Number(form.cargaHoraria);
     const nivel = form.nivel.trim();
 
-    if (!nome) return alert("Name is required.");
-    if (!Number.isFinite(carga) || carga <= 0) return alert("Carga Horária must be > 0.");
+    if (!nome) return alert("O nome é obrigatório.");
+    if (!Number.isFinite(carga) || carga <= 0) return alert("A carga horária deve ser maior que 0.");
 
     const payload = {
       nome,
@@ -124,8 +132,6 @@ export default function AdminModules() {
 
     setSaving(true);
     try {
-      // se o teu endpoint for singular, muda:
-      // POST "/Modulo" | PUT `/Modulo/${editing.id}` | DELETE `/Modulo/${id}`
       if (editing) {
         await api.put(`/Modulos/${editing.id}`, payload);
       } else {
@@ -135,134 +141,221 @@ export default function AdminModules() {
       closeForm();
       await loadModules();
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data || "Failed to save module.";
-      setError(typeof msg === "string" ? msg : "Failed to save module.");
+      const msg = err.response?.data?.message || err.response?.data || "Falha ao guardar módulo.";
+      setError(typeof msg === "string" ? msg : "Falha ao guardar módulo.");
     } finally {
       setSaving(false);
     }
   }
 
   async function deleteModule(id) {
-    if (!window.confirm("Are you sure you want to delete this module?")) return;
+    if (!window.confirm("Tens a certeza que queres apagar este módulo?")) return;
 
     setError("");
     try {
       await api.delete(`/Modulos/${id}`);
       setModules((prev) => prev.filter((m) => m.id !== id));
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data || "Failed to delete module.";
-      setError(typeof msg === "string" ? msg : "Failed to delete module.");
+      const msg = err.response?.data?.message || err.response?.data || "Falha ao apagar módulo.";
+      setError(typeof msg === "string" ? msg : "Falha ao apagar módulo.");
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-800">
-        <div className="container mx-auto px-4 py-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Modules</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Modules management (CRUD) connected to API.
-            </p>
-          </div>
+      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 border-b dark:border-gray-800 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Módulos</h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Gestão do catálogo de módulos formativos
+                  </p>
+                </div>
+              </div>
+            </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="px-4 py-2 rounded border text-gray-700 hover:bg-gray-50
-                         dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
-            >
-              Back
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="px-4 py-2 rounded-lg border hover:bg-gray-100 transition-colors
+                           dark:border-gray-700 dark:hover:bg-gray-800"
+              >
+                ← Voltar
+              </button>
 
-            <button
-              onClick={openCreate}
-              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-            >
-              + New Module
-            </button>
+              <button
+                onClick={openCreate}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-medium
+                           hover:from-cyan-700 hover:to-blue-700 transition-all
+                           shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40
+                           active:scale-95"
+              >
+                + Novo Módulo
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 dark:from-cyan-500/20 dark:to-cyan-600/10 opacity-50" />
+            <div className="relative">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Total de Módulos</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</div>
+            </div>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 opacity-50" />
+            <div className="relative">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Total de Horas</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalHoras}h</div>
+            </div>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-purple-600/5 dark:from-purple-500/20 dark:to-purple-600/10 opacity-50" />
+            <div className="relative">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Níveis Diferentes</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.niveis}</div>
+            </div>
+          </div>
+        </div>
+
         {/* Toolbar */}
-        <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-4 mb-4">
-          <div className="flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
-            <div className="flex-1">
+        <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <div className="flex-1 relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, hours or level..."
-                className="w-full border rounded px-3 py-2
-                           bg-white dark:bg-gray-900 dark:border-gray-800
-                           text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
+                placeholder="Pesquisar por nome, horas ou nível..."
+                className="w-full pl-10 pr-4 py-2.5 border rounded-lg
+                           bg-gray-50 dark:bg-gray-950 dark:border-gray-800
+                           text-gray-900 dark:text-gray-100 placeholder:text-gray-400
+                           focus:outline-none focus:ring-2 focus:ring-cyan-500/40 transition-shadow"
               />
             </div>
 
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Total: <span className="font-semibold">{filtered.length}</span>
+            <div className="px-3 py-2 rounded-lg bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-900/50">
+              <span className="text-sm font-semibold text-cyan-700 dark:text-cyan-300">
+                {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
+              </span>
             </div>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">
-            {error}
+          <div className="bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <svg className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="text-sm text-red-700 dark:text-red-300 flex-1">{error}</div>
           </div>
         )}
 
+        {/* Table */}
         <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-auto">
+          <div className="overflow-x-auto">
             <table className="min-w-full">
-              <thead className="bg-gray-100 dark:bg-gray-800 border-b dark:border-gray-700">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800/50 border-b dark:border-gray-700">
                 <tr>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">ID</th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Name</th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Hours</th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Level</th>
-                  <th className="text-left text-sm font-semibold text-gray-700 dark:text-gray-200 py-3 px-4">Actions</th>
+                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">ID</th>
+                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Nome</th>
+                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Carga Horária</th>
+                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Nível</th>
+                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {loading ? (
                   <tr>
-                    <td colSpan="5" className="py-10 px-4 text-center text-gray-500 dark:text-gray-400">
-                      Loading...
+                    <td colSpan="5" className="py-16 px-6">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-gray-500 dark:text-gray-400">A carregar módulos...</span>
+                      </div>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="py-10 px-4 text-center text-gray-500 dark:text-gray-400">
-                      No modules found.
+                    <td colSpan="5" className="py-16 px-6">
+                      <div className="flex flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
+                        <svg className="w-16 h-16 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
+                        <span>Sem módulos encontrados</span>
+                        <button
+                          onClick={openCreate}
+                          className="mt-2 px-4 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700 transition-colors text-sm"
+                        >
+                          Criar primeiro módulo
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   filtered.map((m) => (
-                    <tr key={m.id} className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60">
-                      <td className="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{m.id}</td>
-                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{m.nome}</td>
-                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{m.cargaHoraria}</td>
-                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{m.nivel || "—"}</td>
-                      <td className="py-3 px-4">
+                    <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <td className="py-4 px-6">
+                        <span className="text-sm font-mono text-gray-600 dark:text-gray-400">#{m.id}</span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                            {(m.nome || "?")[0].toUpperCase()}
+                          </div>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{m.nome}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {m.cargaHoraria}h
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+                        {m.nivel || <span className="text-gray-400">—</span>}
+                      </td>
+                      <td className="py-4 px-6">
                         <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => openEdit(m)}
-                            className="px-3 py-1.5 rounded text-sm font-medium text-yellow-700 hover:bg-yellow-50
-                                       dark:text-yellow-300 dark:hover:bg-yellow-900/20"
+                            className="px-3 py-1.5 rounded-lg text-sm font-medium
+                                       bg-amber-100 text-amber-700 hover:bg-amber-200
+                                       dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50
+                                       transition-colors"
                           >
-                            Edit
+                            ✏ Editar
                           </button>
 
                           <button
                             onClick={() => deleteModule(m.id)}
-                            className="px-3 py-1.5 rounded text-sm font-medium text-red-700 hover:bg-red-50
-                                       dark:text-red-300 dark:hover:bg-red-900/20"
+                            className="px-3 py-1.5 rounded-lg text-sm font-medium
+                                       bg-red-100 text-red-700 hover:bg-red-200
+                                       dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50
+                                       transition-colors"
                           >
-                            Delete
+                            🗑 Apagar
                           </button>
                         </div>
                       </td>
@@ -276,68 +369,93 @@ export default function AdminModules() {
       </div>
 
       {showForm && (
-        <Modal title={editing ? "Edit Module" : "New Module"} onClose={closeForm}>
-          <form onSubmit={saveModule} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Name</label>
-              <input
-                name="nome"
-                value={form.nome}
-                onChange={onChange}
-                className="mt-1 w-full border rounded px-3 py-2
-                           bg-white dark:bg-gray-900 dark:border-gray-800
-                           text-gray-900 dark:text-gray-100"
-                placeholder="Ex: Programação"
-                disabled={saving}
-              />
+        <Modal title={editing ? "Editar Módulo" : "Novo Módulo"} onClose={closeForm}>
+          <form onSubmit={saveModule} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nome do Módulo
+                </label>
+                <input
+                  name="nome"
+                  value={form.nome}
+                  onChange={onChange}
+                  className="w-full border rounded-lg px-4 py-3
+                             bg-white dark:bg-gray-950 dark:border-gray-800
+                             text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                  placeholder="Ex: Programação"
+                  disabled={saving}
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Carga Horária
+                </label>
+                <input
+                  type="number"
+                  name="cargaHoraria"
+                  value={form.cargaHoraria}
+                  onChange={onChange}
+                  className="w-full border rounded-lg px-4 py-3
+                             bg-white dark:bg-gray-950 dark:border-gray-800
+                             text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                  min="1"
+                  disabled={saving}
+                  placeholder="Ex: 50"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Número de horas do módulo</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nível
+                </label>
+                <input
+                  name="nivel"
+                  value={form.nivel}
+                  onChange={onChange}
+                  className="w-full border rounded-lg px-4 py-3
+                             bg-white dark:bg-gray-950 dark:border-gray-800
+                             text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                  placeholder="Ex: Nível 4"
+                  disabled={saving}
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Opcional</p>
+              </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Hours</label>
-              <input
-                type="number"
-                name="cargaHoraria"
-                value={form.cargaHoraria}
-                onChange={onChange}
-                className="mt-1 w-full border rounded px-3 py-2
-                           bg-white dark:bg-gray-900 dark:border-gray-800
-                           text-gray-900 dark:text-gray-100"
-                min="1"
-                disabled={saving}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Level</label>
-              <input
-                name="nivel"
-                value={form.nivel}
-                onChange={onChange}
-                className="mt-1 w-full border rounded px-3 py-2
-                           bg-white dark:bg-gray-900 dark:border-gray-800
-                           text-gray-900 dark:text-gray-100"
-                placeholder="Ex: Nível 4"
-                disabled={saving}
-              />
-            </div>
-
-            <div className="md:col-span-2 flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-800">
               <button
                 type="button"
                 onClick={closeForm}
-                className="px-4 py-2 rounded border text-gray-700 hover:bg-gray-50
-                           dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
+                className="px-5 py-2.5 rounded-lg border hover:bg-gray-100 transition-colors
+                           dark:border-gray-700 dark:hover:bg-gray-800"
                 disabled={saving}
               >
-                Cancel
+                Cancelar
               </button>
 
               <button
                 type="submit"
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-medium
+                           hover:from-cyan-700 hover:to-blue-700 transition-all
+                           shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40
+                           disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
                 disabled={saving}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    A guardar...
+                  </span>
+                ) : (
+                  "Guardar"
+                )}
               </button>
             </div>
           </form>
