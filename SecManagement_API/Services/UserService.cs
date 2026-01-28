@@ -16,36 +16,26 @@ namespace SecManagement_API.Services
 
         public async Task<IEnumerable<UserDto>> GetAllAsync()
         {
-            return await _context.Users
-                .Select(u => new UserDto
-                {
-                    Id = u.Id,
-                    Email = u.Email,
-                    // Nome = u.Nome, // Só descomentar se User tiver Nome
-                    Role = u.Role,
-                    IsActive = u.IsActive,
-                    // Verifica se o ID existe nas outras tabelas
-                    IsFormador = _context.Formadores.Any(f => f.UserId == u.Id),
-                    IsFormando = _context.Formandos.Any(f => f.UserId == u.Id)
-                })
-                .ToListAsync();
+            var users = await _context.Users
+            .Include(u => u.FormadorProfile)
+            .Include(u => u.FormandoProfile)
+            .AsNoTracking()
+            .ToListAsync();
+
+            return users.Select(u => MapToDto(u));
         }
 
         public async Task<UserDto?> GetByIdAsync(int id)
         {
-            var u = await _context.Users.FindAsync(id);
+            var u = await _context.Users
+            .Include(user => user.FormadorProfile)
+            .Include(user => user.FormandoProfile)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(user => user.Id == id);
+
             if (u == null) return null;
 
-            return new UserDto
-            {
-                Id = u.Id,
-                Email = u.Email,
-                // Nome = u.Nome, 
-                Role = u.Role,
-                IsActive = u.IsActive,
-                IsFormador = await _context.Formadores.AnyAsync(f => f.UserId == u.Id),
-                IsFormando = await _context.Formandos.AnyAsync(f => f.UserId == u.Id)
-            };
+            return MapToDto(u);
         }
 
         public async Task<bool> UpdateAsync(int id, UpdateUserDto dto)
@@ -70,6 +60,22 @@ namespace SecManagement_API.Services
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        private static UserDto MapToDto(SecManagement_API.Models.User u)
+        {
+            bool isFormador = u.Role == "Formador" || u.FormadorProfile != null;
+            bool isFormando = u.Role == "Formando" || u.FormandoProfile != null;
+
+            return new UserDto
+            {
+                Id = u.Id,
+                Email = u.Email,
+                Role = u.Role, // "Formador", "Formando", "Secretaria"
+                IsActive = u.IsActive,
+                IsFormador = isFormador,
+                IsFormando = isFormando
+            };
         }
     }
 }

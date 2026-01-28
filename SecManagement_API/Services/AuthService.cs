@@ -28,62 +28,69 @@ namespace SecManagement_API.Services
 
         public async Task<string> RegisterAsync(RegisterDto dto)
         {
+            // 1. Validar duplicados
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-            {
                 throw new Exception("Este email já está registado.");
-            }
 
-            string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-            string activationToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
-
-            var user = new User
-            {
-                Nome = dto.Nome,
-                Email = dto.Email,
-                PasswordHash = passwordHash,
-                Role = "Formando", // Role por defeito
-                IsActive = false,
-                ActivationToken = activationToken, // Usamos o campo correto do Model
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            // Link de Ativação
-            string link = $"http://localhost:5173/activate?email={dto.Email}&token={activationToken}";
-
-            // Tenta enviar email, mas não bloqueia se falhar
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                string body = $@"
-                <h1>Bem-vindo à ATEC!</h1>
-                <p>Por favor confirma a tua conta clicando aqui:</p>
-                <a href='{link}' style='padding:10px; background-color:blue; color:white;'>ATIVAR CONTA</a>";
+                // 2. Criar o User (Login)
+                string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+                string activationToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
 
-                await _emailService.SendEmailAsync(dto.Email, "Ativar Conta", body);
+                var user = new User
+                {
+                    Nome = dto.Nome,
+                    Email = dto.Email,
+                    PasswordHash = passwordHash,
+                    Role = "Formando", // Já entra com perfil de aluno/candidato
+                    IsActive = false,
+                    ActivationToken = activationToken,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync(); // Gera o User.Id
+
+                //  Criar o Perfil de "Candidato" (Formando Provisório)
+                var formando = new Formando
+                {
+                    UserId = user.Id,
+                    NumeroAluno = $"CAND-{user.Id}",
+                    DataNascimento = DateTime.UtcNow // Placeholder até ele preencher no perfil
+                };
+
+                _context.Formandos.Add(formando);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                // 5. Enviar Email (Fora da transação para não bloquear se falhar)
+                string link = $"http://localhost:5173/activate?email={dto.Email}&token={activationToken}";
+                try
+                {
+                    string body = $@"
+                        <h1>Bem-vindo à ATEC!</h1>
+                        <p>Por favor confirma a tua conta clicando aqui:</p>
+                        <a href='{link}' style='padding:10px; background-color:blue; color:white; text-decoration:none;'>ATIVAR CONTA</a>";
+
+                    await _emailService.SendEmailAsync(dto.Email, "Ativar Conta", body);
+                }
+                catch
+                {
+                    // Logar erro, mas não falhar o registo
+                    Console.WriteLine($"[EMAIL ERROR] Falha ao enviar email para {dto.Email}. Link: {link}");
+                }
+
+                return "Utilizador registado com sucesso! Verifique o email para ativar.";
             }
-            catch
+            catch (Exception)
             {
-                Console.WriteLine($"[EMAIL ERROR] Link de ativação: {link}");
+                // Se algo falhar (ex: erro ao criar formando), desfaz a criação do User
+                await transaction.RollbackAsync();
+                throw;
             }
-
-            return "Utilizador registado com sucesso! Verifique o email.";
-        }
-
-        public async Task<string> ActivateAccountAsync(string email, string token)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-
-            // Validar ActivationToken
-            if (user == null || user.ActivationToken != token)
-                throw new Exception("Token de ativação inválido.");
-
-            user.IsActive = true;
-            user.ActivationToken = null; // Limpar token
-
-            await _context.SaveChangesAsync();
-            return "Conta ativada com sucesso!";
         }
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
@@ -104,9 +111,7 @@ namespace SecManagement_API.Services
                     return new AuthResponseDto { RequiresTwoFactor = true, Message = "Insira o código 2FA" };
                 }
 
-                // Validar código TOTP
                 var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
-
                 if (!totp.VerifyTotp(dto.TwoFactorCode, out long timeStepMatched))
                 {
                     throw new Exception("Código 2FA incorreto.");
@@ -115,6 +120,20 @@ namespace SecManagement_API.Services
 
             string token = CreateToken(user);
             return new AuthResponseDto { Token = token, Message = "Login com sucesso" };
+        }
+
+        public async Task<string> ActivateAccountAsync(string email, string token)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user == null || user.ActivationToken != token)
+                throw new Exception("Token de ativação inválido.");
+
+            user.IsActive = true;
+            user.ActivationToken = null;
+
+            await _context.SaveChangesAsync();
+            return "Conta ativada com sucesso!";
         }
 
         public async Task<string> ForgotPasswordAsync(string email)
@@ -128,15 +147,9 @@ namespace SecManagement_API.Services
             await _context.SaveChangesAsync();
 
             string link = $"http://localhost:5173/reset-password?token={user.ResetToken}";
-
             try
             {
-                string body = $@"
-                    <h1>Recuperação de Password</h1>
-                    <p>Olá {user.Nome},</p>
-                    <p>Clica no link para recuperar a password:</p>
-                    <a href='{link}'>Recuperar Password</a>";
-
+                string body = $@"<h1>Recuperação de Password</h1><p>Clica no link: <a href='{link}'>Recuperar</a></p>";
                 await _emailService.SendEmailAsync(email, "Recuperação de Password - ATEC", body);
             }
             catch
@@ -156,7 +169,7 @@ namespace SecManagement_API.Services
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             user.ResetToken = null;
-            user.ResetTokenExpires = null; // Corrigido
+            user.ResetTokenExpires = null;
 
             await _context.SaveChangesAsync();
             return "Password alterada com sucesso.";
@@ -167,7 +180,6 @@ namespace SecManagement_API.Services
             var user = await _context.Users.FindAsync(userId);
             if (user == null) throw new Exception("User não encontrado.");
 
-            // Gerar Chave Secreta
             var key = KeyGeneration.GenerateRandomKey(20);
             var secret = Base32Encoding.ToString(key);
 
@@ -175,24 +187,22 @@ namespace SecManagement_API.Services
             user.IsTwoFactorEnabled = true;
 
             await _context.SaveChangesAsync();
-
-            // Retorna URL para QR Code
             return $"otpauth://totp/ATEC:{user.Email}?secret={secret}&issuer=ATEC_FinalProject";
         }
 
         public async Task<AuthResponseDto> SocialLoginAsync(string email, string provider, string providerKey, string nome)
         {
+
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
             if (user == null)
             {
-                // Registar automaticamente se não existir
                 user = new User
                 {
                     Nome = nome,
                     Email = email,
-                    IsActive = true, // Emails sociais são validados
-                    Role = "Formando",
+                    IsActive = true,
+                    Role = "User",   // Cria como User genérico, pois não sabemos se é aluno ainda
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -207,7 +217,6 @@ namespace SecManagement_API.Services
                 // Associar conta existente
                 if (provider == "Google") user.GoogleId = providerKey;
                 else if (provider == "Facebook") user.FacebookId = providerKey;
-
                 await _context.SaveChangesAsync();
             }
 
@@ -217,12 +226,26 @@ namespace SecManagement_API.Services
 
         private string CreateToken(User user)
         {
+            // Precisamos recarregar para ter certeza que trazemos os perfis para as claims
+            var userWithProfiles = _context.Users
+               .Include(u => u.FormadorProfile)
+               .Include(u => u.FormandoProfile)
+               .FirstOrDefault(u => u.Id == user.Id);
+
+            user = userWithProfiles ?? user;
+
+            // Determinar flags booleanas baseadas na existência das tabelas, não apenas na string Role
+            bool isFormador = user.FormadorProfile != null;
+            bool isFormando = user.FormandoProfile != null;
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Nome),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim("IsFormador", isFormador.ToString()),
+                new Claim("IsFormando", isFormando.ToString())
             };
 
             var tokenKey = _configuration.GetSection("AppSettings:Token").Value

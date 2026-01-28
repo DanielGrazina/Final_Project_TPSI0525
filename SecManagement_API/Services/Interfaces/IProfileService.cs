@@ -11,7 +11,7 @@ namespace SecManagement_API.Services.Interfaces
 
         Task<FormandoProfileDto> GetFormandoProfileAsync(int userId);
         Task<FormandoProfileDto> CreateFormandoProfileAsync(CreateFormandoProfileDto dto);
-
+        
         // --- GESTÃO DE FICHEIROS ---
         Task<UserFicheiroDto> UploadFileAsync(int userId, IFormFile file);
 
@@ -20,5 +20,6 @@ namespace SecManagement_API.Services.Interfaces
         Task<(byte[] Bytes, string ContentType, string FileName)?> GetFileContentAsync(int fileId);
 
         Task<bool> DeleteFileAsync(int fileId);
+        Task<FormandoProfileDto> UpdateNumeroAlunoAsync(int userId, string novoNumero);
     }
 }
