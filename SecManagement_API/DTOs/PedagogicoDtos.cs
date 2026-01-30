@@ -41,6 +41,8 @@ namespace SecManagement_API.DTOs
         public string Nome { get; set; } = string.Empty;
         public DateTime DataInicio { get; set; }
         public DateTime DataFim { get; set; }
+        public int? CoordenadorId { get; set; }
+        public string CoordenadorNome { get; set; } = "N/A";
         public string Local { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
 
@@ -52,6 +54,7 @@ namespace SecManagement_API.DTOs
     {
         [Required]
         public string Nome { get; set; } = string.Empty; // Ex: "TPSI 1024"
+        public int? CoordenadorId { get; set; }
         public DateTime DataInicio { get; set; }
         public DateTime DataFim { get; set; }
         public string Local { get; set; } = string.Empty;

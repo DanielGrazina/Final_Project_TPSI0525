@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SecManagement_API.DTOs;
 using SecManagement_API.Services.Interfaces;
 
@@ -6,125 +7,96 @@ namespace SecManagement_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    // [Authorize] // Podes descomentar quando quiseres proteger tudo
     public class TurmasController : ControllerBase
     {
-        private readonly ITurmaService _service;
+        private readonly ITurmaService _turmaService;
 
-        public TurmasController(ITurmaService service)
+        public TurmasController(ITurmaService turmaService)
         {
-            _service = service;
+            _turmaService = turmaService;
         }
 
-        // --- CRUD BÁSICO DA TURMA ---
+        // --- GESTÃO DE TURMAS ---
 
         // GET: api/Turmas
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TurmaDto>>> GetAll()
+        public async Task<ActionResult<IEnumerable<TurmaDto>>> GetTurmas()
         {
-            return Ok(await _service.GetAllAsync());
+            return Ok(await _turmaService.GetAllAsync());
         }
 
         // GET: api/Turmas/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<TurmaDto>> GetById(int id)
+        public async Task<ActionResult<TurmaDto>> GetTurma(int id)
         {
-            var t = await _service.GetByIdAsync(id);
-            if (t == null) return NotFound("Turma não encontrada.");
-            return Ok(t);
+            var turma = await _turmaService.GetByIdAsync(id);
+            if (turma == null) return NotFound("Turma não encontrada.");
+            return Ok(turma);
         }
 
         // POST: api/Turmas
         [HttpPost]
-        public async Task<ActionResult<TurmaDto>> Create(CreateTurmaDto dto)
+        // [Authorize(Roles = "Secretaria, Admin")]
+        public async Task<ActionResult<TurmaDto>> CreateTurma(CreateTurmaDto dto)
         {
             try
             {
-                var t = await _service.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = t.Id }, t);
+                var novaTurma = await _turmaService.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetTurma), new { id = novaTurma.Id }, novaTurma);
             }
             catch (Exception ex)
             {
-                 return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
         }
 
         // DELETE: api/Turmas/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        // [Authorize(Roles = "Secretaria, Admin")]
+        public async Task<IActionResult> DeleteTurma(int id)
         {
             try
             {
-                if (await _service.DeleteAsync(id)) return NoContent();
+                if (await _turmaService.DeleteAsync(id)) return NoContent();
                 return NotFound();
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message); // Retorna erro se tiver alunos
+                return BadRequest(new { message = ex.Message });
             }
         }
 
         // --- GESTÃO DE MÓDULOS NA TURMA ---
 
-        // GET: api/Turmas/5/modulos
-        [HttpGet("{turmaId}/modulos")]
-        public async Task<ActionResult<IEnumerable<TurmaModuloDto>>> GetModulos(int turmaId)
-        {
-            return Ok(await _service.GetModulosByTurmaAsync(turmaId));
-        }
-
-        // POST: api/Turmas/modulos (Adicionar disciplina à turma)
-        [HttpPost("modulos")]
+        // POST: api/Turmas/modulo
+        [HttpPost("modulo")]
         public async Task<ActionResult<TurmaModuloDto>> AddModulo(CreateTurmaModuloDto dto)
         {
             try
             {
-                var result = await _service.AddModuloAsync(dto);
+                var result = await _turmaService.AddModuloAsync(dto);
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
         }
 
-        // DELETE: api/Turmas/modulos/5 (Remover disciplina da turma)
-        [HttpDelete("modulos/{id}")]
-        public async Task<IActionResult> RemoveModulo(int id)
+        // DELETE: api/Turmas/modulo/5
+        [HttpDelete("modulo/{turmaModuloId}")]
+        public async Task<IActionResult> RemoveModulo(int turmaModuloId)
         {
-            if (await _service.RemoveModuloAsync(id)) return NoContent();
+            if (await _turmaService.RemoveModuloAsync(turmaModuloId)) return NoContent();
             return NotFound();
         }
 
-        // --- GESTÃO DE ALUNOS NA TURMA (INSCRIÇÕES) ---
-
-        // GET: api/Turmas/5/alunos
-        [HttpGet("{turmaId}/alunos")]
-        public async Task<ActionResult<IEnumerable<InscricaoDto>>> GetAlunos(int turmaId)
+        // GET: api/Turmas/5/modulos
+        [HttpGet("{turmaId}/modulos")]
+        public async Task<ActionResult<IEnumerable<TurmaModuloDto>>> GetModulos(int turmaId)
         {
-            return Ok(await _service.GetAlunosByTurmaAsync(turmaId));
-        }
-
-        // POST: api/Turmas/alunos (Inscrever aluno)
-        [HttpPost("alunos")]
-        public async Task<ActionResult<InscricaoDto>> InscreverAluno(CreateInscricaoDto dto)
-        {
-            try
-            {
-                var result = await _service.InscreverAlunoAsync(dto);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        // DELETE: api/Turmas/alunos/5 (Remover inscrição)
-        [HttpDelete("alunos/{inscricaoId}")]
-        public async Task<IActionResult> RemoveInscricao(int inscricaoId)
-        {
-            if (await _service.RemoverInscricaoAsync(inscricaoId)) return NoContent();
-            return NotFound();
+            return Ok(await _turmaService.GetModulosByTurmaAsync(turmaId));
         }
     }
 }

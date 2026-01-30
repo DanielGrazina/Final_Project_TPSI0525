@@ -8,16 +8,11 @@ namespace SecManagement_API.Services.Interfaces
         Task<IEnumerable<TurmaDto>> GetAllAsync();
         Task<TurmaDto?> GetByIdAsync(int id);
         Task<TurmaDto> CreateAsync(CreateTurmaDto dto);
-        Task<bool> DeleteAsync(int id); // Apenas se não tiver inscrições/módulos
+        Task<bool> DeleteAsync(int id);
 
-        // --- DISTRIBUIÇÃO ---
+        // --- DISTRIBUIÇÃO (Módulos/Formadores) ---
         Task<TurmaModuloDto> AddModuloAsync(CreateTurmaModuloDto dto);
         Task<bool> RemoveModuloAsync(int turmaModuloId);
         Task<IEnumerable<TurmaModuloDto>> GetModulosByTurmaAsync(int turmaId);
-
-        // --- INSCRIÇÕES (Alunos) ---
-        Task<InscricaoDto> InscreverAlunoAsync(CreateInscricaoDto dto);
-        Task<bool> RemoverInscricaoAsync(int inscricaoId);
-        Task<IEnumerable<InscricaoDto>> GetAlunosByTurmaAsync(int turmaId);
     }
 }

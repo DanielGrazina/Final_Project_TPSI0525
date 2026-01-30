@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SecManagement_API.Models
 {
@@ -6,15 +6,16 @@ namespace SecManagement_API.Models
     {
         public int Id { get; set; }
 
-        public int FormandoId { get; set; }
-        public Formando? Formando { get; set; }
-
-        public int TurmaId { get; set; }
+        public int? TurmaId { get; set; } 
         public Turma? Turma { get; set; }
 
         public int CursoId { get; set; }
+        public Curso? Curso { get; set; }
+
+        public int FormandoId { get; set; }
+        public Formando? Formando { get; set; }
 
         public DateTime DataInscricao { get; set; } = DateTime.UtcNow;
-        public string Estado { get; set; } = "Ativo"; // Ativo, Desistiu, Concluido, Reserva
+        public string Estado { get; set; } = "Candidatura";
     }
 }
