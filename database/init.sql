@@ -112,8 +112,8 @@ CREATE TABLE "Inscricoes" (
     "CursoId" INT REFERENCES "Cursos"("Id"),
     "DataInscricao" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    "Estado" VARCHAR(50) DEFAULT 'Ativo'
-    CHECK ("Estado" IN ('Ativo', 'Desistiu', 'Concluido')),
+    "Estado" VARCHAR(50) DEFAULT 'Pendente'
+    CHECK ("Estado" IN ('Pendente', 'Ativo', 'Desistiu', 'Concluido')),
 
     UNIQUE("TurmaId", "FormandoId"),
     UNIQUE("Id", "TurmaId")

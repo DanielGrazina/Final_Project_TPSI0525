@@ -302,7 +302,7 @@ export default function Dashboard() {
     rooms: "/admin/Rooms",
     turmas: "/admin/Turmas",
     evaluations: "/admin/Evaluations",
-    inscricoes: "/admin/Inscricoes",
+    inscricoes: "/admin/Recruit",
     sessoes: "/admin/Sessions",
   };
 

@@ -15,6 +15,7 @@ import Areas from "./pages/admin/Areas.jsx";
 import Evaluations from "./pages/admin/Evaluations.jsx";
 import Users from "./pages/admin/Users.jsx";
 import Sessions from "./pages/admin/Sessions.jsx";
+import Recruit from "./pages/admin/Recruit.jsx";
 
 import RequireRole from "./components/RequireRole";
 
@@ -35,6 +36,14 @@ function App() {
           element={
             <RequireRole>
               <Dashboard />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/Recruit"
+          element={
+            <RequireRole allow={["Admin", "Formador", "Formando","User"]}>
+              <Recruit />
             </RequireRole>
           }
         />
