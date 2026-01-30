@@ -15,45 +15,56 @@ namespace SecManagement_API.Services
             _context = context;
         }
 
-        public async Task<InscricaoDto> InscreverAlunoAsync(CreateInscricaoDto dto)
+        public async Task<InscricaoDto> InscreverAlunoAsync(CreateCandidaturaDto dto)
         {
-            // 1. Validar se o Formando existe (tabela Formandos)
-            // Declaramos a variável 'formando' AQUI pela primeira e única vez
+            // 1. Validar Formando
             var formando = await _context.Formandos
                 .Include(f => f.User)
                 .FirstOrDefaultAsync(f => f.Id == dto.FormandoId);
-
             if (formando == null) throw new Exception("Formando não encontrado.");
 
-            // 2. Validar Turma
-            var turma = await _context.Turmas.FindAsync(dto.TurmaId);
-            if (turma == null) throw new Exception("Turma não encontrada.");
+            // 2. Validar Curso
+            var curso = await _context.Cursos.FindAsync(dto.CursoId);
+            if (curso == null) throw new Exception("Curso não encontrado.");
 
-            // 3. Validar duplicados
+            // 3. Validar duplicados (Já tem candidatura a este curso?)
             bool jaInscrito = await _context.Inscricoes
-                .AnyAsync(i => i.TurmaId == dto.TurmaId && i.FormandoId == dto.FormandoId);
+                .AnyAsync(i => i.CursoId == dto.CursoId && i.FormandoId == dto.FormandoId);
+            if (jaInscrito) throw new Exception("Já existe uma candidatura para este curso.");
 
-            if (jaInscrito) throw new Exception("O formando já está inscrito nesta turma.");
-
-            // 4. Detetar se é um candidato (Número começa por CAND-)
-            // Reutilizamos a variável 'formando' declarada no passo 1
-            bool isCandidato = formando.NumeroAluno.StartsWith("CAND-");
-
-            // 5. Criar Inscrição
+            // 4. Criar Candidatura (Sem Turma)
             var inscricao = new Inscricao
             {
-                TurmaId = dto.TurmaId,
+                CursoId = dto.CursoId,
                 FormandoId = dto.FormandoId,
-                CursoId = turma.CursoId,
+                TurmaId = null, // Fica null até a secretaria decidir
                 DataInscricao = DateTime.UtcNow,
-                // Se for candidato fica Pendente, senão fica Ativo
-                Estado = isCandidato ? "Pendente" : "Ativo"
+                Estado = "Candidatura"
             };
 
             _context.Inscricoes.Add(inscricao);
             await _context.SaveChangesAsync();
 
-            // 6. Retornar DTO usando o método auxiliar
+            return await MapToDto(inscricao.Id);
+        }
+
+        public async Task<InscricaoDto> AssociarTurmaAsync(int inscricaoId, int turmaId)
+        {
+            var inscricao = await _context.Inscricoes.FindAsync(inscricaoId);
+            if (inscricao == null) throw new Exception("Candidatura não encontrada.");
+
+            var turma = await _context.Turmas.FindAsync(turmaId);
+            if (turma == null) throw new Exception("Turma não encontrada.");
+
+            // Verificar se a turma pertence ao mesmo curso da candidatura
+            if (turma.CursoId != inscricao.CursoId)
+                throw new Exception("Esta turma não pertence ao curso da candidatura.");
+
+            // Atualizar
+            inscricao.TurmaId = turmaId;
+            inscricao.Estado = "Ativo"; // Passa a ser aluno efetivo
+
+            await _context.SaveChangesAsync();
             return await MapToDto(inscricao.Id);
         }
 
@@ -62,10 +73,11 @@ namespace SecManagement_API.Services
             var list = await _context.Inscricoes
                 .Where(i => i.TurmaId == turmaId)
                 .Include(i => i.Turma)
+                .Include(i => i.Curso)
                 .Include(i => i.Formando).ThenInclude(f => f.User)
                 .ToListAsync();
 
-            return list.Select(ToDto);
+            return list.Select(ToDto); // Agora o ToDto existe (ver fundo do ficheiro)
         }
 
         public async Task<IEnumerable<InscricaoDto>> GetInscricoesByAlunoAsync(int formandoId)
@@ -73,6 +85,7 @@ namespace SecManagement_API.Services
             var list = await _context.Inscricoes
                 .Where(i => i.FormandoId == formandoId)
                 .Include(i => i.Turma)
+                .Include(i => i.Curso)
                 .Include(i => i.Formando).ThenInclude(f => f.User)
                 .ToListAsync();
 
@@ -89,12 +102,13 @@ namespace SecManagement_API.Services
             return true;
         }
 
-        // --- MÉTODOS AUXILIARES QUE FALTAVAM ---
+        // --- MÉTODOS AUXILIARES ---
 
         private async Task<InscricaoDto> MapToDto(int id)
         {
             var i = await _context.Inscricoes
                 .Include(x => x.Turma)
+                .Include(x => x.Curso)
                 .Include(x => x.Formando).ThenInclude(f => f.User)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
@@ -107,7 +121,9 @@ namespace SecManagement_API.Services
             {
                 Id = i.Id,
                 TurmaId = i.TurmaId,
-                TurmaNome = i.Turma?.Nome ?? "N/A",
+                TurmaNome = i.Turma?.Nome ?? "A aguardar colocação",
+                CursoId = i.CursoId,
+                CursoNome = i.Curso?.Nome ?? "N/A",
                 FormandoId = i.FormandoId,
                 FormandoNome = i.Formando?.User?.Nome ?? "N/A",
                 DataInscricao = i.DataInscricao,

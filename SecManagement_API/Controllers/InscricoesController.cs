@@ -17,20 +17,30 @@ namespace SecManagement_API.Controllers
             _service = service;
         }
 
-        // POST: api/Inscricoes
-        // Usado pelo Aluno para se candidatar (fica Pendente se for CAND-...)
-        [HttpPost]
-        public async Task<ActionResult<InscricaoDto>> Inscrever(CreateInscricaoDto dto)
+        // POST: api/Inscricoes/candidatar
+        [HttpPost("candidatar")]
+        public async Task<ActionResult<InscricaoDto>> Candidatar(CreateCandidaturaDto dto)
         {
             try
             {
                 var result = await _service.InscreverAlunoAsync(dto);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
+        // PUT: api/Inscricoes/5/colocar-turma
+        // Body: { "turmaId": 10 }
+        [HttpPut("{id}/colocar-turma")]
+        // [Authorize(Roles = "Secretaria, Admin")]
+        public async Task<ActionResult<InscricaoDto>> ColocarEmTurma(int id, [FromBody] ColocarEmTurmaDto dto)
+        {
+            try
             {
-                return BadRequest(new { message = ex.Message });
+                var result = await _service.AssociarTurmaAsync(id, dto.TurmaId);
+                return Ok(result);
             }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
         // GET: api/Inscricoes/turma/5

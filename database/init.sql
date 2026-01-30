@@ -87,11 +87,11 @@ CREATE TABLE "Turmas" (
     "Id" SERIAL PRIMARY KEY,
     "Nome" VARCHAR(100) NOT NULL,
     "CursoId" INT REFERENCES "Cursos"("Id"),
+    "CoordenadorId" INT REFERENCES "Formadores"("Id") ON DELETE SET NULL,
     "DataInicio" TIMESTAMP,
     "DataFim" TIMESTAMP,
     "Local" VARCHAR(100),
     
-    -- Validação manual em vez de Enum
     "Estado" VARCHAR(50) DEFAULT 'Planeada' 
     CHECK ("Estado" IN ('Planeada', 'Decorrer', 'Terminada', 'Cancelada'))
 );
@@ -107,16 +107,18 @@ CREATE TABLE "Turma_Modulos" (
 
 CREATE TABLE "Inscricoes" (
     "Id" SERIAL PRIMARY KEY,
+    
     "TurmaId" INT REFERENCES "Turmas"("Id"),
-    "FormandoId" INT REFERENCES "Formandos"("Id"),
-    "CursoId" INT REFERENCES "Cursos"("Id"),
+    "CursoId" INT NOT NULL REFERENCES "Cursos"("Id"),
+    "FormandoId" INT NOT NULL REFERENCES "Formandos"("Id"),
+
     "DataInscricao" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    "Estado" VARCHAR(50) DEFAULT 'Pendente'
-    CHECK ("Estado" IN ('Pendente', 'Ativo', 'Desistiu', 'Concluido')),
+    "Estado" VARCHAR(50) DEFAULT 'Candidatura'
+    CHECK ("Estado" IN ('Candidatura', 'Pendente', 'Ativo', 'Concluido', 'Desistiu', 'Rejeitado')),
 
-    UNIQUE("TurmaId", "FormandoId"),
-    UNIQUE("Id", "TurmaId")
+    UNIQUE("Id", "TurmaId"), 
+    UNIQUE("CursoId", "FormandoId") 
 );
 
 ALTER TABLE "Turma_Modulos" ADD CONSTRAINT uq_turmamodulo_turma UNIQUE ("Id", "TurmaId");

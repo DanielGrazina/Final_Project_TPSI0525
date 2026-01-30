@@ -4,9 +4,11 @@ namespace SecManagement_API.Services.Interfaces
 {
     public interface IInscricaoService
     {
-        Task<InscricaoDto> InscreverAlunoAsync(CreateInscricaoDto dto);
+        Task<InscricaoDto> InscreverAlunoAsync(CreateCandidaturaDto dto);
+        Task<InscricaoDto> AssociarTurmaAsync(int inscricaoId, int turmaId);
+
+        Task<bool> RemoverInscricaoAsync(int inscricaoId);
         Task<IEnumerable<InscricaoDto>> GetAlunosByTurmaAsync(int turmaId);
         Task<IEnumerable<InscricaoDto>> GetInscricoesByAlunoAsync(int formandoId);
-        Task<bool> RemoverInscricaoAsync(int inscricaoId);
     }
 }

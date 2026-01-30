@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SecManagement_API.Models
 {
@@ -12,7 +13,11 @@ namespace SecManagement_API.Models
         public DateTime DataInicio { get; set; }
         public DateTime DataFim { get; set; }
         public string Local { get; set; } = string.Empty; // Ex: "Edifício A"
-        public string Estado { get; set; } = "Planeada"; 
+        public string Estado { get; set; } = "Planeada";
+
+        public int? CoordenadorId { get; set; }
+        [ForeignKey("CoordenadorId")]
+        public Formador? Coordenador { get; set; }
 
         public int CursoId { get; set; }
         public Curso? Curso { get; set; }
