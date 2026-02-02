@@ -1,4 +1,3 @@
-// src/pages/admin/Turmas.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
@@ -71,23 +70,15 @@ function extractError(err, fallback) {
   }
 }
 
-function getUserRole(u) {
-  return String(u?.role ?? u?.Role ?? u?.perfil ?? u?.Perfil ?? "").trim();
+// FormadorDto helpers
+function getFormadorId(f) {
+  return Number(f?.id ?? f?.Id);
 }
-function getUserDisplay(u) {
-  return (
-    u?.nome ||
-    u?.Nome ||
-    u?.name ||
-    u?.Name ||
-    u?.email ||
-    u?.Email ||
-    (u?.userName ?? u?.UserName) ||
-    `User #${u?.id ?? u?.Id ?? "?"}`
-  );
-}
-function getUserId(u) {
-  return Number(u?.id ?? u?.Id);
+function getFormadorDisplay(f) {
+  const nome = (f?.nome ?? f?.Nome ?? "").trim();
+  const email = (f?.email ?? f?.Email ?? "").trim();
+  if (nome && email) return `${nome} — ${email}`;
+  return nome || email || `Formador #${getFormadorId(f) || "?"}`;
 }
 
 export default function AdminTurmas() {
@@ -95,6 +86,7 @@ export default function AdminTurmas() {
 
   const [turmas, setTurmas] = useState([]);
   const [cursos, setCursos] = useState([]);
+  const [formadores, setFormadores] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -107,6 +99,7 @@ export default function AdminTurmas() {
   const [form, setForm] = useState({
     nome: "",
     cursoId: "",
+    coordenadorId: "",
     dataInicio: "",
     dataFim: "",
     local: "",
@@ -117,7 +110,6 @@ export default function AdminTurmas() {
   const [selectedTurma, setSelectedTurma] = useState(null);
 
   const [modulosDisponiveis, setModulosDisponiveis] = useState([]);
-  const [formadores, setFormadores] = useState([]);
   const [associados, setAssociados] = useState([]);
 
   const [modLoading, setModLoading] = useState(false);
@@ -135,10 +127,24 @@ export default function AdminTurmas() {
     setError("");
 
     try {
-      const [tRes, cRes] = await Promise.all([api.get("/Turmas"), api.get("/Cursos")]);
+      // ⚠️ Se o /Formadores ainda der 404: rebuild da API no Docker
+      const [tRes, cRes, fRes] = await Promise.all([
+        api.get("/Turmas"),
+        api.get("/Cursos"),
+        api.get("/Formadores"),
+      ]);
+
       setTurmas(Array.isArray(tRes.data) ? tRes.data : []);
       setCursos(Array.isArray(cRes.data) ? cRes.data : []);
+
+      const flist = Array.isArray(fRes.data) ? fRes.data : [];
+      flist.sort((a, b) => getFormadorDisplay(a).localeCompare(getFormadorDisplay(b)));
+      setFormadores(flist);
     } catch (err) {
+      console.error("[Turmas] loadAll FAIL:", {
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
       setError(extractError(err, "Erro ao carregar dados."));
     } finally {
       setLoading(false);
@@ -154,11 +160,13 @@ export default function AdminTurmas() {
 
     return turmas.filter((t) => {
       const cursoNome = (t.cursoNome ?? "").toLowerCase();
+      const coordNome = (t.coordenadorNome ?? "").toLowerCase();
 
       const matchesSearch =
         !s ||
         (t.nome || "").toLowerCase().includes(s) ||
         cursoNome.includes(s) ||
+        coordNome.includes(s) ||
         (t.local || "").toLowerCase().includes(s) ||
         String(t.id ?? "").includes(s);
 
@@ -172,6 +180,7 @@ export default function AdminTurmas() {
     setForm({
       nome: "",
       cursoId: "",
+      coordenadorId: "",
       dataInicio: "",
       dataFim: "",
       local: "",
@@ -200,17 +209,22 @@ export default function AdminTurmas() {
     const local = (form.local ?? "").trim();
     const estado = (form.estado ?? "").trim();
 
+    const coordRaw = String(form.coordenadorId ?? "").trim();
+    const coordenadorIdNum = coordRaw ? Number(coordRaw) : null;
+
     if (!nome) return alert("O nome é obrigatório.");
     if (!Number.isFinite(cursoIdNum) || cursoIdNum <= 0) return alert("Seleciona um curso.");
     if (!form.dataInicio) return alert("Data de início é obrigatória.");
     if (!form.dataFim) return alert("Data de fim é obrigatória.");
     if (!ESTADOS.includes(estado)) return alert("Estado inválido.");
+    if (coordRaw && (!Number.isFinite(coordenadorIdNum) || coordenadorIdNum <= 0)) {
+      return alert("Coordenador inválido.");
+    }
 
     const dataInicioIso = toIsoUtcAtMidnight(form.dataInicio);
     const dataFimIso = toIsoUtcAtMidnight(form.dataFim);
 
     if (!dataInicioIso || !dataFimIso) return alert("Datas inválidas.");
-
     if (new Date(dataFimIso) < new Date(dataInicioIso)) {
       return alert("A data de fim não pode ser anterior à data de início.");
     }
@@ -218,6 +232,7 @@ export default function AdminTurmas() {
     const payload = {
       Nome: nome,
       CursoId: cursoIdNum,
+      CoordenadorId: coordenadorIdNum, // ✅ Formadores.Id
       DataInicio: dataInicioIso,
       DataFim: dataFimIso,
       Local: local,
@@ -261,22 +276,15 @@ export default function AdminTurmas() {
     setModLoading(true);
     setAssociados([]);
     setModulosDisponiveis([]);
-    setFormadores([]);
     setAssocForm({ moduloId: "", formadorId: "", sequencia: 1 });
 
     try {
-      const [mRes, uRes, aRes] = await Promise.all([
+      const [mRes, aRes] = await Promise.all([
         api.get("/Modulos"),
-        api.get("/Users"),
         api.get(`/Turmas/${turma.id}/modulos`),
       ]);
 
       setModulosDisponiveis(Array.isArray(mRes.data) ? mRes.data : []);
-
-      const users = Array.isArray(uRes.data) ? uRes.data : [];
-      const onlyFormadores = users.filter((u) => getUserRole(u).toLowerCase() === "formador");
-      setFormadores(onlyFormadores);
-
       setAssociados(Array.isArray(aRes.data) ? aRes.data : []);
     } catch (err) {
       setModError(extractError(err, "Erro ao carregar dados do modal."));
@@ -305,7 +313,7 @@ export default function AdminTurmas() {
 
     const turmaId = Number(selectedTurma.id);
     const moduloId = Number(assocForm.moduloId);
-    const formadorId = Number(assocForm.formadorId);
+    const formadorId = Number(assocForm.formadorId); // ✅ Formadores.Id
     const sequencia = Number(assocForm.sequencia);
 
     if (!Number.isFinite(moduloId) || moduloId <= 0) return alert("Seleciona um módulo.");
@@ -324,11 +332,12 @@ export default function AdminTurmas() {
 
     setModSaving(true);
     try {
-      await api.post("/Turmas/modulos", payload);
+      // ✅ rota correta (singular)
+      await api.post("/Turmas/modulo", payload);
       await refreshAssociados(turmaId);
       setAssocForm((p) => ({ ...p, moduloId: "" }));
     } catch (err) {
-      console.log("POST /Turmas/modulos FAIL", {
+      console.log("POST /Turmas/modulo FAIL", {
         status: err.response?.status,
         data: err.response?.data,
         payloadSent: payload,
@@ -344,7 +353,8 @@ export default function AdminTurmas() {
 
     setModError("");
     try {
-      await api.delete(`/Turmas/modulos/${turmaModuloId}`);
+      // ✅ rota correta (singular)
+      await api.delete(`/Turmas/modulo/${turmaModuloId}`);
       if (selectedTurma) await refreshAssociados(selectedTurma.id);
     } catch (err) {
       setModError(extractError(err, "Erro ao remover associação."));
@@ -416,7 +426,7 @@ export default function AdminTurmas() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="🔍 Pesquisar por nome, curso, local ou ID..."
+                placeholder="🔍 Pesquisar por nome, curso, coordenador, local ou ID..."
                 className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5
                            bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
                            focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
@@ -435,9 +445,7 @@ export default function AdminTurmas() {
                 >
                   <option value="Todos">Todos</option>
                   {ESTADOS.map((x) => (
-                    <option key={x} value={x}>
-                      {x}
-                    </option>
+                    <option key={x} value={x}>{x}</option>
                   ))}
                 </select>
               </div>
@@ -445,7 +453,7 @@ export default function AdminTurmas() {
               <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 
                               rounded-lg border border-blue-200 dark:border-blue-800">
                 <span className="text-sm font-semibold text-blue-900 dark:text-blue-300">
-                  {filtered.length} {filtered.length === 1 ? 'turma' : 'turmas'}
+                  {filtered.length} {filtered.length === 1 ? "turma" : "turmas"}
                 </span>
               </div>
             </div>
@@ -465,72 +473,45 @@ export default function AdminTurmas() {
             <table className="min-w-full">
               <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    ID
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Nome
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Curso
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Início
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Fim
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Local
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Estado
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Ações
-                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">ID</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Nome</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Curso</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Coordenador</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Início</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Fim</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Local</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Estado</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Ações</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                 {loading ? (
                   <tr>
-                    <td colSpan="8" className="py-16 px-6 text-center">
+                    <td colSpan="9" className="py-16 px-6 text-center">
                       <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                       <p className="mt-3 text-gray-500 dark:text-gray-400">A carregar turmas...</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
+                    <td colSpan="9" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
                       <div className="text-4xl mb-2">📚</div>
                       Nenhuma turma encontrada
                     </td>
                   </tr>
                 ) : (
                   filtered.map((t) => (
-                    <tr
-                      key={t.id}
-                      className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150"
-                    >
-                      <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">
-                        #{t.id}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">
-                        {t.nome}
-                      </td>
+                    <tr key={t.id} className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150">
+                      <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">#{t.id}</td>
+                      <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">{t.nome}</td>
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{t.cursoNome || `#${t.cursoId}`}</td>
                       <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
-                        {t.cursoNome || `#${t.cursoId}`}
+                        {t.coordenadorNome || (t.coordenadorId ? `#${t.coordenadorId}` : "Sem Coordenador")}
                       </td>
-                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
-                        {toDateInputValue(t.dataInicio) || "—"}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
-                        {toDateInputValue(t.dataFim) || "—"}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
-                        {t.local || "—"}
-                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{toDateInputValue(t.dataInicio) || "—"}</td>
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{toDateInputValue(t.dataFim) || "—"}</td>
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{t.local || "—"}</td>
                       <td className="py-4 px-6">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${estadoColors[t.estado] || estadoColors.Planeada}`}>
                           {t.estado || "Planeada"}
@@ -571,9 +552,7 @@ export default function AdminTurmas() {
         <Modal title="✨ Nova Turma" onClose={() => closeForm(false)} disableClose={saving}>
           <form onSubmit={saveTurma} className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="md:col-span-2">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
-                Nome da Turma
-              </label>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Nome da Turma</label>
               <input
                 name="nome"
                 value={form.nome}
@@ -587,9 +566,7 @@ export default function AdminTurmas() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
-                Curso
-              </label>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Curso</label>
               <select
                 name="cursoId"
                 value={form.cursoId}
@@ -601,17 +578,35 @@ export default function AdminTurmas() {
               >
                 <option value="">Seleciona um curso...</option>
                 {cursos.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
+                  <option key={c.id} value={c.id}>{c.nome}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
+                Coordenador (Formador)
+              </label>
+              <select
+                name="coordenadorId"
+                value={form.coordenadorId}
+                onChange={onChange}
+                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
+                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                           focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                disabled={saving}
+              >
+                <option value="">Sem Coordenador</option>
+                {formadores.map((f) => (
+                  <option key={getFormadorId(f)} value={getFormadorId(f)}>
+                    {getFormadorDisplay(f)}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
-                Data de Início
-              </label>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Data de Início</label>
               <input
                 type="date"
                 name="dataInicio"
@@ -625,9 +620,7 @@ export default function AdminTurmas() {
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
-                Data de Fim
-              </label>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Data de Fim</label>
               <input
                 type="date"
                 name="dataFim"
@@ -641,9 +634,7 @@ export default function AdminTurmas() {
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
-                Local
-              </label>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Local</label>
               <input
                 name="local"
                 value={form.local}
@@ -657,9 +648,7 @@ export default function AdminTurmas() {
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
-                Estado
-              </label>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Estado</label>
               <select
                 name="estado"
                 value={form.estado}
@@ -670,9 +659,7 @@ export default function AdminTurmas() {
                 disabled={saving}
               >
                 {ESTADOS.map((x) => (
-                  <option key={x} value={x}>
-                    {x}
-                  </option>
+                  <option key={x} value={x}>{x}</option>
                 ))}
               </select>
             </div>
@@ -711,11 +698,7 @@ export default function AdminTurmas() {
 
       {/* Modal Turma -> Módulos */}
       {showModulos && selectedTurma && (
-        <Modal
-          title={`📚 Módulos — ${selectedTurma.nome}`}
-          onClose={() => closeModulosModal(false)}
-          disableClose={modSaving}
-        >
+        <Modal title={`📚 Módulos — ${selectedTurma.nome}`} onClose={() => closeModulosModal(false)} disableClose={modSaving}>
           {modError && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 
                             px-4 py-3 rounded-lg mb-5 text-sm">
@@ -730,11 +713,12 @@ export default function AdminTurmas() {
             </div>
           ) : (
             <>
-              <form onSubmit={associarModulo} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-blue-200 dark:border-gray-700">
+              <form
+                onSubmit={associarModulo}
+                className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-blue-200 dark:border-gray-700"
+              >
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
-                    Módulo
-                  </label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Módulo</label>
                   <select
                     value={assocForm.moduloId}
                     onChange={(e) => setAssocForm((p) => ({ ...p, moduloId: e.target.value }))}
@@ -756,9 +740,7 @@ export default function AdminTurmas() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
-                    Formador
-                  </label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Formador</label>
                   <select
                     value={assocForm.formadorId}
                     onChange={(e) => setAssocForm((p) => ({ ...p, formadorId: e.target.value }))}
@@ -768,18 +750,16 @@ export default function AdminTurmas() {
                     disabled={modSaving}
                   >
                     <option value="">Seleciona...</option>
-                    {formadores.map((u) => (
-                      <option key={getUserId(u)} value={getUserId(u)}>
-                        {getUserDisplay(u)}
+                    {formadores.map((f) => (
+                      <option key={getFormadorId(f)} value={getFormadorId(f)}>
+                        {getFormadorDisplay(f)}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div className="flex flex-col">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
-                    Sequência
-                  </label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Sequência</label>
                   <input
                     type="number"
                     min="1"
@@ -820,39 +800,19 @@ export default function AdminTurmas() {
                     <table className="min-w-full">
                       <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                         <tr>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">
-                            Seq
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">
-                            Módulo
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">
-                            Formador
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">
-                            Ações
-                          </th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">Seq</th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">Módulo</th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">Formador</th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">Ações</th>
                         </tr>
                       </thead>
 
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                         {associadosOrdenados.map((tm) => (
-                          <tr
-                            key={tm.id}
-                            className="hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
-                          >
-                            <td className="py-3 px-5 text-sm text-gray-600 dark:text-gray-400 font-mono">
-                              #{tm.sequencia ?? "—"}
-                            </td>
-
-                            <td className="py-3 px-5 text-sm text-gray-900 dark:text-gray-100 font-semibold">
-                              {tm.moduloNome || `#${tm.moduloId}`}
-                            </td>
-
-                            <td className="py-3 px-5 text-sm text-gray-700 dark:text-gray-300">
-                              {tm.formadorNome || `#${tm.formadorId}`}
-                            </td>
-
+                          <tr key={tm.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
+                            <td className="py-3 px-5 text-sm text-gray-600 dark:text-gray-400 font-mono">#{tm.sequencia ?? "—"}</td>
+                            <td className="py-3 px-5 text-sm text-gray-900 dark:text-gray-100 font-semibold">{tm.moduloNome || `#${tm.moduloId}`}</td>
+                            <td className="py-3 px-5 text-sm text-gray-700 dark:text-gray-300">{tm.formadorNome || `#${tm.formadorId}`}</td>
                             <td className="py-3 px-5">
                               <button
                                 onClick={() => removerAssociacao(tm.id)}

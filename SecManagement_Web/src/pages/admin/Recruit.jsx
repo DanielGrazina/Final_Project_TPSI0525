@@ -33,11 +33,9 @@ function toLocalDateTime(value) {
 }
 
 function getFormandoIdFromStorageOrToken() {
-  // 1) localStorage (se guardares no login)
   const ls = localStorage.getItem("formandoId");
   if (ls && Number.isFinite(Number(ls))) return Number(ls);
 
-  // 2) token (claims possíveis)
   const token = getToken();
   const payload = decodeJwt(token);
   if (!payload) return null;
@@ -54,16 +52,21 @@ function getFormandoIdFromStorageOrToken() {
 
 const estadoColors = {
   Ativo: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+  Candidatura: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   Pendente: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
   Desistiu: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  Concluido: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  Concluído: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+  Concluido: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
+  Concluído: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
 };
 
 function EstadoBadge({ estado }) {
   const e = estado || "N/A";
   const cls = estadoColors[e] || "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300";
   return <span className={`px-3 py-1 rounded-full text-xs font-semibold ${cls}`}>{e}</span>;
+}
+
+function isNullishTurma(i) {
+  return i?.turmaId == null;
 }
 
 export default function Recruit() {
@@ -79,19 +82,19 @@ export default function Recruit() {
   const isStaff = roleLower === "admin" || roleLower === "formador";
   const roleOk = !!roleLower;
 
-  // Tabs (para Formando/User)
-  const [tab, setTab] = useState("turmas"); // "turmas" | "minhas"
+  // Tabs
+  const [tab, setTab] = useState(isStaff ? "staff" : "cursos"); // "cursos" | "minhas" | "staff"
 
-  // Dados de turmas (todos usam)
+  // Dados gerais
   const [turmas, setTurmas] = useState([]);
-  const [loadingTurmas, setLoadingTurmas] = useState(true);
+  const [cursos, setCursos] = useState([]);
+  const [loadingBase, setLoadingBase] = useState(true);
 
-  // Erro geral
   const [error, setError] = useState("");
 
-  // Turmas -> inscrever (Formando/User)
-  const [searchTurmas, setSearchTurmas] = useState("");
-  const [submittingTurmaId, setSubmittingTurmaId] = useState(null);
+  // Cursos (Formando/User)
+  const [searchCursos, setSearchCursos] = useState("");
+  const [submittingCursoId, setSubmittingCursoId] = useState(null);
 
   // Minhas inscrições (Formando/User)
   const [minhas, setMinhas] = useState([]);
@@ -104,21 +107,35 @@ export default function Recruit() {
   const [loadingInscritos, setLoadingInscritos] = useState(false);
   const [searchInscritos, setSearchInscritos] = useState("");
 
-  async function loadTurmas() {
-    setLoadingTurmas(true);
-    setError("");
-    try {
-      const res = await api.get("/Turmas");
-      const list = Array.isArray(res.data) ? res.data : [];
-      setTurmas(list);
+  // Staff: candidaturas sem turma (usamos tudo o que vier de "aluno" se tiveres um endpoint global não enviado)
+  // Como não enviaste GET /Inscricoes (listar todas), vamos reaproveitar:
+  // -> mostra "candidaturas sem turma" apenas a partir da turma selecionada? (não serve)
+  // Então: nesta versão, o staff gere apenas por TURMA e a colocação em turma é feita a partir de uma inscrição que o staff já tem na lista de "candidatos".
+  // Para ter lista global de candidaturas, precisas de um endpoint tipo GET /Inscricoes (Admin).
+  // Mesmo assim, eu já implemento UI para "colocar em turma" quando tens uma inscrição em mãos (ex: via pesquisa).
+  const [colocarInscricaoId, setColocarInscricaoId] = useState("");
+  const [colocarTurmaId, setColocarTurmaId] = useState("");
+  const [placing, setPlacing] = useState(false);
 
-      if (isStaff && !selectedTurmaId && list.length) {
-        setSelectedTurmaId(String(list[0]?.id ?? ""));
+  async function loadBase() {
+    setLoadingBase(true);
+    setError("");
+
+    try {
+      const [tRes, cRes] = await Promise.all([api.get("/Turmas"), api.get("/Cursos")]);
+      const tList = Array.isArray(tRes.data) ? tRes.data : [];
+      const cList = Array.isArray(cRes.data) ? cRes.data : [];
+
+      setTurmas(tList);
+      setCursos(cList);
+
+      if (isStaff && !selectedTurmaId && tList.length) {
+        setSelectedTurmaId(String(tList[0]?.id ?? ""));
       }
     } catch (err) {
-      setError(extractError(err, "Erro ao carregar turmas."));
+      setError(extractError(err, "Erro ao carregar dados base."));
     } finally {
-      setLoadingTurmas(false);
+      setLoadingBase(false);
     }
   }
 
@@ -127,13 +144,14 @@ export default function Recruit() {
 
     if (!formandoId) {
       setError(
-        "Não encontrei o FormandoId (candidato). Para um User se candidatar, o backend tem de criar um registo em Formandos (CAND-...) e expor o FormandoId no token ou guardá-lo no localStorage."
+        "Não encontrei o FormandoId. O backend tem de expor o FormandoId no token (claim) ou guardá-lo no localStorage no login."
       );
       return;
     }
 
     setLoadingMinhas(true);
     setError("");
+
     try {
       const res = await api.get(`/Inscricoes/aluno/${formandoId}`);
       setMinhas(Array.isArray(res.data) ? res.data : []);
@@ -149,6 +167,7 @@ export default function Recruit() {
 
     setLoadingInscritos(true);
     setError("");
+
     try {
       const res = await api.get(`/Inscricoes/turma/${turmaId}`);
       setInscritos(Array.isArray(res.data) ? res.data : []);
@@ -164,7 +183,7 @@ export default function Recruit() {
       navigate("/", { replace: true });
       return;
     }
-    loadTurmas();
+    loadBase();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -184,18 +203,18 @@ export default function Recruit() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTurmaId, roleLower]);
 
-  const turmasFiltradas = useMemo(() => {
-    const s = searchTurmas.trim().toLowerCase();
-    if (!s) return turmas;
+  const cursosFiltrados = useMemo(() => {
+    const s = searchCursos.trim().toLowerCase();
+    if (!s) return cursos;
 
-    return turmas.filter((t) => {
-      const nome = String(t?.nome ?? "").toLowerCase();
-      const curso = String(t?.cursoNome ?? "").toLowerCase();
-      const local = String(t?.local ?? "").toLowerCase();
-      const id = String(t?.id ?? "");
-      return nome.includes(s) || curso.includes(s) || local.includes(s) || id.includes(s);
+    return cursos.filter((c) => {
+      const nome = String(c?.nome ?? "").toLowerCase();
+      const nivel = String(c?.nivelCurso ?? "").toLowerCase();
+      const area = String(c?.areaNome ?? "").toLowerCase();
+      const id = String(c?.id ?? "");
+      return nome.includes(s) || nivel.includes(s) || area.includes(s) || id.includes(s);
     });
-  }, [turmas, searchTurmas]);
+  }, [cursos, searchCursos]);
 
   const inscritosFiltrados = useMemo(() => {
     const s = searchInscritos.trim().toLowerCase();
@@ -208,36 +227,36 @@ export default function Recruit() {
     });
   }, [inscritos, searchInscritos]);
 
-  async function inscreverNaTurma(turmaId) {
+  async function candidatarAoCurso(cursoId) {
     const formandoId = getFormandoIdFromStorageOrToken();
 
     if (!formandoId) {
       setError(
-        "Não encontrei o FormandoId (candidato). Para um User se candidatar, o backend tem de criar um registo em Formandos (CAND-...) e expor o FormandoId no token ou guardá-lo no localStorage."
+        "Não encontrei o FormandoId. O backend tem de expor o FormandoId no token (claim) ou guardá-lo no localStorage no login."
       );
       return;
     }
 
-    setSubmittingTurmaId(turmaId);
+    setSubmittingCursoId(cursoId);
     setError("");
 
     try {
-      await api.post("/Inscricoes", {
+      await api.post("/Inscricoes/candidatar", {
+        CursoId: Number(cursoId),
         FormandoId: Number(formandoId),
-        TurmaId: Number(turmaId),
       });
 
       await loadMinhasInscricoes();
       setTab("minhas");
     } catch (err) {
-      setError(extractError(err, "Erro ao criar inscrição."));
+      setError(extractError(err, "Erro ao submeter candidatura."));
     } finally {
-      setSubmittingTurmaId(null);
+      setSubmittingCursoId(null);
     }
   }
 
   async function cancelarInscricao(inscricaoId) {
-    if (!window.confirm("Tens a certeza que queres cancelar esta inscrição?")) return;
+    if (!window.confirm("Tens a certeza que queres cancelar esta candidatura/inscrição?")) return;
 
     setBusyInscricaoId(inscricaoId);
     setError("");
@@ -252,7 +271,36 @@ export default function Recruit() {
     }
   }
 
-  // Se não conseguimos ler role do token, não inventamos
+  async function colocarEmTurma() {
+    const inscricaoId = Number(colocarInscricaoId);
+    const turmaId = Number(colocarTurmaId);
+
+    if (!Number.isFinite(inscricaoId) || inscricaoId <= 0) return alert("Inscrição inválida.");
+    if (!Number.isFinite(turmaId) || turmaId <= 0) return alert("Turma inválida.");
+
+    setPlacing(true);
+    setError("");
+
+    try {
+      await api.put(`/Inscricoes/${inscricaoId}/colocar-turma`, { TurmaId: turmaId });
+
+      // refresh lista da turma selecionada se coincidir
+      if (String(turmaId) === String(selectedTurmaId)) {
+        await loadInscritosPorTurma(selectedTurmaId);
+      }
+      // refresh base e limpar form
+      await loadBase();
+
+      setColocarInscricaoId("");
+      setColocarTurmaId("");
+      alert("Aluno colocado na turma com sucesso.");
+    } catch (err) {
+      setError(extractError(err, "Erro ao colocar aluno na turma."));
+    } finally {
+      setPlacing(false);
+    }
+  }
+
   const showNoRole = !roleOk;
 
   return (
@@ -266,7 +314,7 @@ export default function Recruit() {
                 Inscrições
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {isStaff ? "Consulta inscritos por turma" : "Candidata-te a turmas e gere as tuas inscrições"}
+                {isStaff ? "Consulta inscritos por turma e coloca candidaturas em turmas" : "Candidata-te a cursos e acompanha o estado"}
               </p>
             </div>
 
@@ -279,17 +327,31 @@ export default function Recruit() {
                 ← Voltar
               </button>
 
-              {(isFormando && !isStaff) && (
+              {/* Tabs */}
+              {isStaff ? (
                 <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
                   <button
-                    onClick={() => setTab("turmas")}
+                    onClick={() => setTab("staff")}
                     className={`px-4 py-2.5 text-sm font-medium transition-all ${
-                      tab === "turmas"
+                      tab === "staff"
                         ? "bg-blue-600 text-white"
                         : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                     }`}
                   >
-                    Turmas
+                    Gestão
+                  </button>
+                </div>
+              ) : (
+                <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
+                  <button
+                    onClick={() => setTab("cursos")}
+                    className={`px-4 py-2.5 text-sm font-medium transition-all ${
+                      tab === "cursos"
+                        ? "bg-blue-600 text-white"
+                        : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    Cursos
                   </button>
                   <button
                     onClick={() => setTab("minhas")}
@@ -323,39 +385,41 @@ export default function Recruit() {
           </div>
         )}
 
-        {/* STAFF: inscritos por turma */}
-        {isStaff && (
+        {/* STAFF */}
+        {isStaff && tab === "staff" && (
           <>
-            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
-              <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Turma:</span>
-                  <select
-                    value={selectedTurmaId}
-                    onChange={(e) => setSelectedTurmaId(e.target.value)}
-                    className="border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5
-                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                               focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    disabled={loadingTurmas}
-                  >
-                    {turmas.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.nome} {t.cursoNome ? `— ${t.cursoNome}` : ""}
-                      </option>
-                    ))}
-                  </select>
+            {/* Top controls */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              {/* Inscritos por turma */}
+              <div className="lg:col-span-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Turma:</span>
+                    <select
+                      value={selectedTurmaId}
+                      onChange={(e) => setSelectedTurmaId(e.target.value)}
+                      className="border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5
+                                 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                                 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={loadingBase}
+                    >
+                      {turmas.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.nome} {t.cursoNome ? `— ${t.cursoNome}` : ""}
+                        </option>
+                      ))}
+                    </select>
 
-                  <button
-                    onClick={() => loadInscritosPorTurma(selectedTurmaId)}
-                    className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 
-                               hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
-                    disabled={!selectedTurmaId || loadingInscritos}
-                  >
-                    Recarregar
-                  </button>
-                </div>
+                    <button
+                      onClick={() => loadInscritosPorTurma(selectedTurmaId)}
+                      className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 
+                                 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
+                      disabled={!selectedTurmaId || loadingInscritos}
+                    >
+                      Recarregar
+                    </button>
+                  </div>
 
-                <div className="flex items-center gap-4">
                   <input
                     value={searchInscritos}
                     onChange={(e) => setSearchInscritos(e.target.value)}
@@ -364,21 +428,65 @@ export default function Recruit() {
                                bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
                                focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
-                  <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 
-                                  rounded-lg border border-blue-200 dark:border-blue-800">
-                    <span className="text-sm font-semibold text-blue-900 dark:text-blue-300">
-                      {inscritosFiltrados.length} {inscritosFiltrados.length === 1 ? "inscrito" : "inscritos"}
-                    </span>
-                  </div>
+                </div>
+              </div>
+
+              {/* Colocar em turma (manual) */}
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5">
+                <div className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Colocar em turma</div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Usa o ID da inscrição (candidatura) e escolhe a turma. O backend valida se o curso bate certo.
+                </p>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <input
+                    value={colocarInscricaoId}
+                    onChange={(e) => setColocarInscricaoId(e.target.value)}
+                    placeholder="InscriçãoId (ex: 12)"
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5
+                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                               focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    disabled={placing}
+                  />
+
+                  <select
+                    value={colocarTurmaId}
+                    onChange={(e) => setColocarTurmaId(e.target.value)}
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5
+                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                               focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    disabled={placing || loadingBase}
+                  >
+                    <option value="">Seleciona a turma...</option>
+                    {turmas.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nome} {t.cursoNome ? `— ${t.cursoNome}` : ""}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={colocarEmTurma}
+                    className="px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white 
+                               hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-200 font-medium
+                               shadow-lg shadow-blue-500/30"
+                    disabled={placing}
+                  >
+                    {placing ? "A colocar..." : "Colocar"}
+                  </button>
                 </div>
               </div>
             </div>
 
+            {/* Table inscritos */}
             <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden">
               <div className="overflow-auto">
                 <table className="min-w-full">
                   <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
                     <tr>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                        Inscrição
+                      </th>
                       <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
                         Formando
                       </th>
@@ -392,25 +500,23 @@ export default function Recruit() {
                   </thead>
 
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                    {loadingTurmas || loadingInscritos ? (
+                    {loadingBase || loadingInscritos ? (
                       <tr>
-                        <td colSpan="3" className="py-16 px-6 text-center">
+                        <td colSpan="4" className="py-16 px-6 text-center">
                           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                           <p className="mt-3 text-gray-500 dark:text-gray-400">A carregar...</p>
                         </td>
                       </tr>
                     ) : inscritosFiltrados.length === 0 ? (
                       <tr>
-                        <td colSpan="3" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
+                        <td colSpan="4" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
                           Nenhum inscrito encontrado.
                         </td>
                       </tr>
                     ) : (
                       inscritosFiltrados.map((i) => (
-                        <tr
-                          key={i.id}
-                          className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150"
-                        >
+                        <tr key={i.id} className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150">
+                          <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">#{i.id}</td>
                           <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">
                             {i.formandoNome || `#${i.formandoId}`}
                           </td>
@@ -430,27 +536,28 @@ export default function Recruit() {
           </>
         )}
 
-        {/* USER/FORMANDO: candidatar + minhas */}
+        {/* FORMING/USER */}
         {!isStaff && isFormando && (
           <>
-            {tab === "turmas" && (
+            {/* TAB: CURSOS */}
+            {tab === "cursos" && (
               <>
                 <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
                     <input
-                      value={searchTurmas}
-                      onChange={(e) => setSearchTurmas(e.target.value)}
-                      placeholder="Pesquisar turmas por nome, curso, local ou ID..."
+                      value={searchCursos}
+                      onChange={(e) => setSearchCursos(e.target.value)}
+                      placeholder="Pesquisar cursos por nome, nível, área ou ID..."
                       className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5
                                  bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
                                  focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
 
                     <button
-                      onClick={loadTurmas}
+                      onClick={loadBase}
                       className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 
                                  hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
-                      disabled={loadingTurmas}
+                      disabled={loadingBase}
                     >
                       Recarregar
                     </button>
@@ -463,13 +570,10 @@ export default function Recruit() {
                       <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
                         <tr>
                           <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                            Turma
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
                             Curso
                           </th>
                           <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                            Local
+                            Área / Nível
                           </th>
                           <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
                             Ação
@@ -478,43 +582,37 @@ export default function Recruit() {
                       </thead>
 
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                        {loadingTurmas ? (
+                        {loadingBase ? (
                           <tr>
-                            <td colSpan="4" className="py-16 px-6 text-center">
+                            <td colSpan="3" className="py-16 px-6 text-center">
                               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                              <p className="mt-3 text-gray-500 dark:text-gray-400">A carregar turmas...</p>
+                              <p className="mt-3 text-gray-500 dark:text-gray-400">A carregar cursos...</p>
                             </td>
                           </tr>
-                        ) : turmasFiltradas.length === 0 ? (
+                        ) : cursosFiltrados.length === 0 ? (
                           <tr>
-                            <td colSpan="4" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
-                              Nenhuma turma encontrada.
+                            <td colSpan="3" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
+                              Nenhum curso encontrado.
                             </td>
                           </tr>
                         ) : (
-                          turmasFiltradas.map((t) => (
-                            <tr
-                              key={t.id}
-                              className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150"
-                            >
+                          cursosFiltrados.map((c) => (
+                            <tr key={c.id} className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150">
                               <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">
-                                {t.nome} <span className="text-gray-400 font-normal">#{t.id}</span>
+                                {c.nome} <span className="text-gray-400 font-normal">#{c.id}</span>
                               </td>
                               <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
-                                {t.cursoNome || `#${t.cursoId}`}
-                              </td>
-                              <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
-                                {t.local || "—"}
+                                {c.areaNome ? c.areaNome : "—"} {c.nivelCurso ? `— ${c.nivelCurso}` : ""}
                               </td>
                               <td className="py-4 px-6">
                                 <button
-                                  onClick={() => inscreverNaTurma(t.id)}
-                                  disabled={submittingTurmaId === t.id}
+                                  onClick={() => candidatarAoCurso(c.id)}
+                                  disabled={submittingCursoId === c.id}
                                   className="px-4 py-2 rounded-lg text-sm font-medium text-blue-700 dark:text-blue-400 
                                              bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 
                                              disabled:opacity-50 transition-all duration-200"
                                 >
-                                  {submittingTurmaId === t.id ? "A submeter..." : "Candidatar-me"}
+                                  {submittingCursoId === c.id ? "A submeter..." : "Candidatar-me"}
                                 </button>
                               </td>
                             </tr>
@@ -527,12 +625,13 @@ export default function Recruit() {
               </>
             )}
 
+            {/* TAB: MINHAS */}
             {tab === "minhas" && (
               <>
                 <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
                     <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Lista das tuas candidaturas/inscrições.
+                      As tuas candidaturas/inscrições (curso + eventual turma).
                     </div>
 
                     <button
@@ -552,6 +651,9 @@ export default function Recruit() {
                       <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
                         <tr>
                           <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                            Curso
+                          </th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
                             Turma
                           </th>
                           <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
@@ -569,25 +671,25 @@ export default function Recruit() {
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                         {loadingMinhas ? (
                           <tr>
-                            <td colSpan="4" className="py-16 px-6 text-center">
+                            <td colSpan="5" className="py-16 px-6 text-center">
                               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                               <p className="mt-3 text-gray-500 dark:text-gray-400">A carregar...</p>
                             </td>
                           </tr>
                         ) : minhas.length === 0 ? (
                           <tr>
-                            <td colSpan="4" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
-                              Ainda não tens inscrições.
+                            <td colSpan="5" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
+                              Ainda não tens candidaturas.
                             </td>
                           </tr>
                         ) : (
                           minhas.map((i) => (
-                            <tr
-                              key={i.id}
-                              className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150"
-                            >
+                            <tr key={i.id} className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150">
                               <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">
-                                {i.turmaNome || `#${i.turmaId}`}
+                                {i.cursoNome || `#${i.cursoId}`}
+                              </td>
+                              <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+                                {i.turmaNome || (i.turmaId ? `#${i.turmaId}` : "A aguardar colocação")}
                               </td>
                               <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
                                 {toLocalDateTime(i.dataInscricao)}
@@ -613,12 +715,18 @@ export default function Recruit() {
                     </table>
                   </div>
                 </div>
+
+                {/* Ajuda visual para "aguardar colocação" */}
+                {minhas.some(isNullishTurma) && (
+                  <div className="mt-5 text-sm text-gray-600 dark:text-gray-400">
+                    Nota: quando a secretaria te colocar numa turma, a tua candidatura passa para <b>Ativo</b> e aparece aqui a turma atribuída.
+                  </div>
+                )}
               </>
             )}
           </>
         )}
 
-        {/* fallback real: role diferente e não prevista */}
         {!isStaff && !isFormando && (
           <div className="bg-white/80 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-800 rounded-xl p-6 text-sm text-gray-700 dark:text-gray-300">
             A tua role atual não tem uma vista configurada para Inscrições.
