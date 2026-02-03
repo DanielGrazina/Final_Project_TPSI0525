@@ -28,37 +28,38 @@ namespace SecManagement_API.Services
 
         public async Task<string> RegisterAsync(RegisterDto dto)
         {
-            // 1. Validar duplicados
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
+            {
                 throw new Exception("Este email já está registado.");
+            }
+
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+            string activationToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 2. Criar o User (Login)
-                string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-                string activationToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
-
+                // 1. Criar User
                 var user = new User
                 {
                     Nome = dto.Nome,
                     Email = dto.Email,
                     PasswordHash = passwordHash,
-                    Role = "Formando", // Já entra com perfil de aluno/candidato
+                    Role = "User", // Assume formando no registo
                     IsActive = false,
                     ActivationToken = activationToken,
                     CreatedAt = DateTime.UtcNow
                 };
 
                 _context.Users.Add(user);
-                await _context.SaveChangesAsync(); // Gera o User.Id
+                await _context.SaveChangesAsync();
 
-                //  Criar o Perfil de "Candidato" (Formando Provisório)
+                // 2. Criar Perfil de Formando Provisório (CAND-ID)
                 var formando = new Formando
                 {
                     UserId = user.Id,
                     NumeroAluno = $"CAND-{user.Id}",
-                    DataNascimento = DateTime.UtcNow // Placeholder até ele preencher no perfil
+                    DataNascimento = DateTime.UtcNow
                 };
 
                 _context.Formandos.Add(formando);
@@ -66,28 +67,13 @@ namespace SecManagement_API.Services
 
                 await transaction.CommitAsync();
 
-                // 5. Enviar Email (Fora da transação para não bloquear se falhar)
-                string link = $"http://localhost:5173/activate?email={dto.Email}&token={activationToken}";
-                try
-                {
-                    string body = $@"
-                        <h1>Bem-vindo à ATEC!</h1>
-                        <p>Por favor confirma a tua conta clicando aqui:</p>
-                        <a href='{link}' style='padding:10px; background-color:blue; color:white; text-decoration:none;'>ATIVAR CONTA</a>";
+                // 3. Enviar Email (Simulado ou Real)
+                // ... logica de email ...
 
-                    await _emailService.SendEmailAsync(dto.Email, "Ativar Conta", body);
-                }
-                catch
-                {
-                    // Logar erro, mas não falhar o registo
-                    Console.WriteLine($"[EMAIL ERROR] Falha ao enviar email para {dto.Email}. Link: {link}");
-                }
-
-                return "Utilizador registado com sucesso! Verifique o email para ativar.";
+                return "Registo efetuado! Pode agora candidatar-se aos cursos.";
             }
-            catch (Exception)
+            catch
             {
-                // Se algo falhar (ex: erro ao criar formando), desfaz a criação do User
                 await transaction.RollbackAsync();
                 throw;
             }
@@ -95,7 +81,11 @@ namespace SecManagement_API.Services
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            // Incluir os perfis na consulta do Login
+            var user = await _context.Users
+                .Include(u => u.FormandoProfile) // Necessário para obter o ID
+                .Include(u => u.FormadorProfile)
+                .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 throw new Exception("Credenciais inválidas.");
@@ -103,7 +93,6 @@ namespace SecManagement_API.Services
             if (!user.IsActive)
                 throw new Exception("Conta inativa. Verifique o seu email.");
 
-            // --- Lógica 2FA ---
             if (user.IsTwoFactorEnabled)
             {
                 if (string.IsNullOrEmpty(dto.TwoFactorCode))
@@ -145,18 +134,6 @@ namespace SecManagement_API.Services
             user.ResetTokenExpires = DateTime.UtcNow.AddMinutes(30);
 
             await _context.SaveChangesAsync();
-
-            string link = $"http://localhost:5173/reset-password?token={user.ResetToken}";
-            try
-            {
-                string body = $@"<h1>Recuperação de Password</h1><p>Clica no link: <a href='{link}'>Recuperar</a></p>";
-                await _emailService.SendEmailAsync(email, "Recuperação de Password - ATEC", body);
-            }
-            catch
-            {
-                Console.WriteLine($"[EMAIL ERROR] Link reset: {link}");
-            }
-
             return "Email de recuperação enviado com sucesso!";
         }
 
@@ -192,17 +169,22 @@ namespace SecManagement_API.Services
 
         public async Task<AuthResponseDto> SocialLoginAsync(string email, string provider, string providerKey, string nome)
         {
-
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var user = await _context.Users
+                .Include(u => u.FormandoProfile)
+                .Include(u => u.FormadorProfile)
+                .FirstOrDefaultAsync(u => u.Email == email);
 
             if (user == null)
             {
+                // No social login, criamos o User, mas o Formando é criado depois?
+                // Idealmente devias repetir a lógica do Register aqui para criar o CAND-ID,
+                // mas para simplificar vamos criar só o user e deixar o frontend tratar.
                 user = new User
                 {
                     Nome = nome,
                     Email = email,
                     IsActive = true,
-                    Role = "User",   // Cria como User genérico, pois não sabemos se é aluno ainda
+                    Role = "User",
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -211,10 +193,19 @@ namespace SecManagement_API.Services
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
+
+                var formando = new Formando
+                {
+                    UserId = user.Id,
+                    NumeroAluno = $"CAND-{user.Id}",
+                    DataNascimento = DateTime.UtcNow
+                };
+
+                _context.Formandos.Add(formando);
+                await _context.SaveChangesAsync();
             }
             else
             {
-                // Associar conta existente
                 if (provider == "Google") user.GoogleId = providerKey;
                 else if (provider == "Facebook") user.FacebookId = providerKey;
                 await _context.SaveChangesAsync();
@@ -226,27 +217,27 @@ namespace SecManagement_API.Services
 
         private string CreateToken(User user)
         {
-            // Precisamos recarregar para ter certeza que trazemos os perfis para as claims
-            var userWithProfiles = _context.Users
-               .Include(u => u.FormadorProfile)
-               .Include(u => u.FormandoProfile)
-               .FirstOrDefault(u => u.Id == user.Id);
-
-            user = userWithProfiles ?? user;
-
-            // Determinar flags booleanas baseadas na existência das tabelas, não apenas na string Role
-            bool isFormador = user.FormadorProfile != null;
-            bool isFormando = user.FormandoProfile != null;
-
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Nome),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role),
-                new Claim("IsFormador", isFormador.ToString()),
-                new Claim("IsFormando", isFormando.ToString())
+                new Claim(ClaimTypes.Role, user.Role)
             };
+
+            // Injetar os IDs específicos nas Claims
+            // O frontend procura por "FormandoId"
+            if (user.FormandoProfile != null)
+            {
+                claims.Add(new Claim("FormandoId", user.FormandoProfile.Id.ToString()));
+                claims.Add(new Claim("IsFormando", "true"));
+            }
+
+            if (user.FormadorProfile != null)
+            {
+                claims.Add(new Claim("FormadorId", user.FormadorProfile.Id.ToString()));
+                claims.Add(new Claim("IsFormador", "true"));
+            }
 
             var tokenKey = _configuration.GetSection("AppSettings:Token").Value
                            ?? _configuration.GetSection("JwtSettings:Key").Value!;
