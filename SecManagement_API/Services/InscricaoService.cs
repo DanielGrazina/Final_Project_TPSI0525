@@ -68,6 +68,95 @@ namespace SecManagement_API.Services
             return await MapToDto(inscricao.Id);
         }
 
+        /// <summary>
+        /// NOVO: Obter todas as candidaturas pendentes (sem turma atribuída)
+        /// </summary>
+        public async Task<IEnumerable<InscricaoDto>> GetCandidaturasPendentesAsync()
+        {
+            var list = await _context.Inscricoes
+                .Where(i => i.TurmaId == null && i.Estado == "Candidatura")
+                .Include(i => i.Curso)
+                .Include(i => i.Formando).ThenInclude(f => f.User)
+                .OrderBy(i => i.DataInscricao)
+                .ToListAsync();
+
+            return list.Select(ToDto);
+        }
+
+        /// <summary>
+        /// NOVO: Obter candidaturas pendentes filtradas por curso
+        /// </summary>
+        public async Task<IEnumerable<InscricaoDto>> GetCandidaturasPendentesPorCursoAsync(int cursoId)
+        {
+            var list = await _context.Inscricoes
+                .Where(i => i.TurmaId == null && i.Estado == "Candidatura" && i.CursoId == cursoId)
+                .Include(i => i.Curso)
+                .Include(i => i.Formando).ThenInclude(f => f.User)
+                .OrderBy(i => i.DataInscricao)
+                .ToListAsync();
+
+            return list.Select(ToDto);
+        }
+
+        /// <summary>
+        /// NOVO: Aprovar múltiplas candidaturas de uma vez (colocar na mesma turma)
+        /// </summary>
+        public async Task<IEnumerable<InscricaoDto>> AprovarCandidaturasEmLoteAsync(AprovarLoteDto dto)
+        {
+            var turma = await _context.Turmas.FindAsync(dto.TurmaId);
+            if (turma == null) throw new Exception("Turma não encontrada.");
+
+            var inscricoes = await _context.Inscricoes
+                .Where(i => dto.InscricaoIds.Contains(i.Id))
+                .ToListAsync();
+
+            if (inscricoes.Count == 0)
+                throw new Exception("Nenhuma inscrição encontrada.");
+
+            // Validar que todas pertencem ao mesmo curso da turma
+            var invalidCurso = inscricoes.Any(i => i.CursoId != turma.CursoId);
+            if (invalidCurso)
+                throw new Exception("Algumas candidaturas não pertencem ao curso desta turma.");
+
+            // Atualizar todas
+            foreach (var inscricao in inscricoes)
+            {
+                inscricao.TurmaId = dto.TurmaId;
+                inscricao.Estado = "Ativo";
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Retornar as inscrições atualizadas
+            var ids = inscricoes.Select(i => i.Id).ToList();
+            var result = await _context.Inscricoes
+                .Where(i => ids.Contains(i.Id))
+                .Include(i => i.Turma)
+                .Include(i => i.Curso)
+                .Include(i => i.Formando).ThenInclude(f => f.User)
+                .ToListAsync();
+
+            return result.Select(ToDto);
+        }
+
+        /// <summary>
+        /// NOVO: Rejeitar uma candidatura (muda estado para "Rejeitado")
+        /// </summary>
+        public async Task<InscricaoDto> RejeitarCandidaturaAsync(int inscricaoId, string? motivo = null)
+        {
+            var inscricao = await _context.Inscricoes.FindAsync(inscricaoId);
+            if (inscricao == null) throw new Exception("Candidatura não encontrada.");
+
+            if (inscricao.Estado != "Candidatura")
+                throw new Exception("Apenas candidaturas pendentes podem ser rejeitadas.");
+
+            inscricao.Estado = "Rejeitado";
+            // Se quiseres guardar o motivo, adiciona um campo na entidade Inscricao
+
+            await _context.SaveChangesAsync();
+            return await MapToDto(inscricao.Id);
+        }
+
         public async Task<IEnumerable<InscricaoDto>> GetAlunosByTurmaAsync(int turmaId)
         {
             var list = await _context.Inscricoes
@@ -77,7 +166,7 @@ namespace SecManagement_API.Services
                 .Include(i => i.Formando).ThenInclude(f => f.User)
                 .ToListAsync();
 
-            return list.Select(ToDto); // Agora o ToDto existe (ver fundo do ficheiro)
+            return list.Select(ToDto);
         }
 
         public async Task<IEnumerable<InscricaoDto>> GetInscricoesByAlunoAsync(int formandoId)

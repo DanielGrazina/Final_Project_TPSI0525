@@ -55,6 +55,7 @@ const estadoColors = {
   Candidatura: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   Pendente: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
   Desistiu: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+  Rejeitado: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
   Concluido: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
   Concluído: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
 };
@@ -76,14 +77,13 @@ export default function Recruit() {
   const roleRaw = useMemo(() => getUserRoleFromToken(token) || "", [token]);
   const roleLower = String(roleRaw).trim().toLowerCase();
 
-  // ✅ User pode candidatar-se -> usa a vista de "Formando"
   const isUser = roleLower === "user";
   const isFormando = roleLower === "formando" || isUser;
   const isStaff = roleLower === "admin" || roleLower === "formador";
   const roleOk = !!roleLower;
 
-  // Tabs
-  const [tab, setTab] = useState(isStaff ? "staff" : "cursos"); // "cursos" | "minhas" | "staff"
+  // Tabs: "cursos" | "minhas" | "staff" | "pendentes"
+  const [tab, setTab] = useState(isStaff ? "pendentes" : "cursos");
 
   // Dados gerais
   const [turmas, setTurmas] = useState([]);
@@ -107,12 +107,16 @@ export default function Recruit() {
   const [loadingInscritos, setLoadingInscritos] = useState(false);
   const [searchInscritos, setSearchInscritos] = useState("");
 
-  // Staff: candidaturas sem turma (usamos tudo o que vier de "aluno" se tiveres um endpoint global não enviado)
-  // Como não enviaste GET /Inscricoes (listar todas), vamos reaproveitar:
-  // -> mostra "candidaturas sem turma" apenas a partir da turma selecionada? (não serve)
-  // Então: nesta versão, o staff gere apenas por TURMA e a colocação em turma é feita a partir de uma inscrição que o staff já tem na lista de "candidatos".
-  // Para ter lista global de candidaturas, precisas de um endpoint tipo GET /Inscricoes (Admin).
-  // Mesmo assim, eu já implemento UI para "colocar em turma" quando tens uma inscrição em mãos (ex: via pesquisa).
+  // NOVO: Staff - Candidaturas Pendentes
+  const [pendentes, setPendentes] = useState([]);
+  const [loadingPendentes, setLoadingPendentes] = useState(false);
+  const [searchPendentes, setSearchPendentes] = useState("");
+  const [filtrarCursoId, setFiltrarCursoId] = useState("");
+  const [selectedPendentes, setSelectedPendentes] = useState(new Set());
+  const [turmaAprovacao, setTurmaAprovacao] = useState("");
+  const [approvingBatch, setApprovingBatch] = useState(false);
+
+  // Staff: colocar em turma (manual - individual)
   const [colocarInscricaoId, setColocarInscricaoId] = useState("");
   const [colocarTurmaId, setColocarTurmaId] = useState("");
   const [placing, setPlacing] = useState(false);
@@ -178,6 +182,26 @@ export default function Recruit() {
     }
   }
 
+  // NOVO: Carregar candidaturas pendentes
+  async function loadPendentes() {
+    setLoadingPendentes(true);
+    setError("");
+
+    try {
+      const endpoint = filtrarCursoId
+        ? `/Inscricoes/pendentes/curso/${filtrarCursoId}`
+        : "/Inscricoes/pendentes";
+
+      const res = await api.get(endpoint);
+      setPendentes(Array.isArray(res.data) ? res.data : []);
+      setSelectedPendentes(new Set()); // Limpar seleção ao recarregar
+    } catch (err) {
+      setError(extractError(err, "Erro ao carregar candidaturas pendentes."));
+    } finally {
+      setLoadingPendentes(false);
+    }
+  }
+
   useEffect(() => {
     if (!token) {
       navigate("/", { replace: true });
@@ -197,11 +221,19 @@ export default function Recruit() {
   }, [roleOk, roleLower]);
 
   useEffect(() => {
-    if (isStaff && selectedTurmaId) {
+    if (isStaff && selectedTurmaId && tab === "staff") {
       loadInscritosPorTurma(selectedTurmaId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTurmaId, roleLower]);
+  }, [selectedTurmaId, roleLower, tab]);
+
+  // NOVO: Carregar pendentes quando mudar o filtro ou tab
+  useEffect(() => {
+    if (isStaff && tab === "pendentes") {
+      loadPendentes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStaff, tab, filtrarCursoId]);
 
   const cursosFiltrados = useMemo(() => {
     const s = searchCursos.trim().toLowerCase();
@@ -226,6 +258,19 @@ export default function Recruit() {
       return nome.includes(s) || estado.includes(s);
     });
   }, [inscritos, searchInscritos]);
+
+  // NOVO: Filtrar pendentes
+  const pendentesFiltrados = useMemo(() => {
+    const s = searchPendentes.trim().toLowerCase();
+    if (!s) return pendentes;
+
+    return pendentes.filter((i) => {
+      const nome = String(i?.formandoNome ?? "").toLowerCase();
+      const curso = String(i?.cursoNome ?? "").toLowerCase();
+      const id = String(i?.id ?? "");
+      return nome.includes(s) || curso.includes(s) || id.includes(s);
+    });
+  }, [pendentes, searchPendentes]);
 
   async function candidatarAoCurso(cursoId) {
     const formandoId = getFormandoIdFromStorageOrToken();
@@ -284,12 +329,11 @@ export default function Recruit() {
     try {
       await api.put(`/Inscricoes/${inscricaoId}/colocar-turma`, { TurmaId: turmaId });
 
-      // refresh lista da turma selecionada se coincidir
       if (String(turmaId) === String(selectedTurmaId)) {
         await loadInscritosPorTurma(selectedTurmaId);
       }
-      // refresh base e limpar form
       await loadBase();
+      await loadPendentes(); // Atualizar lista de pendentes
 
       setColocarInscricaoId("");
       setColocarTurmaId("");
@@ -298,6 +342,77 @@ export default function Recruit() {
       setError(extractError(err, "Erro ao colocar aluno na turma."));
     } finally {
       setPlacing(false);
+    }
+  }
+
+  // NOVO: Toggle seleção de candidatura pendente
+  function togglePendente(id) {
+    setSelectedPendentes((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  // NOVO: Selecionar/Desselecionar todas as candidaturas visíveis
+  function toggleAllPendentes() {
+    if (selectedPendentes.size === pendentesFiltrados.length) {
+      setSelectedPendentes(new Set());
+    } else {
+      setSelectedPendentes(new Set(pendentesFiltrados.map((p) => p.id)));
+    }
+  }
+
+  // NOVO: Aprovar candidaturas em lote
+  async function aprovarLote() {
+    if (selectedPendentes.size === 0) {
+      return alert("Seleciona pelo menos uma candidatura.");
+    }
+
+    const turmaId = Number(turmaAprovacao);
+    if (!Number.isFinite(turmaId) || turmaId <= 0) {
+      return alert("Seleciona uma turma válida.");
+    }
+
+    if (!window.confirm(`Aprovar ${selectedPendentes.size} candidatura(s) para a turma selecionada?`)) {
+      return;
+    }
+
+    setApprovingBatch(true);
+    setError("");
+
+    try {
+      await api.post("/Inscricoes/aprovar-lote", {
+        TurmaId: turmaId,
+        InscricaoIds: Array.from(selectedPendentes),
+      });
+
+      await loadPendentes();
+      setTurmaAprovacao("");
+      alert("Candidaturas aprovadas com sucesso!");
+    } catch (err) {
+      setError(extractError(err, "Erro ao aprovar candidaturas em lote."));
+    } finally {
+      setApprovingBatch(false);
+    }
+  }
+
+  // NOVO: Rejeitar candidatura individual
+  async function rejeitarCandidatura(inscricaoId) {
+    if (!window.confirm("Tens a certeza que queres rejeitar esta candidatura?")) return;
+
+    setError("");
+
+    try {
+      await api.put(`/Inscricoes/${inscricaoId}/rejeitar`);
+      await loadPendentes();
+      alert("Candidatura rejeitada.");
+    } catch (err) {
+      setError(extractError(err, "Erro ao rejeitar candidatura."));
     }
   }
 
@@ -314,7 +429,9 @@ export default function Recruit() {
                 Inscrições
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {isStaff ? "Consulta inscritos por turma e coloca candidaturas em turmas" : "Candidata-te a cursos e acompanha o estado"}
+                {isStaff
+                  ? "Gere candidaturas pendentes e consulta inscritos por turma"
+                  : "Candidata-te a cursos e acompanha o estado"}
               </p>
             </div>
 
@@ -331,6 +448,21 @@ export default function Recruit() {
               {isStaff ? (
                 <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
                   <button
+                    onClick={() => setTab("pendentes")}
+                    className={`px-4 py-2.5 text-sm font-medium transition-all relative ${
+                      tab === "pendentes"
+                        ? "bg-blue-600 text-white"
+                        : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    Candidaturas
+                    {pendentes.length > 0 && (
+                      <span className="ml-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-xs">
+                        {pendentes.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
                     onClick={() => setTab("staff")}
                     className={`px-4 py-2.5 text-sm font-medium transition-all ${
                       tab === "staff"
@@ -338,7 +470,7 @@ export default function Recruit() {
                         : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                     }`}
                   >
-                    Gestão
+                    Por Turma
                   </button>
                 </div>
               ) : (
@@ -385,7 +517,218 @@ export default function Recruit() {
           </div>
         )}
 
-        {/* STAFF */}
+        {/* ========== STAFF: CANDIDATURAS PENDENTES ========== */}
+        {isStaff && tab === "pendentes" && (
+          <>
+            {/* Filtros e Ações em Lote */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Filtros */}
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5">
+                <div className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Filtros</div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Filtrar por Curso
+                    </label>
+                    <select
+                      value={filtrarCursoId}
+                      onChange={(e) => setFiltrarCursoId(e.target.value)}
+                      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5
+                                 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                                 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={loadingBase}
+                    >
+                      <option value="">Todos os cursos</option>
+                      {cursos.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Pesquisar
+                    </label>
+                    <input
+                      value={searchPendentes}
+                      onChange={(e) => setSearchPendentes(e.target.value)}
+                      placeholder="Pesquisar por nome, curso ou ID..."
+                      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5
+                                 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
+                                 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <button
+                    onClick={loadPendentes}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 
+                               hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium"
+                    disabled={loadingPendentes}
+                  >
+                    Recarregar
+                  </button>
+                </div>
+              </div>
+
+              {/* Aprovação em Lote */}
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5">
+                <div className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Aprovar em Lote
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Seleciona candidaturas e atribui-as a uma turma de uma só vez.
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Turma de Aprovação
+                      </label>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {selectedPendentes.size} selecionada(s)
+                      </span>
+                    </div>
+                    <select
+                      value={turmaAprovacao}
+                      onChange={(e) => setTurmaAprovacao(e.target.value)}
+                      className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5
+                                 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                                 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={approvingBatch || loadingBase}
+                    >
+                      <option value="">Seleciona a turma...</option>
+                      {turmas.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.nome} {t.cursoNome ? `— ${t.cursoNome}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={aprovarLote}
+                    className="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white 
+                               hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 transition-all duration-200 font-medium
+                               shadow-lg shadow-green-500/30"
+                    disabled={approvingBatch || selectedPendentes.size === 0 || !turmaAprovacao}
+                  >
+                    {approvingBatch ? "A aprovar..." : `Aprovar ${selectedPendentes.size} candidatura(s)`}
+                  </button>
+
+                  {selectedPendentes.size > 0 && (
+                    <button
+                      onClick={() => setSelectedPendentes(new Set())}
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 
+                                 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
+                    >
+                      Limpar Seleção
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Tabela de Candidaturas Pendentes */}
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden">
+              <div className="overflow-auto">
+                <table className="min-w-full">
+                  <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
+                    <tr>
+                      <th className="py-4 px-6">
+                        <input
+                          type="checkbox"
+                          checked={pendentesFiltrados.length > 0 && selectedPendentes.size === pendentesFiltrados.length}
+                          onChange={toggleAllPendentes}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                        ID
+                      </th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                        Formando
+                      </th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                        Curso
+                      </th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                        Data
+                      </th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                    {loadingPendentes ? (
+                      <tr>
+                        <td colSpan="6" className="py-16 px-6 text-center">
+                          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                          <p className="mt-3 text-gray-500 dark:text-gray-400">A carregar candidaturas...</p>
+                        </td>
+                      </tr>
+                    ) : pendentesFiltrados.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
+                          {pendentes.length === 0
+                            ? "🎉 Nenhuma candidatura pendente!"
+                            : "Nenhuma candidatura encontrada com os filtros aplicados."}
+                        </td>
+                      </tr>
+                    ) : (
+                      pendentesFiltrados.map((p) => (
+                        <tr
+                          key={p.id}
+                          className={`hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150 ${
+                            selectedPendentes.has(p.id) ? "bg-blue-50/30 dark:bg-blue-900/10" : ""
+                          }`}
+                        >
+                          <td className="py-4 px-6">
+                            <input
+                              type="checkbox"
+                              checked={selectedPendentes.has(p.id)}
+                              onChange={() => togglePendente(p.id)}
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">
+                            #{p.id}
+                          </td>
+                          <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">
+                            {p.formandoNome || `#${p.formandoId}`}
+                          </td>
+                          <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+                            {p.cursoNome || `#${p.cursoId}`}
+                          </td>
+                          <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+                            {toLocalDateTime(p.dataInscricao)}
+                          </td>
+                          <td className="py-4 px-6">
+                            <button
+                              onClick={() => rejeitarCandidatura(p.id)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 dark:text-red-400 
+                                         bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 
+                                         transition-all duration-200"
+                            >
+                              Rejeitar
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ========== STAFF: POR TURMA ========== */}
         {isStaff && tab === "staff" && (
           <>
             {/* Top controls */}
@@ -435,7 +778,7 @@ export default function Recruit() {
               <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5">
                 <div className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Colocar em turma</div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Usa o ID da inscrição (candidatura) e escolhe a turma. O backend valida se o curso bate certo.
+                  Usa o ID da inscrição (candidatura) e escolhe a turma.
                 </p>
 
                 <div className="grid grid-cols-1 gap-3">
@@ -536,7 +879,7 @@ export default function Recruit() {
           </>
         )}
 
-        {/* FORMING/USER */}
+        {/* ========== FORMANDO/USER ========== */}
         {!isStaff && isFormando && (
           <>
             {/* TAB: CURSOS */}
@@ -716,7 +1059,6 @@ export default function Recruit() {
                   </div>
                 </div>
 
-                {/* Ajuda visual para "aguardar colocação" */}
                 {minhas.some(isNullishTurma) && (
                   <div className="mt-5 text-sm text-gray-600 dark:text-gray-400">
                     Nota: quando a secretaria te colocar numa turma, a tua candidatura passa para <b>Ativo</b> e aparece aqui a turma atribuída.

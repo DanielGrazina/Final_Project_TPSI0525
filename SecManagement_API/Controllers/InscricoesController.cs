@@ -43,6 +43,53 @@ namespace SecManagement_API.Controllers
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
+        // NOVO: GET: api/Inscricoes/pendentes
+        // Lista todas as candidaturas sem turma (estado "Candidatura")
+        [HttpGet("pendentes")]
+        // [Authorize(Roles = "Secretaria, Admin")]
+        public async Task<ActionResult<IEnumerable<InscricaoDto>>> GetPendentes()
+        {
+            return Ok(await _service.GetCandidaturasPendentesAsync());
+        }
+
+        // NOVO: GET: api/Inscricoes/pendentes/curso/5
+        // Lista candidaturas pendentes de um curso específico
+        [HttpGet("pendentes/curso/{cursoId}")]
+        // [Authorize(Roles = "Secretaria, Admin")]
+        public async Task<ActionResult<IEnumerable<InscricaoDto>>> GetPendentesPorCurso(int cursoId)
+        {
+            return Ok(await _service.GetCandidaturasPendentesPorCursoAsync(cursoId));
+        }
+
+        // NOVO: POST: api/Inscricoes/aprovar-lote
+        // Aprova múltiplas candidaturas de uma vez, colocando-as na mesma turma
+        // Body: { "turmaId": 10, "inscricaoIds": [1, 2, 3] }
+        [HttpPost("aprovar-lote")]
+        // [Authorize(Roles = "Secretaria, Admin")]
+        public async Task<ActionResult<IEnumerable<InscricaoDto>>> AprovarLote(AprovarLoteDto dto)
+        {
+            try
+            {
+                var result = await _service.AprovarCandidaturasEmLoteAsync(dto);
+                return Ok(result);
+            }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
+        // NOVO: PUT: api/Inscricoes/5/rejeitar
+        // Rejeita uma candidatura
+        [HttpPut("{id}/rejeitar")]
+        // [Authorize(Roles = "Secretaria, Admin")]
+        public async Task<ActionResult<InscricaoDto>> Rejeitar(int id)
+        {
+            try
+            {
+                var result = await _service.RejeitarCandidaturaAsync(id);
+                return Ok(result);
+            }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
         // GET: api/Inscricoes/turma/5
         // Usado pela Secretaria/Formador para ver quem está na turma
         [HttpGet("turma/{turmaId}")]
