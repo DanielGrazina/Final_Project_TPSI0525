@@ -167,7 +167,7 @@ CREATE TABLE "Disponibilidades" (
 
 CREATE TABLE "Sessoes" (
     "Id" SERIAL PRIMARY KEY,
-    "CursoModuloId" INT REFERENCES "Turma_Modulos"("Id") ON DELETE CASCADE,
+    "TurmaModuloId" INT REFERENCES "Turma_Modulos"("Id") ON DELETE CASCADE,
     "SalaId" INT REFERENCES "Salas"("Id"),
     "HorarioInicio" TIMESTAMP NOT NULL,
     "HorarioFim" TIMESTAMP NOT NULL,
