@@ -26,26 +26,37 @@ namespace SecManagement_API.Services
             return notas.Select(ToDto);
         }
 
-        public async Task<AvaliacaoDto> LancarNotaAsync(CreateAvaliacaoDto dto)
+        public async Task<AvaliacaoDto> LancarNotaAsync(CreateAvaliacaoDto dto, int userId, string role)
         {
-            // 1. Validar se a Inscrição pertence à Turma
+            // Validar Módulo e obter quem é o formador responsável
+            var modulo = await _context.TurmaModulos
+                .Include(tm => tm.Modulo)
+                .Include(tm => tm.Formador)
+                .FirstOrDefaultAsync(tm => tm.Id == dto.TurmaModuloId && tm.TurmaId == dto.TurmaId);
+
+            if (modulo == null) throw new Exception("O módulo indicado não pertence a esta turma.");
+
+            // === SEGURANÇA: Verificar se o user tem permissão ===
+            if (role == "Formador")
+            {
+                // Verifica se o user logado é o dono deste módulo
+                if (modulo.Formador?.UserId != userId)
+                    throw new Exception("Sem permissão: Apenas o formador responsável por este módulo pode lançar notas.");
+            }
+            else if (role != "Secretaria" && role != "Admin")
+            {
+                throw new Exception("Sem permissão para lançar notas.");
+            }
+
+            // Validar Inscrição
             var inscricao = await _context.Inscricoes
                 .Include(i => i.Formando).ThenInclude(f => f.User)
                 .Include(i => i.Turma)
                 .FirstOrDefaultAsync(i => i.Id == dto.InscricaoId && i.TurmaId == dto.TurmaId);
 
-            if (inscricao == null)
-                throw new Exception("O aluno indicado não está inscrito nesta turma.");
+            if (inscricao == null) throw new Exception("O aluno indicado não está inscrito nesta turma.");
 
-            // 2. Validar se o Módulo pertence à Turma
-            var modulo = await _context.TurmaModulos
-                .Include(tm => tm.Modulo)
-                .FirstOrDefaultAsync(tm => tm.Id == dto.TurmaModuloId && tm.TurmaId == dto.TurmaId);
-
-            if (modulo == null)
-                throw new Exception("O módulo indicado não pertence a esta turma.");
-
-            // 3. Criar Avaliação
+            // Criar
             var avaliacao = new Avaliacao
             {
                 TurmaId = dto.TurmaId,
@@ -58,18 +69,37 @@ namespace SecManagement_API.Services
             _context.Avaliacoes.Add(avaliacao);
             await _context.SaveChangesAsync();
 
-            return new AvaliacaoDto
+            return ToDtoCompleto(avaliacao, inscricao, modulo);
+        }
+
+        public async Task<AvaliacaoDto> UpdateNotaAsync(int id, CreateAvaliacaoDto dto, int userId, string role)
+        {
+            var avaliacao = await _context.Avaliacoes
+                .Include(a => a.TurmaModulo).ThenInclude(tm => tm.Formador)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (avaliacao == null) throw new Exception("Avaliação não encontrada.");
+
+            // === SEGURANÇA ===
+            if (role == "Formador")
             {
-                Id = avaliacao.Id,
-                TurmaId = dto.TurmaId,
-                TurmaNome = inscricao.Turma?.Nome ?? "",
-                InscricaoId = dto.InscricaoId,
-                FormandoNome = inscricao.Formando?.User?.Nome ?? "Aluno",
-                TurmaModuloId = dto.TurmaModuloId,
-                ModuloNome = modulo.Modulo?.Nome ?? "Módulo",
-                Avaliacao = avaliacao.AvaliacaoValor,
-                Observacoes = avaliacao.Observacoes
-            };
+                if (avaliacao.TurmaModulo?.Formador?.UserId != userId)
+                    throw new Exception("Sem permissão: Não é o formador responsável por esta nota.");
+            }
+            else if (role != "Secretaria" && role != "Admin")
+            {
+                throw new Exception("Sem permissão.");
+            }
+
+            // Atualizar campos
+            avaliacao.AvaliacaoValor = dto.Avaliacao;
+            avaliacao.Observacoes = dto.Observacoes;
+            // Nota: Geralmente não deixamos mudar o Aluno ou Turma na edição, apenas a nota.
+
+            await _context.SaveChangesAsync();
+
+            // Recarregar dados para devolver DTO bonito
+            return await GetByIdInternalAsync(id);
         }
 
         public async Task<IEnumerable<AvaliacaoDto>> GetNotasByTurmaAsync(int turmaId)
@@ -97,16 +127,40 @@ namespace SecManagement_API.Services
             return notas.Select(ToDto);
         }
 
-        public async Task<bool> DeleteNotaAsync(int id)
+        public async Task<bool> DeleteNotaAsync(int id, int userId, string role)
         {
-            var av = await _context.Avaliacoes.FindAsync(id);
+            var av = await _context.Avaliacoes
+                .Include(a => a.TurmaModulo).ThenInclude(tm => tm.Formador)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
             if (av == null) return false;
+
+            // === SEGURANÇA ===
+            if (role == "Formador")
+            {
+                if (av.TurmaModulo?.Formador?.UserId != userId)
+                    throw new Exception("Sem permissão para apagar esta nota.");
+            }
+            else if (role != "Secretaria" && role != "Admin")
+            {
+                throw new Exception("Sem permissão.");
+            }
 
             _context.Avaliacoes.Remove(av);
             await _context.SaveChangesAsync();
             return true;
         }
 
+        // --- HELPERS ---
+        private async Task<AvaliacaoDto> GetByIdInternalAsync(int id)
+        {
+            var a = await _context.Avaliacoes
+                 .Include(a => a.Inscricao).ThenInclude(i => i.Formando).ThenInclude(f => f.User)
+                 .Include(a => a.TurmaModulo).ThenInclude(tm => tm.Modulo)
+                 .Include(a => a.Turma)
+                 .FirstOrDefaultAsync(x => x.Id == id);
+            return ToDto(a!);
+        }
         private static AvaliacaoDto ToDto(Avaliacao a)
         {
             return new AvaliacaoDto
@@ -118,6 +172,21 @@ namespace SecManagement_API.Services
                 FormandoNome = a.Inscricao?.Formando?.User?.Nome ?? "Desconhecido",
                 TurmaModuloId = a.TurmaModuloId,
                 ModuloNome = a.TurmaModulo?.Modulo?.Nome ?? "Módulo",
+                Avaliacao = a.AvaliacaoValor,
+                Observacoes = a.Observacoes
+            };
+        }
+        private static AvaliacaoDto ToDtoCompleto(Avaliacao a, Inscricao i, TurmaModulo tm)
+        {
+            return new AvaliacaoDto
+            {
+                Id = a.Id,
+                TurmaId = a.TurmaId,
+                TurmaNome = i.Turma?.Nome ?? "",
+                InscricaoId = a.InscricaoId,
+                FormandoNome = i.Formando?.User?.Nome ?? "Aluno",
+                TurmaModuloId = a.TurmaModuloId,
+                ModuloNome = tm.Modulo?.Nome ?? "Módulo",
                 Avaliacao = a.AvaliacaoValor,
                 Observacoes = a.Observacoes
             };

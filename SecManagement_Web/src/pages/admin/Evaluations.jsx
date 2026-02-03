@@ -561,11 +561,22 @@ export default function AdminEvaluations() {
                           {getTurmaNome(a.turmaId)}
                         </span>
                       </td>
+                      {/* Coluna Aluno */}
                       <td className="py-4 px-6">
-                        <span className="text-sm text-gray-700 dark:text-gray-300">#{a.inscricaoId}</span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {a.formandoNome || "Aluno Desconhecido"}
+                          </span>
+                        </div>
                       </td>
+
+                      {/* Coluna Módulo */}
                       <td className="py-4 px-6">
-                        <span className="text-sm text-gray-700 dark:text-gray-300">#{a.turmaModuloId}</span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {a.moduloNome || "Módulo Desconhecido"}
+                          </span>
+                        </div>
                       </td>
                       <td className="py-4 px-6">
                         <Gradebadge grade={a.avaliacao} />
