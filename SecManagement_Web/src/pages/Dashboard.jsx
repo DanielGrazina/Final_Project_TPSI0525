@@ -1,10 +1,12 @@
 // src/pages/Dashboard.jsx
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useTheme from "../hooks/useTheme";
 import ThemeToggle from "../components/ThemeToggle";
 import { getToken, getUserRoleFromToken } from "../utils/auth";
-import TawkToWidget from "../components/TawkToWidget"; // ✅ chatbot (só após login)
+import TawkToWidget from "../components/TawkToWidget";
+import { QRCodeCanvas } from "qrcode.react";
+import api from "../api/axios";
 
 function Badge({ children, tone = "neutral" }) {
   const tones = {
@@ -74,12 +76,7 @@ function Icon({ name }) {
         <svg className={common} viewBox="0 0 24 24" fill="none">
           <path d="M4 20V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12" stroke="currentColor" strokeWidth="2" />
           <path d="M9 20v-5h6v5" stroke="currentColor" strokeWidth="2" />
-          <path
-            d="M8 10h1M11.5 10h1M15 10h1"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
+          <path d="M8 10h1M11.5 10h1M15 10h1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
     case "eval":
@@ -258,6 +255,11 @@ export default function Dashboard() {
 
   const token = getToken();
 
+  // --- 2FA ---
+  const [twoFaUrl, setTwoFaUrl] = useState("");
+  const [twoFaLoading, setTwoFaLoading] = useState(false);
+  const [twoFaError, setTwoFaError] = useState("");
+
   useEffect(() => {
     if (!token) navigate("/", { replace: true });
   }, [navigate, token]);
@@ -339,9 +341,27 @@ export default function Dashboard() {
     return "Gestão de inscrições disponível.";
   }, [perms]);
 
+  const enable2FA = async () => {
+    try {
+      setTwoFaError("");
+      setTwoFaLoading(true);
+
+      // ✅ usa axios instance (baseURL + Bearer token já configurados)
+      const res = await api.post("/Auth/enable-2fa");
+      if (!res?.data?.qrCodeUrl) throw new Error("Resposta inválida: qrCodeUrl em falta.");
+
+      setTwoFaUrl(res.data.qrCodeUrl);
+    } catch (e) {
+      setTwoFaUrl("");
+      const msg = e?.response?.data?.message || e?.message || "Erro inesperado.";
+      setTwoFaError(msg);
+    } finally {
+      setTwoFaLoading(false);
+    }
+  };
+
   return (
     <>
-      {/* ✅ Chatbot (Tawk.to) só aparece depois do login porque este componente só existe no Dashboard */}
       <TawkToWidget />
 
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
@@ -442,6 +462,57 @@ export default function Dashboard() {
                   <strong>Dica:</strong> Se uma área não aparecer, significa que o teu perfil não tem permissão de acesso.
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* ✅ 2FA (QR Code) */}
+          <div className="mt-8">
+            <div className="border rounded-2xl bg-white dark:bg-gray-900 dark:border-gray-800 shadow-sm p-6">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">2FA</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Gera o QR code para configurar autenticação de dois fatores na tua conta.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={enable2FA}
+                  disabled={twoFaLoading}
+                  className={[
+                    "px-4 py-2 rounded-lg font-medium text-white transition shadow-sm",
+                    twoFaLoading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700",
+                  ].join(" ")}
+                >
+                  {twoFaLoading ? "A gerar..." : twoFaUrl ? "Mostrar novamente" : "Gerar QR Code"}
+                </button>
+              </div>
+
+              {twoFaError && <div className="mt-4 text-sm text-red-600 dark:text-red-400">{twoFaError}</div>}
+
+              {twoFaUrl && (
+                <div className="mt-5 flex flex-col md:flex-row items-start gap-6">
+                  <div className="p-4 rounded-xl border bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+                    <QRCodeCanvas value={twoFaUrl} size={180} includeMargin />
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                      1) Abre o Google Authenticator / Microsoft Authenticator<br />
+                      2) Lê o QR code<br />
+                      3) Guarda o backup abaixo (opcional)
+                    </div>
+
+                    <div className="mt-3">
+                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Backup (otpauth URL)</div>
+                      <div className="text-xs break-all rounded-lg border p-3 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 text-gray-700 dark:text-gray-200">
+                        {twoFaUrl}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
