@@ -73,13 +73,55 @@ function tmLabel(tm) {
 // Junta date + time e devolve ISO UTC (string)
 function dateTimeToIsoUtc(dateStr, timeStr) {
   if (!dateStr || !timeStr) return null;
-
-  // dateStr: "YYYY-MM-DD"
-  // timeStr: "HH:mm"
   const local = new Date(`${dateStr}T${timeStr}:00`);
   if (Number.isNaN(local.getTime())) return null;
-
   return local.toISOString();
+}
+
+function isoUtcFromDate(dateStr, endOfDay = false) {
+  if (!dateStr) return null;
+  // Força UTC diretamente (sem depender do timezone local)
+  return `${dateStr}T${endOfDay ? "23:59:59" : "00:00:00"}Z`;
+}
+
+function toLocalDateTime(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString();
+}
+
+function durationLabel(ini, fim) {
+  const a = new Date(ini);
+  const b = new Date(fim);
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return "—";
+  const mins = Math.max(0, Math.round((b - a) / 60000));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h <= 0) return `${m} min`;
+  return `${h}h ${m}m`;
+}
+
+function Segmented({ value, onChange, options }) {
+  return (
+    <div className="inline-flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => onChange(o.value)}
+          className={[
+            "px-4 py-2.5 text-sm font-medium transition-all",
+            value === o.value
+              ? "bg-emerald-600 text-white"
+              : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
+          ].join(" ")}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export default function AdminSessions() {
@@ -91,13 +133,43 @@ export default function AdminSessions() {
   const [turmaModulos, setTurmaModulos] = useState([]);
   const [loadingTM, setLoadingTM] = useState(false);
 
-  const [loading, setLoading] = useState(true);
+  const [loadingBase, setLoadingBase] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const [showForm, setShowForm] = useState(false);
 
-  // 👇 Em vez de datetime-local, usamos date + time
+  // --- LISTAGEM ---
+  const [view, setView] = useState("turma"); // "turma" | "sala" | "formador"
+  const [filterTurmaId, setFilterTurmaId] = useState("");
+  const [filterSalaId, setFilterSalaId] = useState("");
+  const [filterFormadorId, setFilterFormadorId] = useState("");
+
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
+
+  const plus7Str = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
+
+  const [rangeStart, setRangeStart] = useState(todayStr);
+  const [rangeEnd, setRangeEnd] = useState(plus7Str);
+
+  const [sessions, setSessions] = useState([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [search, setSearch] = useState("");
+
+  // --- CREATE FORM (já tinhas) ---
   const [form, setForm] = useState({
     turmaId: "",
     turmaModuloId: "",
@@ -109,7 +181,7 @@ export default function AdminSessions() {
   });
 
   async function loadBase() {
-    setLoading(true);
+    setLoadingBase(true);
     setError("");
     try {
       const [turmasRes, salasRes] = await Promise.all([
@@ -117,12 +189,19 @@ export default function AdminSessions() {
         api.get("/Salas"),
       ]);
 
-      setTurmas(Array.isArray(turmasRes.data) ? turmasRes.data : []);
-      setSalas(Array.isArray(salasRes.data) ? salasRes.data : []);
+      const t = Array.isArray(turmasRes.data) ? turmasRes.data : [];
+      const s = Array.isArray(salasRes.data) ? salasRes.data : [];
+
+      setTurmas(t);
+      setSalas(s);
+
+      // defaults (para listagem)
+      if (!filterTurmaId && t.length) setFilterTurmaId(String(t[0]?.id ?? ""));
+      if (!filterSalaId && s.length) setFilterSalaId(String(s[0]?.id ?? ""));
     } catch (err) {
       setError(extractError(err, "Erro ao carregar dados."));
     } finally {
-      setLoading(false);
+      setLoadingBase(false);
     }
   }
 
@@ -144,9 +223,69 @@ export default function AdminSessions() {
     }
   }
 
+  async function loadSessions() {
+    setError("");
+
+    const startIso = isoUtcFromDate(rangeStart, false);
+    const endIso = isoUtcFromDate(rangeEnd, true);
+    if (!startIso || !endIso) {
+      setError("Seleciona um intervalo de datas válido.");
+      return;
+    }
+
+    if (new Date(endIso) < new Date(startIso)) {
+      setError("A data final tem de ser igual ou posterior à data inicial.");
+      return;
+    }
+
+    let url = "";
+    if (view === "turma") {
+      const tid = Number(filterTurmaId);
+      if (!Number.isFinite(tid) || tid <= 0) {
+        setError("Seleciona uma turma para listar sessões.");
+        return;
+      }
+      url = `/Sessoes/turma/${tid}?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}`;
+    } else if (view === "sala") {
+      const sid = Number(filterSalaId);
+      if (!Number.isFinite(sid) || sid <= 0) {
+        setError("Seleciona uma sala para listar sessões.");
+        return;
+      }
+      url = `/Sessoes/sala/${sid}?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}`;
+    } else {
+      const fid = Number(filterFormadorId);
+      if (!Number.isFinite(fid) || fid <= 0) {
+        setError("Indica um FormadorId válido para listar sessões.");
+        return;
+      }
+      url = `/Sessoes/formador/${fid}?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}`;
+    }
+
+    setLoadingSessions(true);
+    try {
+      const res = await api.get(url);
+      setSessions(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      setSessions([]);
+      setError(extractError(err, "Erro ao carregar sessões."));
+    } finally {
+      setLoadingSessions(false);
+    }
+  }
+
   useEffect(() => {
     loadBase();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // primeira carga automática depois de ter base (turmas/salas) e defaults
+  useEffect(() => {
+    if (loadingBase) return;
+    // carrega logo uma vez
+    loadSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingBase]);
 
   function openCreate() {
     setError("");
@@ -250,6 +389,9 @@ export default function AdminSessions() {
         fimTime: "",
       });
       setTurmaModulos([]);
+
+      // refresh list
+      await loadSessions();
     } catch (err) {
       console.log("POST /Sessoes FAIL", {
         status: err?.response?.status,
@@ -262,6 +404,51 @@ export default function AdminSessions() {
     }
   }
 
+  async function deleteSession(id) {
+    if (!window.confirm(`Eliminar a sessão #${id}?`)) return;
+
+    setError("");
+    try {
+      await api.delete(`/Sessoes/${id}`);
+      setSessions((prev) => prev.filter((x) => Number(x?.id) !== Number(id)));
+    } catch (err) {
+      setError(extractError(err, "Erro ao eliminar sessão."));
+    }
+  }
+
+  const sessionsFiltered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    const list = Array.isArray(sessions) ? sessions : [];
+    if (!s) return list;
+
+    return list.filter((x) => {
+      const turma = String(x?.turmaNome ?? "").toLowerCase();
+      const mod = String(x?.moduloNome ?? "").toLowerCase();
+      const formador = String(x?.formadorNome ?? "").toLowerCase();
+      const sala = String(x?.salaNome ?? "").toLowerCase();
+      const id = String(x?.id ?? "");
+      return (
+        turma.includes(s) ||
+        mod.includes(s) ||
+        formador.includes(s) ||
+        sala.includes(s) ||
+        id.includes(s)
+      );
+    });
+  }, [sessions, search]);
+
+  const listTitle = useMemo(() => {
+    if (view === "turma") {
+      const t = turmas.find((x) => String(x.id) === String(filterTurmaId));
+      return t?.nome ? `Turma: ${t.nome}` : "Turma";
+    }
+    if (view === "sala") {
+      const s = salas.find((x) => String(x.id) === String(filterSalaId));
+      return s?.nome ? `Sala: ${s.nome}` : "Sala";
+    }
+    return filterFormadorId ? `FormadorId: ${filterFormadorId}` : "Formador";
+  }, [view, turmas, salas, filterTurmaId, filterSalaId, filterFormadorId]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header */}
@@ -273,7 +460,7 @@ export default function AdminSessions() {
                 Gestão de Sessões
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Agende sessões de formação com turmas, módulos e salas
+                Agende sessões e consulte horários por Turma, Sala ou Formador
               </p>
             </div>
 
@@ -290,7 +477,7 @@ export default function AdminSessions() {
                 onClick={openCreate}
                 className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white
                            hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 font-medium shadow-lg shadow-emerald-500/30"
-                disabled={loading}
+                disabled={loadingBase}
               >
                 + Nova Sessão
               </button>
@@ -310,25 +497,230 @@ export default function AdminSessions() {
           </div>
         )}
 
-        {/* Listagem removida por agora */}
-        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg p-6">
-          {loading ? (
-            <div className="py-10 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-              <p className="mt-3 text-gray-500 dark:text-gray-400">
-                A carregar dados base...
-              </p>
-            </div>
-          ) : (
-            <div className="text-gray-700 dark:text-gray-300">
-              <div className="font-semibold mb-2">
-                Listagem de sessões (temporariamente desativada)
+        {/* FILTER BAR */}
+        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg p-5 mb-6">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Segmented
+                value={view}
+                onChange={(v) => setView(v)}
+                options={[
+                  { value: "turma", label: "Por Turma" },
+                  { value: "sala", label: "Por Sala" },
+                  { value: "formador", label: "Por Formador" },
+                ]}
+              />
+
+              <div className="flex flex-wrap gap-3 items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">De</span>
+                  <input
+                    type="date"
+                    value={rangeStart}
+                    onChange={(e) => setRangeStart(e.target.value)}
+                    className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2.5
+                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                               focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">Até</span>
+                  <input
+                    type="date"
+                    value={rangeEnd}
+                    onChange={(e) => setRangeEnd(e.target.value)}
+                    className="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2.5
+                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                               focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={loadSessions}
+                  className="px-4 py-2.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition font-medium"
+                  disabled={loadingBase || loadingSessions}
+                >
+                  {loadingSessions ? "A carregar..." : "Recarregar"}
+                </button>
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Para já: <b>Turma → Módulo → Sala → Data + Hora</b>.
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Selector */}
+              <div className="lg:col-span-1">
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                  {view === "turma" ? "Turma" : view === "sala" ? "Sala" : "FormadorId"}
+                </div>
+
+                {view === "turma" && (
+                  <select
+                    value={filterTurmaId}
+                    onChange={(e) => setFilterTurmaId(e.target.value)}
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
+                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                               focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    disabled={loadingBase}
+                  >
+                    <option value="">Seleciona uma turma...</option>
+                    {turmas.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nome ?? `Turma #${t.id}`}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {view === "sala" && (
+                  <select
+                    value={filterSalaId}
+                    onChange={(e) => setFilterSalaId(e.target.value)}
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
+                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                               focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    disabled={loadingBase}
+                  >
+                    <option value="">Seleciona uma sala...</option>
+                    {salas.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.nome ? `${s.nome}` : `Sala #${s.id}`}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {view === "formador" && (
+                  <input
+                    value={filterFormadorId}
+                    onChange={(e) => setFilterFormadorId(e.target.value)}
+                    placeholder="Ex: 10"
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
+                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                               focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  />
+                )}
+
+                <div className="text-[12px] text-gray-500 dark:text-gray-400 mt-2">
+                  Intervalo: <b>{rangeStart}</b> → <b>{rangeEnd}</b>
+                </div>
+              </div>
+
+              {/* Search */}
+              <div className="lg:col-span-2">
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Pesquisa</div>
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Pesquisar por turma, módulo, formador, sala ou id..."
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
+                             bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
+                             focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                />
+                <div className="mt-2 text-[12px] text-gray-500 dark:text-gray-400">
+                  Vista: <b>{listTitle}</b> • Resultados: <b>{sessionsFiltered.length}</b>
+                </div>
               </div>
             </div>
-          )}
+          </div>
+        </div>
+
+        {/* LISTAGEM */}
+        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden">
+          <div className="overflow-auto">
+            <table className="min-w-full">
+              <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Data/Hora
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Turma
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Módulo
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Formador
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Sala
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Duração
+                  </th>
+                  <th className="text-right text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Ações
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                {loadingBase || loadingSessions ? (
+                  <tr>
+                    <td colSpan="7" className="py-14 px-6 text-center">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+                      <p className="mt-3 text-gray-500 dark:text-gray-400">
+                        A carregar sessões...
+                      </p>
+                    </td>
+                  </tr>
+                ) : sessionsFiltered.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="py-14 px-6 text-center text-gray-500 dark:text-gray-400">
+                      Sem sessões para este filtro/intervalo.
+                    </td>
+                  </tr>
+                ) : (
+                  sessionsFiltered.map((s) => (
+                    <tr
+                      key={s.id}
+                      className="hover:bg-emerald-50/40 dark:hover:bg-gray-800/60 transition-colors"
+                    >
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-200">
+                        <div className="font-semibold">{toLocalDateTime(s.horarioInicio)}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          até {toLocalDateTime(s.horarioFim)}
+                        </div>
+                      </td>
+
+                      <td className="py-4 px-6 text-sm text-gray-800 dark:text-gray-100">
+                        {s.turmaNome || "—"}
+                      </td>
+
+                      <td className="py-4 px-6 text-sm text-gray-800 dark:text-gray-100">
+                        {s.moduloNome || "—"}
+                      </td>
+
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-200">
+                        {s.formadorNome || "—"}
+                      </td>
+
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-200">
+                        {s.salaNome || `#${s.salaId}`}
+                      </td>
+
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-200">
+                        {durationLabel(s.horarioInicio, s.horarioFim)}
+                      </td>
+
+                      <td className="py-4 px-6 text-right">
+                        <button
+                          type="button"
+                          onClick={() => deleteSession(s.id)}
+                          className="px-3 py-2 rounded-lg text-sm font-semibold
+                                     text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20
+                                     hover:bg-red-100 dark:hover:bg-red-900/30 transition"
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -417,9 +809,7 @@ export default function AdminSessions() {
                 {salas.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.nome
-                      ? `${s.nome}${s.tipo ? ` (${s.tipo}` : ""}${
-                          s.capacidade ? `, ${s.capacidade} pessoas` : ""
-                        }${s.tipo || s.capacidade ? ")" : ""}`
+                      ? `${s.nome}${s.tipo ? ` (${s.tipo}` : ""}${s.capacidade ? `, ${s.capacidade} pessoas` : ""}${s.tipo || s.capacidade ? ")" : ""}`
                       : `Sala #${s.id}`}
                   </option>
                 ))}
@@ -496,8 +886,10 @@ export default function AdminSessions() {
             </div>
 
             {error && (
-              <div className="md:col-span-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800
-                              text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
+              <div
+                className="md:col-span-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800
+                           text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm"
+              >
                 {error}
               </div>
             )}
