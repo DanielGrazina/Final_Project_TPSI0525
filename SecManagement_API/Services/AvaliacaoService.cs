@@ -15,6 +15,17 @@ namespace SecManagement_API.Services
             _context = context;
         }
 
+        public async Task<IEnumerable<AvaliacaoDto>> GetAllAsync()
+        {
+            var notas = await _context.Avaliacoes
+                .Include(a => a.Inscricao).ThenInclude(i => i.Formando).ThenInclude(f => f.User)
+                .Include(a => a.TurmaModulo).ThenInclude(tm => tm.Modulo)
+                .Include(a => a.Turma)
+                .ToListAsync();
+
+            return notas.Select(ToDto);
+        }
+
         public async Task<AvaliacaoDto> LancarNotaAsync(CreateAvaliacaoDto dto)
         {
             // 1. Validar se a Inscrição pertence à Turma

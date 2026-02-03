@@ -7,26 +7,26 @@ namespace SecManagement_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize] // Podes descomentar quando quiseres proteger tudo
     public class TurmasController : ControllerBase
     {
         private readonly ITurmaService _turmaService;
+        private readonly IInscricaoService _inscricaoService; // <--- NOVO SERVIÇO INJETADO
 
-        public TurmasController(ITurmaService turmaService)
+        // Construtor aceita agora os dois serviços
+        public TurmasController(ITurmaService turmaService, IInscricaoService inscricaoService)
         {
             _turmaService = turmaService;
+            _inscricaoService = inscricaoService;
         }
 
         // --- GESTÃO DE TURMAS ---
 
-        // GET: api/Turmas
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TurmaDto>>> GetTurmas()
         {
             return Ok(await _turmaService.GetAllAsync());
         }
 
-        // GET: api/Turmas/5
         [HttpGet("{id}")]
         public async Task<ActionResult<TurmaDto>> GetTurma(int id)
         {
@@ -35,9 +35,7 @@ namespace SecManagement_API.Controllers
             return Ok(turma);
         }
 
-        // POST: api/Turmas
         [HttpPost]
-        // [Authorize(Roles = "Secretaria, Admin")]
         public async Task<ActionResult<TurmaDto>> CreateTurma(CreateTurmaDto dto)
         {
             try
@@ -51,9 +49,7 @@ namespace SecManagement_API.Controllers
             }
         }
 
-        // DELETE: api/Turmas/5
         [HttpDelete("{id}")]
-        // [Authorize(Roles = "Secretaria, Admin")]
         public async Task<IActionResult> DeleteTurma(int id)
         {
             try
@@ -67,9 +63,27 @@ namespace SecManagement_API.Controllers
             }
         }
 
-        // --- GESTÃO DE MÓDULOS NA TURMA ---
+        // --- ENDPOINTS RESTAURADOS (O Frontend agradece!) ---
 
-        // POST: api/Turmas/modulo
+        // GET: api/Turmas/5/modulos
+        // Mantém-se no TurmaService porque os módulos são estrutura da turma
+        [HttpGet("{turmaId}/modulos")]
+        public async Task<ActionResult<IEnumerable<TurmaModuloDto>>> GetModulos(int turmaId)
+        {
+            return Ok(await _turmaService.GetModulosByTurmaAsync(turmaId));
+        }
+
+        // GET: api/Turmas/5/alunos
+        // Este endpoint existe aqui "logicamente", mas internamente pede ao InscricaoService
+        [HttpGet("{turmaId}/alunos")]
+        public async Task<ActionResult<IEnumerable<InscricaoDto>>> GetAlunos(int turmaId)
+        {
+            // Delegamos a tarefa para o serviço correto
+            return Ok(await _inscricaoService.GetAlunosByTurmaAsync(turmaId));
+        }
+
+        // --- GESTÃO DE MÓDULOS (Add/Remove) ---
+
         [HttpPost("modulo")]
         public async Task<ActionResult<TurmaModuloDto>> AddModulo(CreateTurmaModuloDto dto)
         {
@@ -84,19 +98,11 @@ namespace SecManagement_API.Controllers
             }
         }
 
-        // DELETE: api/Turmas/modulo/5
         [HttpDelete("modulo/{turmaModuloId}")]
         public async Task<IActionResult> RemoveModulo(int turmaModuloId)
         {
             if (await _turmaService.RemoveModuloAsync(turmaModuloId)) return NoContent();
             return NotFound();
-        }
-
-        // GET: api/Turmas/5/modulos
-        [HttpGet("{turmaId}/modulos")]
-        public async Task<ActionResult<IEnumerable<TurmaModuloDto>>> GetModulos(int turmaId)
-        {
-            return Ok(await _turmaService.GetModulosByTurmaAsync(turmaId));
         }
     }
 }

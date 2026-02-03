@@ -17,6 +17,12 @@ namespace SecManagement_API.Controllers
             _service = service;
         }
 
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<AvaliacaoDto>>> GetTodasNotas()
+        {
+            return Ok(await _service.GetAllAsync());
+        }
+
         [HttpPost]
         public async Task<ActionResult<AvaliacaoDto>> LancarNota(CreateAvaliacaoDto dto)
         {

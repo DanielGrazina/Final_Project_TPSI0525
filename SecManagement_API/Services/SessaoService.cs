@@ -72,8 +72,8 @@ namespace SecManagement_API.Services
             {
                 TurmaModuloId = dto.TurmaModuloId,
                 SalaId = dto.SalaId,
-                HorarioInicio = dto.HorarioInicio,
-                HorarioFim = dto.HorarioFim
+                HorarioInicio = dto.HorarioInicio.ToUniversalTime(),
+                HorarioFim = dto.HorarioFim.ToUniversalTime()
             };
 
             _context.Sessoes.Add(sessao);
