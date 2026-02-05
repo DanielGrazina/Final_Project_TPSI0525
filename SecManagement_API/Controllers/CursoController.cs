@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SecManagement_API.DTOs;
+using SecManagement_API.Helpers;
 using SecManagement_API.Services.Interfaces;
 
 namespace SecManagement_API.Controllers
@@ -16,12 +18,14 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<CursoDto>>> GetCursos()
         {
             return Ok(await _service.GetCursosAsync());
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<CursoDto>> GetCurso(int id)
         {
             var curso = await _service.GetCursoByIdAsync(id);
@@ -30,6 +34,7 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<CursoDto>> PostCurso(CreateCursoDto dto)
         {
             try
@@ -44,6 +49,7 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<CursoDto>> PutCurso(int id, CreateCursoDto dto)
         {
             try
@@ -54,6 +60,7 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> DeleteCurso(int id)
         {
             try

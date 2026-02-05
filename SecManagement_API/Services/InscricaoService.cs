@@ -98,9 +98,6 @@ namespace SecManagement_API.Services
             return list.Select(ToDto);
         }
 
-        /// <summary>
-        /// NOVO: Aprovar múltiplas candidaturas de uma vez (colocar na mesma turma)
-        /// </summary>
         public async Task<IEnumerable<InscricaoDto>> AprovarCandidaturasEmLoteAsync(AprovarLoteDto dto)
         {
             var turma = await _context.Turmas.FindAsync(dto.TurmaId);

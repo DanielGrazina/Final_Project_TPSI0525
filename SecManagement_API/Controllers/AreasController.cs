@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SecManagement_API.DTOs;
+using SecManagement_API.Helpers;
 using SecManagement_API.Services.Interfaces;
 
 namespace SecManagement_API.Controllers
@@ -16,12 +18,14 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<AreaDto>>> GetAreas()
         {
             return Ok(await _service.GetAreasAsync());
         }
 
         [HttpPost]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<AreaDto>> PostArea(CreateAreaDto dto)
         {
             var area = await _service.CreateAreaAsync(dto);
@@ -29,6 +33,7 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<AreaDto>> PutArea(int id, CreateAreaDto dto)
         {
             try
@@ -39,6 +44,7 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> DeleteArea(int id)
         {
             try

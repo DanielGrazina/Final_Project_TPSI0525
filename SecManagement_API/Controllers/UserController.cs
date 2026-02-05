@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SecManagement_API.DTOs;
+using SecManagement_API.Helpers;
 using SecManagement_API.Services.Interfaces;
 
 namespace SecManagement_API.Controllers
@@ -19,6 +20,7 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Users
         [HttpGet]
+        [Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Secretaria}")]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
         {
             return Ok(await _userService.GetAllAsync());
@@ -26,6 +28,7 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Users/5
         [HttpGet("{id}")]
+        [Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Secretaria}")]
         public async Task<ActionResult<UserDto>> GetUser(int id)
         {
             var user = await _userService.GetByIdAsync(id);
@@ -40,6 +43,7 @@ namespace SecManagement_API.Controllers
 
         // PUT: api/Users/5
         [HttpPut("{id}")]
+        [Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin},{Roles.Secretaria}")]
         public async Task<IActionResult> PutUser(int id, [FromBody] UpdateUserDto dto)
         {
             var sucesso = await _userService.UpdateAsync(id, dto);
@@ -54,6 +58,7 @@ namespace SecManagement_API.Controllers
 
         // DELETE: api/Users/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
             var sucesso = await _userService.DeleteAsync(id);
