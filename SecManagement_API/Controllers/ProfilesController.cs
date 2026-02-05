@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SecManagement_API.DTOs;
+using SecManagement_API.Helpers;
 using SecManagement_API.Services.Interfaces;
 using System.Security.Claims;
 
@@ -24,6 +25,7 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Profiles/formador/5 (Passar o UserID)
         [HttpGet("formador/{userId}")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<FormadorProfileDto>> GetFormador(int userId)
         {
             try
@@ -35,6 +37,7 @@ namespace SecManagement_API.Controllers
 
         // POST: api/Profiles/formador
         [HttpPost("formador")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<FormadorProfileDto>> CreateFormador(CreateFormadorProfileDto dto)
         {
             try
@@ -47,6 +50,7 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Profiles/formador/5/pdf
         [HttpGet("formador/{userId}/pdf")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> DownloadFormadorPdf(int userId)
         {
             try
@@ -64,6 +68,7 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Profiles/formando/5 (Passar o UserID)
         [HttpGet("formando/{userId}")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<FormandoProfileDto>> GetFormando(int userId)
         {
             try
@@ -75,6 +80,7 @@ namespace SecManagement_API.Controllers
 
         // POST: api/Profiles/formando
         [HttpPost("formando")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<FormandoProfileDto>> CreateFormando(CreateFormandoProfileDto dto)
         {
             try
@@ -87,6 +93,7 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Profiles/formando/5/pdf
         [HttpGet("formando/{userId}/pdf")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> DownloadFormandoPdf(int userId)
         {
             try
@@ -104,6 +111,7 @@ namespace SecManagement_API.Controllers
 
         // POST: api/Profiles/upload/5 (UserId)
         [HttpPost("upload/{userId}")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<UserFicheiroDto>> UploadFile(int userId, [FromForm] UploadFicheiroDto dto)
         {
             try
@@ -116,6 +124,7 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Profiles/file/10 (Download por ID do Ficheiro)
         [HttpGet("file/{fileId}")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> DownloadFile(int fileId)
         {
             var result = await _service.GetFileContentAsync(fileId);
@@ -127,6 +136,7 @@ namespace SecManagement_API.Controllers
 
         // DELETE: api/Profiles/file/10
         [HttpDelete("file/{fileId}")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> DeleteFile(int fileId)
         {
             if (await _service.DeleteFileAsync(fileId)) return NoContent();
@@ -138,7 +148,7 @@ namespace SecManagement_API.Controllers
         // PUT: api/Profiles/formando/5/numero
         // Body: { "novoNumero": "A2026001" }
         [HttpPut("formando/{userId}/numero")]
-        // [Authorize(Roles = "Secretaria, Admin")] // Descomenta se quiseres restringir
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<FormandoProfileDto>> UpdateNumeroAluno(int userId, [FromBody] UpdateNumeroDto request)
         {
             try

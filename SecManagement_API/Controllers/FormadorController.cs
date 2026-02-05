@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SecManagement_API.Data;
 using SecManagement_API.DTOs;
+using SecManagement_API.Helpers;
 
 namespace SecManagement_API.Controllers
 {
@@ -20,13 +21,14 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Formadores
         [HttpGet]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<FormadorDto>>> GetFormadores()
         {
             var list = await _context.Formadores
                 .Include(f => f.User)
                 .Select(f => new FormadorDto
                 {
-                    Id = f.Id,                 // ✅ Formadores.Id (o que Turmas.CoordenadorId precisa)
+                    Id = f.Id,
                     Nome = f.User.Nome ?? "",
                     Email = f.User.Email ?? "",
                     TemFoto = false,

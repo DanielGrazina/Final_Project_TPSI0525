@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SecManagement_API.DTOs;
+using SecManagement_API.Helpers;
 using SecManagement_API.Services.Interfaces;
 
 namespace SecManagement_API.Controllers
@@ -16,6 +18,7 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = $"{Roles.Formador}")]
         public async Task<ActionResult<DisponibilidadeDto>> Create(CreateDisponibilidadeDto dto)
         {
             try

@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SecManagement_API.DTOs;
+using SecManagement_API.Helpers;
 using SecManagement_API.Services.Interfaces;
 
 namespace SecManagement_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // Obrigatório estar logado
+    [Authorize]
     public class InscricoesController : ControllerBase
     {
         private readonly IInscricaoService _service;
@@ -19,6 +20,7 @@ namespace SecManagement_API.Controllers
 
         // POST: api/Inscricoes/candidatar
         [HttpPost("candidatar")]
+        [Authorize(Roles = $"{Roles.User},{Roles.Formando}")]
         public async Task<ActionResult<InscricaoDto>> Candidatar(CreateCandidaturaDto dto)
         {
             try
@@ -32,7 +34,7 @@ namespace SecManagement_API.Controllers
         // PUT: api/Inscricoes/5/colocar-turma
         // Body: { "turmaId": 10 }
         [HttpPut("{id}/colocar-turma")]
-        // [Authorize(Roles = "Secretaria, Admin")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<InscricaoDto>> ColocarEmTurma(int id, [FromBody] ColocarEmTurmaDto dto)
         {
             try
@@ -46,7 +48,7 @@ namespace SecManagement_API.Controllers
         // NOVO: GET: api/Inscricoes/pendentes
         // Lista todas as candidaturas sem turma (estado "Candidatura")
         [HttpGet("pendentes")]
-        // [Authorize(Roles = "Secretaria, Admin")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<InscricaoDto>>> GetPendentes()
         {
             return Ok(await _service.GetCandidaturasPendentesAsync());
@@ -55,7 +57,7 @@ namespace SecManagement_API.Controllers
         // NOVO: GET: api/Inscricoes/pendentes/curso/5
         // Lista candidaturas pendentes de um curso específico
         [HttpGet("pendentes/curso/{cursoId}")]
-        // [Authorize(Roles = "Secretaria, Admin")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<InscricaoDto>>> GetPendentesPorCurso(int cursoId)
         {
             return Ok(await _service.GetCandidaturasPendentesPorCursoAsync(cursoId));
@@ -65,7 +67,7 @@ namespace SecManagement_API.Controllers
         // Aprova múltiplas candidaturas de uma vez, colocando-as na mesma turma
         // Body: { "turmaId": 10, "inscricaoIds": [1, 2, 3] }
         [HttpPost("aprovar-lote")]
-        // [Authorize(Roles = "Secretaria, Admin")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<InscricaoDto>>> AprovarLote(AprovarLoteDto dto)
         {
             try
@@ -79,7 +81,7 @@ namespace SecManagement_API.Controllers
         // NOVO: PUT: api/Inscricoes/5/rejeitar
         // Rejeita uma candidatura
         [HttpPut("{id}/rejeitar")]
-        // [Authorize(Roles = "Secretaria, Admin")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<InscricaoDto>> Rejeitar(int id)
         {
             try
