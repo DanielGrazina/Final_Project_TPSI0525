@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SecManagement_API.DTOs;
+using SecManagement_API.Helpers;
 using SecManagement_API.Services.Interfaces;
 
 namespace SecManagement_API.Controllers
@@ -17,6 +19,7 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Salas
         [HttpGet]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<SalaDto>>> GetSalas()
         {
             return Ok(await _salaService.GetAllAsync());
@@ -24,6 +27,7 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Salas/5
         [HttpGet("{id}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<SalaDto>> GetSala(int id)
         {
             var sala = await _salaService.GetByIdAsync(id);
@@ -33,6 +37,7 @@ namespace SecManagement_API.Controllers
 
         // POST: api/Salas
         [HttpPost]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<SalaDto>> PostSala(CreateSalaDto dto)
         {
             var novaSala = await _salaService.CreateAsync(dto);
@@ -41,6 +46,7 @@ namespace SecManagement_API.Controllers
 
         // PUT: api/Salas/5
         [HttpPut("{id}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> PutSala(int id, CreateSalaDto dto)
         {
             var sucesso = await _salaService.UpdateAsync(id, dto);
@@ -50,6 +56,7 @@ namespace SecManagement_API.Controllers
 
         // DELETE: api/Salas/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> DeleteSala(int id)
         {
             var sucesso = await _salaService.DeleteAsync(id);

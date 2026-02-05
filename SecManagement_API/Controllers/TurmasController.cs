@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SecManagement_API.DTOs;
+using SecManagement_API.Helpers;
 using SecManagement_API.Services.Interfaces;
 
 namespace SecManagement_API.Controllers
@@ -22,12 +23,14 @@ namespace SecManagement_API.Controllers
         // --- GESTÃO DE TURMAS ---
 
         [HttpGet]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<TurmaDto>>> GetTurmas()
         {
             return Ok(await _turmaService.GetAllAsync());
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<TurmaDto>> GetTurma(int id)
         {
             var turma = await _turmaService.GetByIdAsync(id);
@@ -36,6 +39,7 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<TurmaDto>> CreateTurma(CreateTurmaDto dto)
         {
             try
@@ -50,6 +54,7 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> DeleteTurma(int id)
         {
             try
@@ -66,7 +71,6 @@ namespace SecManagement_API.Controllers
         // --- ENDPOINTS RESTAURADOS (O Frontend agradece!) ---
 
         // GET: api/Turmas/5/modulos
-        // Mantém-se no TurmaService porque os módulos são estrutura da turma
         [HttpGet("{turmaId}/modulos")]
         public async Task<ActionResult<IEnumerable<TurmaModuloDto>>> GetModulos(int turmaId)
         {
@@ -74,7 +78,6 @@ namespace SecManagement_API.Controllers
         }
 
         // GET: api/Turmas/5/alunos
-        // Este endpoint existe aqui "logicamente", mas internamente pede ao InscricaoService
         [HttpGet("{turmaId}/alunos")]
         public async Task<ActionResult<IEnumerable<InscricaoDto>>> GetAlunos(int turmaId)
         {

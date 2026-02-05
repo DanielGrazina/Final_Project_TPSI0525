@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SecManagement_API.DTOs;
+using SecManagement_API.Helpers;
 using SecManagement_API.Services.Interfaces;
 using System.Security.Claims;
 
@@ -25,6 +26,7 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = $"{Roles.Formador},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<AvaliacaoDto>> LancarNota(CreateAvaliacaoDto dto)
         {
             try

@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SecManagement_API.Data;
 using SecManagement_API.DTOs;
+using SecManagement_API.Helpers;
 using SecManagement_API.Services.Interfaces;
 
 namespace SecManagement_API.Controllers
@@ -9,13 +12,16 @@ namespace SecManagement_API.Controllers
     public class SessoesController : ControllerBase
     {
         private readonly ISessaoService _service;
+        private readonly AppDbContext _context;
 
-        public SessoesController(ISessaoService service)
+        public SessoesController(ISessaoService service, AppDbContext context)
         {
             _service = service;
+            _context = context;
         }
 
         [HttpPost]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin},{Roles.Formador}")]
         public async Task<ActionResult<SessaoDto>> Agendar(CreateSessaoDto dto)
         {
             try
