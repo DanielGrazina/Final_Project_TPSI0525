@@ -41,10 +41,10 @@ namespace SecManagement_API.Controllers
             {
                 var result = await _authService.LoginAsync(request);
 
-                // If ask fot 2FA, return 202 Accepted for frontend change page
+                // ✅ 2FA challenge -> frontend deve mostrar input de código
                 if (result.RequiresTwoFactor)
                 {
-                    return Accepted(result);
+                    return Accepted(result); // 202
                 }
 
                 return Ok(result);
@@ -64,7 +64,10 @@ namespace SecManagement_API.Controllers
                 var result = await _authService.ForgotPasswordAsync(request.Email);
                 return Ok(new { message = result });
             }
-            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // POST: api/Auth/reset-password
@@ -76,7 +79,10 @@ namespace SecManagement_API.Controllers
                 var result = await _authService.ResetPasswordAsync(request);
                 return Ok(new { message = result });
             }
-            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // POST: api/Auth/activate
@@ -88,7 +94,10 @@ namespace SecManagement_API.Controllers
                 var result = await _authService.ActivateAccountAsync(request.Email, request.Token);
                 return Ok(new { message = result });
             }
-            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // POST: api/Auth/enable-2fa
@@ -98,15 +107,23 @@ namespace SecManagement_API.Controllers
         {
             try
             {
-                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+                var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrWhiteSpace(userIdStr))
+                    return Unauthorized(new { message = "Token inválido: NameIdentifier em falta." });
+
+                var userId = int.Parse(userIdStr);
+
                 var qrCodeUrl = await _authService.EnableTwoFactorAsync(userId);
                 return Ok(new { qrCodeUrl });
             }
-            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // POST: api/Auth/google
-        // Login with google
+        // Login with google (+ 2FA support)
         [HttpPost("google")]
         public async Task<IActionResult> Google([FromBody] GoogleLoginDto request)
         {
@@ -115,16 +132,21 @@ namespace SecManagement_API.Controllers
                 if (string.IsNullOrWhiteSpace(request.IdToken))
                     return BadRequest(new { message = "IdToken em falta." });
 
-                // Validates the Google Token ID 
+                // ✅ Validar token do Google
                 var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
 
-                // Cria/atualiza o user e devolve JWT
+                // ✅ 2FA: passa o TwoFactorCode (pode vir null/vazio)
                 var result = await _authService.SocialLoginAsync(
                     payload.Email,
                     "Google",
-                    payload.Subject, // Unique Google ID
-                    payload.Name ?? payload.Email
+                    payload.Subject,
+                    payload.Name ?? payload.Email,
+                    request.TwoFactorCode
                 );
+
+                // ✅ Se pedir 2FA, devolve 202 para o frontend mostrar input
+                if (result.RequiresTwoFactor)
+                    return Accepted(result);
 
                 return Ok(result);
             }
@@ -135,11 +157,29 @@ namespace SecManagement_API.Controllers
         }
 
         // POST: api/Auth/social-login
+        // (Se ainda usares isto para FB/Outros. Também suporta 2FA opcional.)
         [HttpPost("social-login")]
         public async Task<IActionResult> SocialLogin([FromBody] SocialLoginDto request)
         {
-            var result = await _authService.SocialLoginAsync(request.Email, request.Provider, request.ProviderKey, request.Nome);
-            return Ok(result);
+            try
+            {
+                var result = await _authService.SocialLoginAsync(
+                    request.Email,
+                    request.Provider,
+                    request.ProviderKey,
+                    request.Nome,
+                    request.TwoFactorCode
+                );
+
+                if (result.RequiresTwoFactor)
+                    return Accepted(result);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

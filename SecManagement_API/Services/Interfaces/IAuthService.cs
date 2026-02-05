@@ -1,5 +1,4 @@
 ﻿using SecManagement_API.DTOs;
-using SecManagement_API.Models;
 
 namespace SecManagement_API.Services.Interfaces
 {
@@ -14,6 +13,14 @@ namespace SecManagement_API.Services.Interfaces
 
         Task<string> EnableTwoFactorAsync(int userId);
         Task<string> ActivateAccountAsync(string email, string token);
-        Task<AuthResponseDto> SocialLoginAsync(string email, string provider, string providerKey, string nome);
+
+        // ✅ ALTERADO: agora aceita twoFactorCode opcional para login social
+        Task<AuthResponseDto> SocialLoginAsync(
+            string email,
+            string provider,
+            string providerKey,
+            string nome,
+            string? twoFactorCode = null
+        );
     }
 }

@@ -29,9 +29,7 @@ namespace SecManagement_API.Services
         public async Task<string> RegisterAsync(RegisterDto dto)
         {
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-            {
                 throw new Exception("Este email já está registado.");
-            }
 
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
             string activationToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
@@ -39,13 +37,12 @@ namespace SecManagement_API.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. Criar User
                 var user = new User
                 {
                     Nome = dto.Nome,
                     Email = dto.Email,
                     PasswordHash = passwordHash,
-                    Role = "User", // Assume formando no registo
+                    Role = "User",
                     IsActive = false,
                     ActivationToken = activationToken,
                     CreatedAt = DateTime.UtcNow
@@ -54,7 +51,7 @@ namespace SecManagement_API.Services
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
-                // 2. Criar Perfil de Formando Provisório (CAND-ID)
+                // Perfil "Candidato" (Formando provisório)
                 var formando = new Formando
                 {
                     UserId = user.Id,
@@ -67,10 +64,11 @@ namespace SecManagement_API.Services
 
                 await transaction.CommitAsync();
 
-                // 3. Enviar Email (Simulado ou Real)
-                // ... logica de email ...
+                // Se quiseres email real, mete aqui (tu já tinhas isso noutra versão)
+                // string link = $"http://localhost:5173/activate?email={dto.Email}&token={activationToken}";
+                // await _emailService.SendEmailAsync(dto.Email, "Ativar Conta", $"Clica: {link}");
 
-                return "Registo efetuado! Pode agora candidatar-se aos cursos.";
+                return "Registo efetuado! Verifica o email para ativar (ou ativa via link).";
             }
             catch
             {
@@ -81,9 +79,8 @@ namespace SecManagement_API.Services
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
         {
-            // Incluir os perfis na consulta do Login
             var user = await _context.Users
-                .Include(u => u.FormandoProfile) // Necessário para obter o ID
+                .Include(u => u.FormandoProfile)
                 .Include(u => u.FormadorProfile)
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
@@ -93,18 +90,24 @@ namespace SecManagement_API.Services
             if (!user.IsActive)
                 throw new Exception("Conta inativa. Verifique o seu email.");
 
+            // ✅ 2FA
             if (user.IsTwoFactorEnabled)
             {
-                if (string.IsNullOrEmpty(dto.TwoFactorCode))
+                if (string.IsNullOrWhiteSpace(dto.TwoFactorCode))
                 {
-                    return new AuthResponseDto { RequiresTwoFactor = true, Message = "Insira o código 2FA" };
+                    return new AuthResponseDto
+                    {
+                        RequiresTwoFactor = true,
+                        Message = "Insira o código 2FA"
+                    };
                 }
 
+                if (string.IsNullOrWhiteSpace(user.TwoFactorSecret))
+                    throw new Exception("2FA ativo mas secret não configurado.");
+
                 var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
-                if (!totp.VerifyTotp(dto.TwoFactorCode, out long timeStepMatched))
-                {
+                if (!totp.VerifyTotp(dto.TwoFactorCode.Trim(), out long _))
                     throw new Exception("Código 2FA incorreto.");
-                }
             }
 
             string token = CreateToken(user);
@@ -134,6 +137,11 @@ namespace SecManagement_API.Services
             user.ResetTokenExpires = DateTime.UtcNow.AddMinutes(30);
 
             await _context.SaveChangesAsync();
+
+            // Se usares email real:
+            // string link = $"http://localhost:5173/reset-password?token={user.ResetToken}";
+            // await _emailService.SendEmailAsync(email, "Recuperação de Password", $"Clica: {link}");
+
             return "Email de recuperação enviado com sucesso!";
         }
 
@@ -164,21 +172,47 @@ namespace SecManagement_API.Services
             user.IsTwoFactorEnabled = true;
 
             await _context.SaveChangesAsync();
+
+            // QR content
             return $"otpauth://totp/ATEC:{user.Email}?secret={secret}&issuer=ATEC_FinalProject";
         }
 
-        public async Task<AuthResponseDto> SocialLoginAsync(string email, string provider, string providerKey, string nome)
+        // ✅ ALTERADO: suporta 2FA também no login social
+        public async Task<AuthResponseDto> SocialLoginAsync(
+            string email,
+            string provider,
+            string providerKey,
+            string nome,
+            string? twoFactorCode = null
+        )
         {
             var user = await _context.Users
                 .Include(u => u.FormandoProfile)
                 .Include(u => u.FormadorProfile)
                 .FirstOrDefaultAsync(u => u.Email == email);
 
+            // ✅ Se existe e tem 2FA ligado: validar
+            if (user != null && user.IsTwoFactorEnabled)
+            {
+                if (string.IsNullOrWhiteSpace(twoFactorCode))
+                {
+                    return new AuthResponseDto
+                    {
+                        RequiresTwoFactor = true,
+                        Message = "Insira o código 2FA"
+                    };
+                }
+
+                if (string.IsNullOrWhiteSpace(user.TwoFactorSecret))
+                    throw new Exception("2FA ativo mas secret não configurado.");
+
+                var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
+                if (!totp.VerifyTotp(twoFactorCode.Trim(), out long _))
+                    throw new Exception("Código 2FA incorreto.");
+            }
+
             if (user == null)
             {
-                // No social login, criamos o User, mas o Formando é criado depois?
-                // Idealmente devias repetir a lógica do Register aqui para criar o CAND-ID,
-                // mas para simplificar vamos criar só o user e deixar o frontend tratar.
                 user = new User
                 {
                     Nome = nome,
@@ -194,6 +228,7 @@ namespace SecManagement_API.Services
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
+                // Criar CAND- (Formando provisório)
                 var formando = new Formando
                 {
                     UserId = user.Id,
@@ -203,11 +238,19 @@ namespace SecManagement_API.Services
 
                 _context.Formandos.Add(formando);
                 await _context.SaveChangesAsync();
+
+                // ✅ Recarregar para ter os perfis e gerar token com claims certas
+                user = await _context.Users
+                    .Include(u => u.FormandoProfile)
+                    .Include(u => u.FormadorProfile)
+                    .FirstAsync(u => u.Id == user.Id);
             }
             else
             {
+                // Associar provider key ao user existente
                 if (provider == "Google") user.GoogleId = providerKey;
                 else if (provider == "Facebook") user.FacebookId = providerKey;
+
                 await _context.SaveChangesAsync();
             }
 
@@ -217,20 +260,30 @@ namespace SecManagement_API.Services
 
         private string CreateToken(User user)
         {
+            // garantir que trazemos perfis quando precisamos de claims (FormandoId / FormadorId)
+            var userWithProfiles = _context.Users
+                .Include(u => u.FormadorProfile)
+                .Include(u => u.FormandoProfile)
+                .FirstOrDefault(u => u.Id == user.Id);
+
+            user = userWithProfiles ?? user;
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Nome),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.Name, user.Nome ?? ""),
+                new Claim(ClaimTypes.Email, user.Email ?? ""),
+                new Claim(ClaimTypes.Role, user.Role ?? "User")
             };
 
-            // Injetar os IDs específicos nas Claims
-            // O frontend procura por "FormandoId"
             if (user.FormandoProfile != null)
             {
                 claims.Add(new Claim("FormandoId", user.FormandoProfile.Id.ToString()));
                 claims.Add(new Claim("IsFormando", "true"));
+            }
+            else
+            {
+                claims.Add(new Claim("IsFormando", "false"));
             }
 
             if (user.FormadorProfile != null)
@@ -238,9 +291,14 @@ namespace SecManagement_API.Services
                 claims.Add(new Claim("FormadorId", user.FormadorProfile.Id.ToString()));
                 claims.Add(new Claim("IsFormador", "true"));
             }
+            else
+            {
+                claims.Add(new Claim("IsFormador", "false"));
+            }
 
             var tokenKey = _configuration.GetSection("AppSettings:Token").Value
-                           ?? _configuration.GetSection("JwtSettings:Key").Value!;
+                           ?? _configuration.GetSection("JwtSettings:Key").Value
+                           ?? throw new Exception("JWT key não configurada em AppSettings:Token ou JwtSettings:Key.");
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);

@@ -14,6 +14,9 @@ export default function Login() {
   const [requires2FA, setRequires2FA] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // ✅ NOVO: guarda o idToken do Google quando o backend responde “RequiresTwoFactor”
+  const [pendingGoogleIdToken, setPendingGoogleIdToken] = useState("");
+
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
@@ -29,6 +32,27 @@ export default function Login() {
     setLoading(true);
 
     try {
+      // ✅ CASO 1: estamos em modo 2FA e o login pendente é Google
+      if (requires2FA && pendingGoogleIdToken) {
+        const response = await api.post("/Auth/google", {
+          IdToken: pendingGoogleIdToken,
+          TwoFactorCode: twoFactorCode,
+        });
+
+        const token = response.data?.token || response.data?.Token;
+
+        if (!token) {
+          setError(response.data?.message || response.data?.Message || "Falhou: token não recebido.");
+          return;
+        }
+
+        localStorage.setItem("token", token);
+        setPendingGoogleIdToken("");
+        navigate("/dashboard");
+        return;
+      }
+
+      // ✅ CASO 2: login normal (email/password) com 2FA opcional
       const payload = {
         email,
         password,
@@ -76,6 +100,17 @@ export default function Login() {
 
       const response = await api.post("/Auth/google", { IdToken: idToken });
 
+      const requiresTwoFactor =
+        response.data?.requiresTwoFactor ?? response.data?.RequiresTwoFactor ?? false;
+
+      // ✅ Se pedir 2FA, guardamos o idToken e mostramos o input do código
+      if (requiresTwoFactor || response.status === 202) {
+        setPendingGoogleIdToken(idToken);
+        setRequires2FA(true);
+        setTwoFactorCode("");
+        return;
+      }
+
       const token = response.data?.token || response.data?.Token;
       if (!token) {
         setError(response.data?.message || response.data?.Message || "Login Google falhou: token não recebido.");
@@ -85,8 +120,8 @@ export default function Login() {
       localStorage.setItem("token", token);
       navigate("/dashboard");
     } catch (err) {
-      console.log("GOOGLE STATUS:", err.response?.status);
-      console.log("GOOGLE DATA:", err.response?.data);
+      console.log("GOOGLE STATUS:", err?.response?.status);
+      console.log("GOOGLE DATA:", err?.response?.data);
       setError(readApiMessage(err, "Erro no login Google."));
     } finally {
       setLoading(false);
@@ -99,18 +134,15 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 relative overflow-hidden">
-      {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-      
-      {/* Theme toggle in top right */}
+
       <div className="absolute top-4 right-4">
         <ThemeToggle theme={theme} onToggle={toggleTheme} />
       </div>
 
       <div className="relative w-full max-w-md px-4">
         <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl border dark:border-gray-800">
-          {/* Logo/Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 mb-4 shadow-lg shadow-blue-500/30">
               <span className="text-2xl font-bold text-white">AM</span>
@@ -139,7 +171,7 @@ export default function Login() {
                   </label>
                   <div className="relative">
                     <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 0 0 8 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                     </svg>
                     <input
                       type="email"
@@ -225,6 +257,7 @@ export default function Login() {
                       setRequires2FA(false);
                       setTwoFactorCode("");
                       setError("");
+                      setPendingGoogleIdToken(""); // ✅ limpa também
                     }}
                     className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                     disabled={loading}
@@ -285,7 +318,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="text-center mt-6 text-xs text-gray-500 dark:text-gray-400">
           ATEC Management • Portal de Gestão v1.0
         </div>
