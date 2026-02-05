@@ -40,7 +40,7 @@ function getFormandoIdFromStorageOrToken() {
   const payload = decodeJwt(token);
   if (!payload) return null;
 
-  const candidates = ["formandoId", "FormandoId", "idFormando", "IdFormando", "formando_id"];
+  const candidates = ["FormandoId", "formandoId", "idFormando", "IdFormando", "formando_id"];
 
   for (const k of candidates) {
     const v = payload[k];
@@ -76,27 +76,38 @@ export default function Recruit() {
   const token = getToken();
   const roleRaw = useMemo(() => getUserRoleFromToken(token) || "", [token]);
   const roleLower = String(roleRaw).trim().toLowerCase();
-
-  const isUser = roleLower === "user";
-  const isFormando = roleLower === "formando" || isUser;
-  const isStaff = roleLower === "admin" || roleLower === "formador";
   const roleOk = !!roleLower;
 
-  // Tabs: "cursos" | "minhas" | "staff" | "pendentes"
+  // Regras (ajustadas ao teu backend):
+  // - User = candidato (Formando provisório) => tem FormandoId no token
+  // - Formando = aluno
+  // - Staff = Admin/SuperAdmin/Secretaria/Formador
+  const isUser = roleLower === "user";
+  const isFormando = roleLower === "formando";
+  const isAluno = isUser || isFormando;
+
+  const isStaff =
+    roleLower === "admin" ||
+    roleLower === "superadmin" ||
+    roleLower === "secretaria" ||
+    roleLower === "formador";
+
+  // Tabs: staff -> "pendentes" | "staff"
+  // aluno -> "cursos" | "minhas"
   const [tab, setTab] = useState(isStaff ? "pendentes" : "cursos");
 
-  // Dados gerais
+  // Dados base
   const [turmas, setTurmas] = useState([]);
   const [cursos, setCursos] = useState([]);
   const [loadingBase, setLoadingBase] = useState(true);
 
   const [error, setError] = useState("");
 
-  // Cursos (Formando/User)
+  // Cursos (Aluno)
   const [searchCursos, setSearchCursos] = useState("");
   const [submittingCursoId, setSubmittingCursoId] = useState(null);
 
-  // Minhas inscrições (Formando/User)
+  // Minhas inscrições (Aluno)
   const [minhas, setMinhas] = useState([]);
   const [loadingMinhas, setLoadingMinhas] = useState(false);
   const [busyInscricaoId, setBusyInscricaoId] = useState(null);
@@ -107,7 +118,7 @@ export default function Recruit() {
   const [loadingInscritos, setLoadingInscritos] = useState(false);
   const [searchInscritos, setSearchInscritos] = useState("");
 
-  // NOVO: Staff - Candidaturas Pendentes
+  // Staff: candidaturas pendentes
   const [pendentes, setPendentes] = useState([]);
   const [loadingPendentes, setLoadingPendentes] = useState(false);
   const [searchPendentes, setSearchPendentes] = useState("");
@@ -116,7 +127,7 @@ export default function Recruit() {
   const [turmaAprovacao, setTurmaAprovacao] = useState("");
   const [approvingBatch, setApprovingBatch] = useState(false);
 
-  // Staff: colocar em turma (manual - individual)
+  // Staff: colocar em turma (manual)
   const [colocarInscricaoId, setColocarInscricaoId] = useState("");
   const [colocarTurmaId, setColocarTurmaId] = useState("");
   const [placing, setPlacing] = useState(false);
@@ -148,7 +159,7 @@ export default function Recruit() {
 
     if (!formandoId) {
       setError(
-        "Não encontrei o FormandoId. O backend tem de expor o FormandoId no token (claim) ou guardá-lo no localStorage no login."
+        "Não encontrei o FormandoId no token. Faz logout/login e confirma que o JWT traz a claim 'FormandoId'."
       );
       return;
     }
@@ -182,7 +193,6 @@ export default function Recruit() {
     }
   }
 
-  // NOVO: Carregar candidaturas pendentes
   async function loadPendentes() {
     setLoadingPendentes(true);
     setError("");
@@ -194,7 +204,7 @@ export default function Recruit() {
 
       const res = await api.get(endpoint);
       setPendentes(Array.isArray(res.data) ? res.data : []);
-      setSelectedPendentes(new Set()); // Limpar seleção ao recarregar
+      setSelectedPendentes(new Set());
     } catch (err) {
       setError(extractError(err, "Erro ao carregar candidaturas pendentes."));
     } finally {
@@ -214,7 +224,7 @@ export default function Recruit() {
   useEffect(() => {
     if (!roleOk) return;
 
-    if (isFormando) {
+    if (isAluno) {
       loadMinhasInscricoes();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -227,7 +237,6 @@ export default function Recruit() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTurmaId, roleLower, tab]);
 
-  // NOVO: Carregar pendentes quando mudar o filtro ou tab
   useEffect(() => {
     if (isStaff && tab === "pendentes") {
       loadPendentes();
@@ -259,7 +268,6 @@ export default function Recruit() {
     });
   }, [inscritos, searchInscritos]);
 
-  // NOVO: Filtrar pendentes
   const pendentesFiltrados = useMemo(() => {
     const s = searchPendentes.trim().toLowerCase();
     if (!s) return pendentes;
@@ -277,7 +285,7 @@ export default function Recruit() {
 
     if (!formandoId) {
       setError(
-        "Não encontrei o FormandoId. O backend tem de expor o FormandoId no token (claim) ou guardá-lo no localStorage no login."
+        "Não encontrei o FormandoId no token. Faz logout/login e confirma que o JWT traz a claim 'FormandoId'."
       );
       return;
     }
@@ -333,7 +341,7 @@ export default function Recruit() {
         await loadInscritosPorTurma(selectedTurmaId);
       }
       await loadBase();
-      await loadPendentes(); // Atualizar lista de pendentes
+      await loadPendentes();
 
       setColocarInscricaoId("");
       setColocarTurmaId("");
@@ -345,20 +353,15 @@ export default function Recruit() {
     }
   }
 
-  // NOVO: Toggle seleção de candidatura pendente
   function togglePendente(id) {
     setSelectedPendentes((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
 
-  // NOVO: Selecionar/Desselecionar todas as candidaturas visíveis
   function toggleAllPendentes() {
     if (selectedPendentes.size === pendentesFiltrados.length) {
       setSelectedPendentes(new Set());
@@ -367,20 +370,13 @@ export default function Recruit() {
     }
   }
 
-  // NOVO: Aprovar candidaturas em lote
   async function aprovarLote() {
-    if (selectedPendentes.size === 0) {
-      return alert("Seleciona pelo menos uma candidatura.");
-    }
+    if (selectedPendentes.size === 0) return alert("Seleciona pelo menos uma candidatura.");
 
     const turmaId = Number(turmaAprovacao);
-    if (!Number.isFinite(turmaId) || turmaId <= 0) {
-      return alert("Seleciona uma turma válida.");
-    }
+    if (!Number.isFinite(turmaId) || turmaId <= 0) return alert("Seleciona uma turma válida.");
 
-    if (!window.confirm(`Aprovar ${selectedPendentes.size} candidatura(s) para a turma selecionada?`)) {
-      return;
-    }
+    if (!window.confirm(`Aprovar ${selectedPendentes.size} candidatura(s) para a turma selecionada?`)) return;
 
     setApprovingBatch(true);
     setError("");
@@ -401,7 +397,6 @@ export default function Recruit() {
     }
   }
 
-  // NOVO: Rejeitar candidatura individual
   async function rejeitarCandidatura(inscricaoId) {
     if (!window.confirm("Tens a certeza que queres rejeitar esta candidatura?")) return;
 
@@ -425,20 +420,16 @@ export default function Recruit() {
         <div className="container mx-auto px-6 py-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
-                Inscrições
-              </h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">Inscrições</h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {isStaff
-                  ? "Gere candidaturas pendentes e consulta inscritos por turma"
-                  : "Candidata-te a cursos e acompanha o estado"}
+                {isStaff ? "Gere candidaturas pendentes e consulta inscritos por turma" : "Candidata-te a cursos e acompanha o estado"}
               </p>
             </div>
 
             <div className="flex gap-3">
               <button
                 onClick={() => navigate("/dashboard")}
-                className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 
+                className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300
                            hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium"
               >
                 ← Voltar
@@ -505,8 +496,7 @@ export default function Recruit() {
       {/* Content */}
       <div className="container mx-auto px-6 py-8">
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 
-                          px-5 py-4 rounded-xl mb-6 text-sm shadow-sm">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 px-5 py-4 rounded-xl mb-6 text-sm shadow-sm">
             {error}
           </div>
         )}
@@ -517,20 +507,16 @@ export default function Recruit() {
           </div>
         )}
 
-        {/* ========== STAFF: CANDIDATURAS PENDENTES ========== */}
+        {/* STAFF: PENDENTES */}
         {isStaff && tab === "pendentes" && (
           <>
-            {/* Filtros e Ações em Lote */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Filtros */}
               <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5">
                 <div className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Filtros</div>
-                
+
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Filtrar por Curso
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Curso</label>
                     <select
                       value={filtrarCursoId}
                       onChange={(e) => setFiltrarCursoId(e.target.value)}
@@ -549,9 +535,7 @@ export default function Recruit() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Pesquisar
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pesquisar</label>
                     <input
                       value={searchPendentes}
                       onChange={(e) => setSearchPendentes(e.target.value)}
@@ -564,7 +548,7 @@ export default function Recruit() {
 
                   <button
                     onClick={loadPendentes}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300
                                hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium"
                     disabled={loadingPendentes}
                   >
@@ -573,11 +557,8 @@ export default function Recruit() {
                 </div>
               </div>
 
-              {/* Aprovação em Lote */}
               <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5">
-                <div className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  Aprovar em Lote
-                </div>
+                <div className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Aprovar em Lote</div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   Seleciona candidaturas e atribui-as a uma turma de uma só vez.
                 </p>
@@ -585,12 +566,8 @@ export default function Recruit() {
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Turma de Aprovação
-                      </label>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {selectedPendentes.size} selecionada(s)
-                      </span>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Turma de Aprovação</label>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{selectedPendentes.size} selecionada(s)</span>
                     </div>
                     <select
                       value={turmaAprovacao}
@@ -611,7 +588,7 @@ export default function Recruit() {
 
                   <button
                     onClick={aprovarLote}
-                    className="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white 
+                    className="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white
                                hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 transition-all duration-200 font-medium
                                shadow-lg shadow-green-500/30"
                     disabled={approvingBatch || selectedPendentes.size === 0 || !turmaAprovacao}
@@ -622,7 +599,7 @@ export default function Recruit() {
                   {selectedPendentes.size > 0 && (
                     <button
                       onClick={() => setSelectedPendentes(new Set())}
-                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300
                                  hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
                     >
                       Limpar Seleção
@@ -632,7 +609,6 @@ export default function Recruit() {
               </div>
             </div>
 
-            {/* Tabela de Candidaturas Pendentes */}
             <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden">
               <div className="overflow-auto">
                 <table className="min-w-full">
@@ -646,21 +622,11 @@ export default function Recruit() {
                           className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                       </th>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                        ID
-                      </th>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                        Formando
-                      </th>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                        Curso
-                      </th>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                        Data
-                      </th>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                        Ações
-                      </th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">ID</th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Formando</th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Curso</th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Data</th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Ações</th>
                     </tr>
                   </thead>
 
@@ -675,9 +641,7 @@ export default function Recruit() {
                     ) : pendentesFiltrados.length === 0 ? (
                       <tr>
                         <td colSpan="6" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
-                          {pendentes.length === 0
-                            ? "🎉 Nenhuma candidatura pendente!"
-                            : "Nenhuma candidatura encontrada com os filtros aplicados."}
+                          {pendentes.length === 0 ? "Nenhuma candidatura pendente." : "Nenhuma candidatura encontrada com os filtros aplicados."}
                         </td>
                       </tr>
                     ) : (
@@ -696,23 +660,19 @@ export default function Recruit() {
                               className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
                           </td>
-                          <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">
-                            #{p.id}
-                          </td>
+                          <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">#{p.id}</td>
                           <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">
                             {p.formandoNome || `#${p.formandoId}`}
                           </td>
                           <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
                             {p.cursoNome || `#${p.cursoId}`}
                           </td>
-                          <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
-                            {toLocalDateTime(p.dataInscricao)}
-                          </td>
+                          <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{toLocalDateTime(p.dataInscricao)}</td>
                           <td className="py-4 px-6">
                             <button
                               onClick={() => rejeitarCandidatura(p.id)}
-                              className="px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 dark:text-red-400 
-                                         bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 
+                              className="px-3 py-1.5 rounded-lg text-xs font-medium text-red-700 dark:text-red-400
+                                         bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30
                                          transition-all duration-200"
                             >
                               Rejeitar
@@ -728,12 +688,10 @@ export default function Recruit() {
           </>
         )}
 
-        {/* ========== STAFF: POR TURMA ========== */}
+        {/* STAFF: POR TURMA */}
         {isStaff && tab === "staff" && (
           <>
-            {/* Top controls */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              {/* Inscritos por turma */}
               <div className="lg:col-span-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
                   <div className="flex items-center gap-3">
@@ -755,7 +713,7 @@ export default function Recruit() {
 
                     <button
                       onClick={() => loadInscritosPorTurma(selectedTurmaId)}
-                      className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 
+                      className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300
                                  hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
                       disabled={!selectedTurmaId || loadingInscritos}
                     >
@@ -774,12 +732,9 @@ export default function Recruit() {
                 </div>
               </div>
 
-              {/* Colocar em turma (manual) */}
               <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5">
                 <div className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Colocar em turma</div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Usa o ID da inscrição (candidatura) e escolhe a turma.
-                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Usa o ID da inscrição e escolhe a turma.</p>
 
                 <div className="grid grid-cols-1 gap-3">
                   <input
@@ -810,7 +765,7 @@ export default function Recruit() {
 
                   <button
                     onClick={colocarEmTurma}
-                    className="px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white 
+                    className="px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white
                                hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-200 font-medium
                                shadow-lg shadow-blue-500/30"
                     disabled={placing}
@@ -821,24 +776,15 @@ export default function Recruit() {
               </div>
             </div>
 
-            {/* Table inscritos */}
             <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden">
               <div className="overflow-auto">
                 <table className="min-w-full">
                   <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
                     <tr>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                        Inscrição
-                      </th>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                        Formando
-                      </th>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                        Data
-                      </th>
-                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                        Estado
-                      </th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Inscrição</th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Formando</th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Data</th>
+                      <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Estado</th>
                     </tr>
                   </thead>
 
@@ -852,20 +798,14 @@ export default function Recruit() {
                       </tr>
                     ) : inscritosFiltrados.length === 0 ? (
                       <tr>
-                        <td colSpan="4" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
-                          Nenhum inscrito encontrado.
-                        </td>
+                        <td colSpan="4" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">Nenhum inscrito encontrado.</td>
                       </tr>
                     ) : (
                       inscritosFiltrados.map((i) => (
                         <tr key={i.id} className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150">
                           <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">#{i.id}</td>
-                          <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">
-                            {i.formandoNome || `#${i.formandoId}`}
-                          </td>
-                          <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
-                            {toLocalDateTime(i.dataInscricao)}
-                          </td>
+                          <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">{i.formandoNome || `#${i.formandoId}`}</td>
+                          <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{toLocalDateTime(i.dataInscricao)}</td>
                           <td className="py-4 px-6">
                             <EstadoBadge estado={i.estado} />
                           </td>
@@ -879,10 +819,9 @@ export default function Recruit() {
           </>
         )}
 
-        {/* ========== FORMANDO/USER ========== */}
-        {!isStaff && isFormando && (
+        {/* ALUNO (User/Formando) */}
+        {!isStaff && isAluno && (
           <>
-            {/* TAB: CURSOS */}
             {tab === "cursos" && (
               <>
                 <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
@@ -898,7 +837,7 @@ export default function Recruit() {
 
                     <button
                       onClick={loadBase}
-                      className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 
+                      className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300
                                  hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
                       disabled={loadingBase}
                     >
@@ -912,15 +851,9 @@ export default function Recruit() {
                     <table className="min-w-full">
                       <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
                         <tr>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                            Curso
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                            Área / Nível
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                            Ação
-                          </th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Curso</th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Área / Nível</th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Ação</th>
                         </tr>
                       </thead>
 
@@ -934,9 +867,7 @@ export default function Recruit() {
                           </tr>
                         ) : cursosFiltrados.length === 0 ? (
                           <tr>
-                            <td colSpan="3" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
-                              Nenhum curso encontrado.
-                            </td>
+                            <td colSpan="3" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">Nenhum curso encontrado.</td>
                           </tr>
                         ) : (
                           cursosFiltrados.map((c) => (
@@ -951,8 +882,8 @@ export default function Recruit() {
                                 <button
                                   onClick={() => candidatarAoCurso(c.id)}
                                   disabled={submittingCursoId === c.id}
-                                  className="px-4 py-2 rounded-lg text-sm font-medium text-blue-700 dark:text-blue-400 
-                                             bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 
+                                  className="px-4 py-2 rounded-lg text-sm font-medium text-blue-700 dark:text-blue-400
+                                             bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30
                                              disabled:opacity-50 transition-all duration-200"
                                 >
                                   {submittingCursoId === c.id ? "A submeter..." : "Candidatar-me"}
@@ -968,18 +899,15 @@ export default function Recruit() {
               </>
             )}
 
-            {/* TAB: MINHAS */}
             {tab === "minhas" && (
               <>
                 <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      As tuas candidaturas/inscrições (curso + eventual turma).
-                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">As tuas candidaturas/inscrições (curso + eventual turma).</div>
 
                     <button
                       onClick={loadMinhasInscricoes}
-                      className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 
+                      className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300
                                  hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
                       disabled={loadingMinhas}
                     >
@@ -993,21 +921,11 @@ export default function Recruit() {
                     <table className="min-w-full">
                       <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
                         <tr>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                            Curso
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                            Turma
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                            Data
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                            Estado
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                            Ação
-                          </th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Curso</th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Turma</th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Data</th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Estado</th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Ação</th>
                         </tr>
                       </thead>
 
@@ -1021,9 +939,7 @@ export default function Recruit() {
                           </tr>
                         ) : minhas.length === 0 ? (
                           <tr>
-                            <td colSpan="5" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
-                              Ainda não tens candidaturas.
-                            </td>
+                            <td colSpan="5" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">Ainda não tens candidaturas.</td>
                           </tr>
                         ) : (
                           minhas.map((i) => (
@@ -1034,9 +950,7 @@ export default function Recruit() {
                               <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
                                 {i.turmaNome || (i.turmaId ? `#${i.turmaId}` : "A aguardar colocação")}
                               </td>
-                              <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
-                                {toLocalDateTime(i.dataInscricao)}
-                              </td>
+                              <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{toLocalDateTime(i.dataInscricao)}</td>
                               <td className="py-4 px-6">
                                 <EstadoBadge estado={i.estado} />
                               </td>
@@ -1044,8 +958,8 @@ export default function Recruit() {
                                 <button
                                   onClick={() => cancelarInscricao(i.id)}
                                   disabled={busyInscricaoId === i.id}
-                                  className="px-4 py-2 rounded-lg text-sm font-medium text-red-700 dark:text-red-400 
-                                             bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 
+                                  className="px-4 py-2 rounded-lg text-sm font-medium text-red-700 dark:text-red-400
+                                             bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30
                                              disabled:opacity-50 transition-all duration-200"
                                 >
                                   {busyInscricaoId === i.id ? "A cancelar..." : "Cancelar"}
@@ -1069,7 +983,7 @@ export default function Recruit() {
           </>
         )}
 
-        {!isStaff && !isFormando && (
+        {!isStaff && !isAluno && (
           <div className="bg-white/80 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-800 rounded-xl p-6 text-sm text-gray-700 dark:text-gray-300">
             A tua role atual não tem uma vista configurada para Inscrições.
           </div>

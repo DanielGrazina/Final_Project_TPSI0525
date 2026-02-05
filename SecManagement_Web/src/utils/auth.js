@@ -45,14 +45,74 @@ export function getUserRoleFromToken(token) {
   const payload = decodeJwt(token);
   if (!payload) return null;
 
-  // alguns backends usam estas chaves:
-  return (
+  const role =
     payload.role ||
     payload.Role ||
     payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
     payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role"] ||
-    null
-  );
+    null;
+
+  // À prova de bala: alguns backends devolvem array de roles
+  if (Array.isArray(role)) return role[0] ?? null;
+
+  return role;
+}
+
+// Id do utilizador (NameIdentifier)
+export function getUserIdFromToken(token) {
+  const payload = decodeJwt(token);
+  if (!payload) return null;
+
+  // o vosso backend usa ClaimTypes.NameIdentifier
+  const id =
+    payload.sub ||
+    payload.nameid ||
+    payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ||
+    payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/nameidentifier"] ||
+    payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ||
+    null;
+
+  if (id == null) return null;
+
+  const n = Number(id);
+  return Number.isFinite(n) ? n : id; // devolve número quando possível
+}
+
+// Claims extra que o vosso backend adiciona no token
+export function getFormandoIdFromToken(token) {
+  const payload = decodeJwt(token);
+  if (!payload) return null;
+
+  const v = payload.FormandoId ?? payload["FormandoId"] ?? null;
+  if (v == null) return null;
+
+  const n = Number(v);
+  return Number.isFinite(n) ? n : v;
+}
+
+export function getFormadorIdFromToken(token) {
+  const payload = decodeJwt(token);
+  if (!payload) return null;
+
+  const v = payload.FormadorId ?? payload["FormadorId"] ?? null;
+  if (v == null) return null;
+
+  const n = Number(v);
+  return Number.isFinite(n) ? n : v;
+}
+
+export function isFormandoFromToken(token) {
+  const payload = decodeJwt(token);
+  if (!payload) return false;
+
+  return payload.IsFormando === "true" || payload.IsFormando === true;
+}
+
+export function isFormadorFromToken(token) {
+  const payload = decodeJwt(token);
+  if (!payload) return false;
+
+  return payload.IsFormador === "true" || payload.IsFormador === true;
 }
 
 export function isTokenExpired(token) {

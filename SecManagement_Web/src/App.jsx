@@ -39,86 +39,107 @@ function App() {
             </RequireRole>
           }
         />
+
+        {/* INSCRIÇÕES / CANDIDATURAS
+            - POST /Inscricoes/candidatar -> User, Formando
+            - GET /Inscricoes/aluno/{formandoId} -> autenticado (mas vamos controlar no frontend)
+            - GET /Inscricoes/pendentes + aprovar/rejeitar -> Secretaria, Admin, SuperAdmin
+        */}
         <Route
-          path="/admin/Recruit"
+          path="/recruit"
           element={
-            <RequireRole allow={["Admin", "Formador", "Formando","User"]}>
+            <RequireRole allow={["User", "Formando", "Secretaria", "Admin", "SuperAdmin"]}>
               <Recruit />
             </RequireRole>
           }
         />
 
-        {/* ADMIN only */}
+        {/* USERS
+            - GET/PUT: SuperAdmin, Admin, Secretaria
+            - DELETE: SuperAdmin, Admin
+        */}
         <Route
-          path="/admin/Users"
+          path="/admin/users"
           element={
-            <RequireRole allow={["Admin"]}>
+            <RequireRole allow={["Secretaria", "Admin", "SuperAdmin"]}>
               <Users />
             </RequireRole>
           }
         />
+
+        {/* PEDAGÓGICO (Admin/SuperAdmin) */}
         <Route
-          path="/admin/Areas"
+          path="/admin/areas"
           element={
-            <RequireRole allow={["Admin"]}>
+            <RequireRole allow={["Admin", "SuperAdmin"]}>
               <Areas />
             </RequireRole>
           }
         />
         <Route
-          path="/admin/Courses"
+          path="/admin/courses"
           element={
-            <RequireRole allow={["Admin"]}>
+            <RequireRole allow={["Admin", "SuperAdmin"]}>
               <Courses />
             </RequireRole>
           }
         />
         <Route
-          path="/admin/Modules"
+          path="/admin/modules"
           element={
-            <RequireRole allow={["Admin"]}>
+            <RequireRole allow={["Admin", "SuperAdmin"]}>
               <Modules />
             </RequireRole>
           }
         />
         <Route
-          path="/admin/Turmas"
+          path="/admin/turmas"
           element={
-            <RequireRole allow={["Admin"]}>
+            <RequireRole allow={["Admin", "SuperAdmin"]}>
               <Turmas />
             </RequireRole>
           }
         />
 
-        {/* Admin + Formador */}
+        {/* SALAS (controller só Admin/SuperAdmin) */}
         <Route
-          path="/admin/Rooms"
+          path="/admin/rooms"
           element={
-            <RequireRole allow={["Admin", "Formador"]}>
+            <RequireRole allow={["Admin", "SuperAdmin"]}>
               <Rooms />
             </RequireRole>
           }
         />
 
-        {/* Admin + Formador + Formando */}
+        {/* AVALIAÇÕES
+            - Controller: [Authorize] geral
+            - POST lançar nota: Formador, Admin, SuperAdmin
+            - Aluno vê as suas: GET /Avaliacoes/aluno/{id} (controlado por claims no backend)
+        */}
         <Route
-          path="/admin/Evaluations"
+          path="/admin/evaluations"
           element={
-            <RequireRole allow={["Admin", "Formador", "Formando"]}>
+            <RequireRole allow={["Formando", "Formador", "Admin", "SuperAdmin"]}>
               <Evaluations />
             </RequireRole>
           }
         />
 
-        {/* Sessões: Admin + Formador (como disseste) */}
+        {/* SESSÕES
+            - POST agendar: Admin, SuperAdmin, Formador
+            - GET horários: autenticado
+        */}
         <Route
-          path="/admin/Sessions"
+          path="/admin/sessions"
           element={
-            <RequireRole allow={["Admin", "Formador"]}>
+            <RequireRole allow={["Formador", "Admin", "SuperAdmin"]}>
               <Sessions />
             </RequireRole>
           }
         />
+
+        {/* Fallback simples */}
+        <Route path="*" element={<Login />} />
       </Routes>
     </BrowserRouter>
   );
