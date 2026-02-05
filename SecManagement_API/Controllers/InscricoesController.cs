@@ -20,7 +20,6 @@ namespace SecManagement_API.Controllers
 
         // POST: api/Inscricoes/candidatar
         [HttpPost("candidatar")]
-        [Authorize(Roles = $"{Roles.User},{Roles.Formando}")]
         public async Task<ActionResult<InscricaoDto>> Candidatar(CreateCandidaturaDto dto)
         {
             try
@@ -48,7 +47,6 @@ namespace SecManagement_API.Controllers
         // NOVO: GET: api/Inscricoes/pendentes
         // Lista todas as candidaturas sem turma (estado "Candidatura")
         [HttpGet("pendentes")]
-        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<InscricaoDto>>> GetPendentes()
         {
             return Ok(await _service.GetCandidaturasPendentesAsync());
@@ -57,7 +55,6 @@ namespace SecManagement_API.Controllers
         // NOVO: GET: api/Inscricoes/pendentes/curso/5
         // Lista candidaturas pendentes de um curso específico
         [HttpGet("pendentes/curso/{cursoId}")]
-        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<InscricaoDto>>> GetPendentesPorCurso(int cursoId)
         {
             return Ok(await _service.GetCandidaturasPendentesPorCursoAsync(cursoId));

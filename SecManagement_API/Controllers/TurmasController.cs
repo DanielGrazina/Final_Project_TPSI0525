@@ -23,14 +23,12 @@ namespace SecManagement_API.Controllers
         // --- GESTÃO DE TURMAS ---
 
         [HttpGet]
-        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<TurmaDto>>> GetTurmas()
         {
             return Ok(await _turmaService.GetAllAsync());
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<TurmaDto>> GetTurma(int id)
         {
             var turma = await _turmaService.GetByIdAsync(id);

@@ -18,14 +18,12 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<CursoDto>>> GetCursos()
         {
             return Ok(await _service.GetCursosAsync());
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<CursoDto>> GetCurso(int id)
         {
             var curso = await _service.GetCursoByIdAsync(id);

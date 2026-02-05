@@ -18,7 +18,6 @@ namespace SecManagement_API.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<AreaDto>>> GetAreas()
         {
             return Ok(await _service.GetAreasAsync());
