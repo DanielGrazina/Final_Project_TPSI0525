@@ -1,7 +1,8 @@
-// src/pages/admin/Evaluations.jsx  (ou AdminEvaluations.jsx)
+// src/pages/admin/Evaluations.jsx (ou AdminEvaluations.jsx)
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import { getToken, getUserRoleFromToken, decodeJwt } from "../../utils/auth";
 
 function Modal({ title, children, onClose, disabled }) {
   return (
@@ -88,14 +89,70 @@ function Gradebadge({ grade }) {
   );
 }
 
+// --- Helpers de claims ---
+function getIdFromToken(keys) {
+  const token = getToken();
+  const payload = decodeJwt(token);
+  if (!payload) return null;
+
+  for (const k of keys) {
+    const v = payload[k];
+    if (v != null && Number.isFinite(Number(v))) return Number(v);
+  }
+  return null;
+}
+
+function getFormandoId() {
+  // também tenta localStorage se usares isso
+  const ls = localStorage.getItem("formandoId");
+  if (ls && Number.isFinite(Number(ls))) return Number(ls);
+
+  return getIdFromToken(["FormandoId", "formandoId", "IdFormando", "idFormando", "formando_id"]);
+}
+
+function getFormadorId() {
+  return getIdFromToken(["FormadorId", "formadorId", "IdFormador", "idFormador", "formador_id"]);
+}
+
+// --- Tentativas de endpoints (para não te bloquear se o backend tiver nomes diferentes) ---
+async function tryGetFirst(endpoints) {
+  let lastErr = null;
+  for (const ep of endpoints) {
+    try {
+      const res = await api.get(ep);
+      return res;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error("Falha nos endpoints.");
+}
+
 export default function AdminEvaluations() {
   const navigate = useNavigate();
 
-  // Se no Swagger estiver /Evaluations em vez de /Avaliacoes, muda só esta linha:
+  // Se no Swagger estiver /Evaluations em vez de /Avaliacoes, muda só isto:
   const BASE = "/Avaliacoes";
+
+  const token = getToken();
+  const roleRaw = useMemo(() => getUserRoleFromToken(token) || "", [token]);
+  const role = String(roleRaw).trim().toLowerCase();
+
+  const isUser = role === "user"; // candidato
+  const isFormando = role === "formando";
+  const isAluno = isUser || isFormando;
+
+  const isFormador = role === "formador";
+
+  const isAdminLike = role === "admin" || role === "superadmin" || role === "secretaria";
+
+  const canManage = isAdminLike || isFormador; // criar/editar/apagar (com limites no formador)
+  const formingId = useMemo(() => getFormandoId(), []);
+  const teacherId = useMemo(() => getFormadorId(), []);
 
   const [avaliacoes, setAvaliacoes] = useState([]);
   const [turmas, setTurmas] = useState([]);
+  const [allowedTurmaIds, setAllowedTurmaIds] = useState(new Set()); // para formador
   const [inscricoes, setInscricoes] = useState([]);
   const [turmaModulos, setTurmaModulos] = useState([]);
 
@@ -117,39 +174,142 @@ export default function AdminEvaluations() {
     observacoes: "",
   });
 
-  // ✅ Carrega avaliações + turmas sem bloquear (mesmo que um endpoint falhe)
+  function hardBlockIfNoToken() {
+    if (!token) {
+      navigate("/", { replace: true });
+      return true;
+    }
+    return false;
+  }
+
+  // Carrega turmas do formador (permitidas)
+  async function loadFormadorTurmas() {
+    if (!isFormador) {
+      setAllowedTurmaIds(new Set());
+      return [];
+    }
+
+    if (!teacherId) {
+      setError("Não encontrei o FormadorId no token. Confirma a claim 'FormadorId' no JWT.");
+      setAllowedTurmaIds(new Set());
+      return [];
+    }
+
+    try {
+      // Ajusta se tiveres endpoint certo.
+      // Estes são “palpites” comuns:
+      const res = await tryGetFirst([
+        `/Turmas/formador/${teacherId}`,
+        `/Formadores/${teacherId}/turmas`,
+        `/Turmas?formadorId=${teacherId}`,
+      ]);
+
+      const list = Array.isArray(res.data) ? res.data : [];
+      const ids = new Set(list.map((t) => Number(t.id)).filter((x) => Number.isFinite(x)));
+      setAllowedTurmaIds(ids);
+      return list;
+    } catch (err) {
+      // se não existir endpoint, ainda dá para limitar pelo que vier no /Turmas (menos seguro)
+      setError(extractError(err, "Falha ao carregar turmas do formador (endpoint)."));
+      setAllowedTurmaIds(new Set());
+      return [];
+    }
+  }
+
+  // Carregar avaliações consoante o perfil
+  async function loadAvaliacoes() {
+    if (isAluno) {
+      if (!formingId) {
+        throw new Error("Não encontrei o FormandoId no token. Confirma a claim 'FormandoId' no JWT.");
+      }
+
+      // endpoints típicos:
+      // - /Avaliacoes/aluno/{formandoId}
+      // - /Avaliacoes/formando/{formandoId}
+      // - /Avaliacoes?formandoId=...
+      const res = await tryGetFirst([
+        `${BASE}/aluno/${formingId}`,
+        `${BASE}/formando/${formingId}`,
+        `${BASE}?formandoId=${formingId}`,
+        `${BASE}?FormandoId=${formingId}`,
+      ]);
+
+      return Array.isArray(res.data) ? res.data : [];
+    }
+
+    // Admin/Secretaria/SuperAdmin: tudo
+    if (isAdminLike) {
+      const res = await api.get(BASE);
+      return Array.isArray(res.data) ? res.data : [];
+    }
+
+    // Formador: ideal -> endpoint próprio; fallback -> filtra por turmas permitidas
+    if (isFormador) {
+      // tenta endpoint próprio primeiro
+      if (teacherId) {
+        try {
+          const r = await tryGetFirst([
+            `${BASE}/formador/${teacherId}`,
+            `${BASE}?formadorId=${teacherId}`,
+            `${BASE}?FormadorId=${teacherId}`,
+          ]);
+          const list = Array.isArray(r.data) ? r.data : [];
+          return list;
+        } catch {
+          // fallback abaixo
+        }
+      }
+
+      // fallback: usa /Avaliacoes e filtra por turmaId permitida
+      const res = await api.get(BASE);
+      const list = Array.isArray(res.data) ? res.data : [];
+      return list.filter((a) => allowedTurmaIds.has(Number(a.turmaId)));
+    }
+
+    // Outros perfis: nada
+    return [];
+  }
+
+  // Carregar tudo (dependente da role)
   async function loadAll() {
+    if (hardBlockIfNoToken()) return;
+
     setLoading(true);
     setError("");
 
-    const results = await Promise.allSettled([api.get(BASE), api.get("/Turmas")]);
-    const [aRes, tRes] = results;
+    try {
+      let turmasList = [];
 
-    // Turmas
-    if (tRes.status === "fulfilled") {
-      setTurmas(Array.isArray(tRes.value.data) ? tRes.value.data : []);
-    } else {
-      console.log("GET /Turmas FAIL", {
-        status: tRes.reason?.response?.status,
-        data: tRes.reason?.response?.data,
-      });
-      setTurmas([]);
-      setError((prev) => prev || extractError(tRes.reason, "Falha ao carregar turmas."));
-    }
+      // Turmas:
+      if (isAdminLike) {
+        const tRes = await api.get("/Turmas");
+        turmasList = Array.isArray(tRes.data) ? tRes.data : [];
+        setTurmas(turmasList);
+        setAllowedTurmaIds(new Set()); // admin não precisa
+      } else if (isFormador) {
+        // turmas do formador (permitidas)
+        turmasList = await loadFormadorTurmas();
+        setTurmas(turmasList);
+      } else {
+        // aluno: turmas podem não ser precisas; mas mantemos para mostrar nomes
+        try {
+          const tRes = await api.get("/Turmas");
+          turmasList = Array.isArray(tRes.data) ? tRes.data : [];
+          setTurmas(turmasList);
+        } catch {
+          setTurmas([]);
+        }
+      }
 
-    // Avaliações
-    if (aRes.status === "fulfilled") {
-      setAvaliacoes(Array.isArray(aRes.value.data) ? aRes.value.data : []);
-    } else {
-      console.log(`GET ${BASE} FAIL`, {
-        status: aRes.reason?.response?.status,
-        data: aRes.reason?.response?.data,
-      });
+      // Avaliações:
+      const list = await loadAvaliacoes();
+      setAvaliacoes(Array.isArray(list) ? list : []);
+    } catch (err) {
       setAvaliacoes([]);
-      setError((prev) => prev || extractError(aRes.reason, `Falha ao carregar avaliações (${BASE}).`));
+      setError(extractError(err, "Falha ao carregar avaliações."));
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -157,32 +317,50 @@ export default function AdminEvaluations() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Quando o allowedTurmaIds muda (formador), recarrega avaliações para aplicar filtro
+  useEffect(() => {
+    if (!isFormador) return;
+    // se ainda não carregou turmas, não faz nada
+    if (allowedTurmaIds.size === 0) return;
+    loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowedTurmaIds.size]);
+
+  // Dependências da turma: alunos e módulos
   async function loadTurmaDependencias(turmaId) {
     setInscricoes([]);
     setTurmaModulos([]);
 
     if (!turmaId) return;
 
+    // BLOQUEIO: formador só pode carregar dependências de turmas permitidas
+    if (isFormador && allowedTurmaIds.size > 0 && !allowedTurmaIds.has(Number(turmaId))) {
+      setError("Não tens permissões para essa turma.");
+      return;
+    }
+
     try {
-      // Se estes endpoints forem diferentes no teu backend, ajusta aqui:
       const [iRes, mRes] = await Promise.all([
         api.get(`/Turmas/${turmaId}/alunos`),
         api.get(`/Turmas/${turmaId}/modulos`),
       ]);
 
-      setInscricoes(Array.isArray(iRes.data) ? iRes.data : []);
-      setTurmaModulos(Array.isArray(mRes.data) ? mRes.data : []);
+      const alunos = Array.isArray(iRes.data) ? iRes.data : [];
+      let mods = Array.isArray(mRes.data) ? mRes.data : [];
+
+      // Se for formador, opcionalmente filtra módulos para só aparecerem os dele
+      if (isFormador && teacherId) {
+        mods = mods.filter((x) => Number(x.formadorId ?? x.formador?.id) === Number(teacherId));
+      }
+
+      setInscricoes(alunos);
+      setTurmaModulos(mods);
     } catch (err) {
-      console.log("GET dependências FAIL", {
-        turmaId,
-        status: err.response?.status,
-        data: err.response?.data,
-      });
       setError(extractError(err, "Falha a carregar alunos/módulos da turma."));
     }
   }
 
-  // ✅ Stats robustos (sem dividir por zero)
+  // Stats
   const stats = useMemo(() => {
     const total = avaliacoes.length;
     const onlyWithGrade = avaliacoes.filter(
@@ -198,16 +376,37 @@ export default function AdminEvaluations() {
     return { total, withGrades, avgGrade };
   }, [avaliacoes]);
 
+  // Filtra turmas no dropdown (para formador só as permitidas)
+  const turmasForSelect = useMemo(() => {
+    if (isFormador && allowedTurmaIds.size > 0) {
+      return turmas.filter((t) => allowedTurmaIds.has(Number(t.id)));
+    }
+    return turmas;
+  }, [turmas, isFormador, allowedTurmaIds]);
+
+  // Filtra avaliações (UI)
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
 
-    return avaliacoes.filter((a) => {
+    let list = [...avaliacoes];
+
+    // Aluno: garante (extra) filtro por formandoId, caso backend devolva a mais
+    if (isAluno && formingId) {
+      list = list.filter(
+        (a) => Number(a.formandoId ?? a.alunoId ?? a.formando?.id) === Number(formingId)
+      );
+    }
+
+    // Formador: garante (extra) filtro por turmas permitidas
+    if (isFormador && allowedTurmaIds.size > 0) {
+      list = list.filter((a) => allowedTurmaIds.has(Number(a.turmaId)));
+    }
+
+    return list.filter((a) => {
       const turmaNome =
         (turmas.find((t) => Number(t.id) === Number(a.turmaId))?.nome ?? a.turmaNome ?? "").toLowerCase();
 
-      const alunoNome =
-        (a.formandoNome ?? a.alunoNome ?? a.userNome ?? a.nome ?? "").toLowerCase();
-
+      const alunoNome = (a.formandoNome ?? a.alunoNome ?? a.userNome ?? a.nome ?? "").toLowerCase();
       const moduloNome = (a.moduloNome ?? "").toLowerCase();
 
       const matchesSearch =
@@ -221,13 +420,22 @@ export default function AdminEvaluations() {
         moduloNome.includes(s) ||
         safeStr(a.avaliacao).toLowerCase().includes(s);
 
-      const matchesTurma = turmaFilter === "Todos" ? true : Number(turmaFilter) === Number(a.turmaId);
+      const matchesTurma =
+        turmaFilter === "Todos" ? true : Number(turmaFilter) === Number(a.turmaId);
 
       return matchesSearch && matchesTurma;
     });
-  }, [avaliacoes, turmas, search, turmaFilter]);
+  }, [avaliacoes, turmas, search, turmaFilter, isAluno, formingId, isFormador, allowedTurmaIds]);
+
+  function getTurmaNome(turmaId) {
+    const t = turmas.find((x) => Number(x.id) === Number(turmaId));
+    return t?.nome ?? `#${turmaId}`;
+  }
 
   function openCreate() {
+    // Aluno não pode criar
+    if (!canManage) return;
+
     setEditing(null);
     setForm({
       turmaId: "",
@@ -242,6 +450,14 @@ export default function AdminEvaluations() {
   }
 
   async function openEdit(a) {
+    if (!canManage) return;
+
+    // Formador: só edita se for das turmas permitidas
+    if (isFormador && allowedTurmaIds.size > 0 && !allowedTurmaIds.has(Number(a.turmaId))) {
+      setError("Não tens permissões para editar avaliações fora das tuas turmas.");
+      return;
+    }
+
     setEditing(a);
 
     const turmaId = String(a.turmaId ?? "");
@@ -267,6 +483,12 @@ export default function AdminEvaluations() {
     const { name, value } = e.target;
 
     if (name === "turmaId") {
+      // Formador: só pode escolher turmas permitidas
+      if (isFormador && allowedTurmaIds.size > 0 && value && !allowedTurmaIds.has(Number(value))) {
+        setError("Não tens permissões para essa turma.");
+        return;
+      }
+
       setForm((p) => ({
         ...p,
         turmaId: value,
@@ -280,20 +502,9 @@ export default function AdminEvaluations() {
     setForm((p) => ({ ...p, [name]: value }));
   }
 
-  function getTurmaNome(turmaId) {
-    const t = turmas.find((x) => Number(x.id) === Number(turmaId));
-    return t?.nome ?? `#${turmaId}`;
-  }
-
   function getInscricaoLabel(i) {
     const id = i.id ?? i.inscricaoId ?? "";
-    const nome =
-      i.formandoNome ??
-      i.alunoNome ??
-      i.userNome ??
-      i.nome ??
-      i.email ??
-      "";
+    const nome = i.formandoNome ?? i.alunoNome ?? i.userNome ?? i.nome ?? i.email ?? "";
     return nome ? `${nome} (ID ${id})` : `Inscrição #${id}`;
   }
 
@@ -309,6 +520,8 @@ export default function AdminEvaluations() {
     e.preventDefault();
     setError("");
 
+    if (!canManage) return;
+
     const turmaIdNum = Number(form.turmaId);
     const inscricaoIdNum = Number(form.inscricaoId);
     const turmaModuloIdNum = Number(form.turmaModuloId);
@@ -316,6 +529,11 @@ export default function AdminEvaluations() {
     if (!Number.isFinite(turmaIdNum) || turmaIdNum <= 0) return alert("Seleciona uma turma.");
     if (!Number.isFinite(inscricaoIdNum) || inscricaoIdNum <= 0) return alert("Seleciona um aluno/inscrição.");
     if (!Number.isFinite(turmaModuloIdNum) || turmaModuloIdNum <= 0) return alert("Seleciona um módulo da turma.");
+
+    // Formador: bloqueio extra por turma
+    if (isFormador && allowedTurmaIds.size > 0 && !allowedTurmaIds.has(Number(turmaIdNum))) {
+      return alert("Não tens permissões para essa turma.");
+    }
 
     const avaliacaoNum =
       form.avaliacao === "" || form.avaliacao === null
@@ -345,34 +563,40 @@ export default function AdminEvaluations() {
       closeForm();
       await loadAll();
     } catch (err) {
-      console.log("SAVE avaliação FAIL", {
-        endpoint: editing ? `${BASE}/${editing.id}` : BASE,
-        status: err.response?.status,
-        data: err.response?.data,
-        payloadSent: payload,
-      });
       setError(extractError(err, "Falha ao guardar avaliação."));
     } finally {
       setSaving(false);
     }
   }
 
-  async function deleteEvaluation(id) {
+  async function deleteEvaluation(a) {
+    if (!canManage) return;
+
+    // Formador: só apaga se for das turmas permitidas
+    if (isFormador && allowedTurmaIds.size > 0 && !allowedTurmaIds.has(Number(a.turmaId))) {
+      setError("Não tens permissões para apagar avaliações fora das tuas turmas.");
+      return;
+    }
+
     if (!window.confirm("Tens a certeza que queres apagar esta avaliação?")) return;
 
     setError("");
     try {
-      await api.delete(`${BASE}/${id}`);
-      setAvaliacoes((prev) => prev.filter((x) => x.id !== id));
+      await api.delete(`${BASE}/${a.id}`);
+      setAvaliacoes((prev) => prev.filter((x) => x.id !== a.id));
     } catch (err) {
-      console.log("DELETE avaliação FAIL", {
-        endpoint: `${BASE}/${id}`,
-        status: err.response?.status,
-        data: err.response?.data,
-      });
       setError(extractError(err, "Falha ao apagar avaliação."));
     }
   }
+
+  const headerDesc = isAluno
+    ? "Aqui só vês as tuas avaliações"
+    : isFormador
+      ? "Só podes avaliar alunos das tuas turmas"
+      : "Gestão de avaliações por turma, aluno e módulo";
+
+  // Turma filter options: formador só as permitidas
+  const turmasForFilter = turmasForSelect;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
@@ -389,9 +613,7 @@ export default function AdminEvaluations() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Avaliações</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Gestão de avaliações por turma, aluno e módulo
-                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{headerDesc}</p>
                 </div>
               </div>
             </div>
@@ -406,16 +628,18 @@ export default function AdminEvaluations() {
                 ← Voltar
               </button>
 
-              <button
-                onClick={openCreate}
-                className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium
-                           hover:from-purple-700 hover:to-pink-700 transition-all
-                           shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40
-                           active:scale-95"
-                type="button"
-              >
-                + Nova Avaliação
-              </button>
+              {canManage && (
+                <button
+                  onClick={openCreate}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium
+                             hover:from-purple-700 hover:to-pink-700 transition-all
+                             shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40
+                             active:scale-95"
+                  type="button"
+                >
+                  + Nova Avaliação
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -428,7 +652,7 @@ export default function AdminEvaluations() {
           <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-purple-600/5 dark:from-purple-500/20 dark:to-purple-600/10 opacity-50" />
             <div className="relative">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Total de Avaliações</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Total</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</div>
             </div>
           </div>
@@ -436,7 +660,7 @@ export default function AdminEvaluations() {
           <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 opacity-50" />
             <div className="relative">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Com Notas</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Com Nota</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.withGrades}</div>
             </div>
           </div>
@@ -444,7 +668,7 @@ export default function AdminEvaluations() {
           <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-green-600/5 dark:from-green-500/20 dark:to-green-600/10 opacity-50" />
             <div className="relative">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Média Global</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Média</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.avgGrade}</div>
             </div>
           </div>
@@ -454,7 +678,12 @@ export default function AdminEvaluations() {
         <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             <div className="flex-1 relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -480,7 +709,7 @@ export default function AdminEvaluations() {
                              focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 >
                   <option value="Todos">Todas</option>
-                  {turmas.map((t) => (
+                  {turmasForFilter.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.nome} (ID {t.id})
                     </option>
@@ -493,6 +722,15 @@ export default function AdminEvaluations() {
                   {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
                 </span>
               </div>
+
+              <button
+                onClick={loadAll}
+                className="px-4 py-2 rounded-lg border hover:bg-gray-100 transition-colors
+                           dark:border-gray-700 dark:hover:bg-gray-800 text-sm"
+                type="button"
+              >
+                Recarregar
+              </button>
             </div>
           </div>
         </div>
@@ -514,7 +752,7 @@ export default function AdminEvaluations() {
                 <tr>
                   <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">ID</th>
                   <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Turma</th>
-                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Inscrição</th>
+                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Aluno</th>
                   <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Módulo</th>
                   <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Nota</th>
                   <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Observações</th>
@@ -539,14 +777,7 @@ export default function AdminEvaluations() {
                         <svg className="w-16 h-16 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                         </svg>
-                        <span>Sem avaliações registadas</span>
-                        <button
-                          onClick={openCreate}
-                          className="mt-2 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors text-sm"
-                          type="button"
-                        >
-                          Criar primeira avaliação
-                        </button>
+                        <span>Sem avaliações</span>
                       </div>
                     </td>
                   </tr>
@@ -557,63 +788,56 @@ export default function AdminEvaluations() {
                         <span className="text-sm font-mono text-gray-600 dark:text-gray-400">#{a.id}</span>
                       </td>
                       <td className="py-4 px-6">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{getTurmaNome(a.turmaId)}</span>
+                      </td>
+                      <td className="py-4 px-6">
                         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {getTurmaNome(a.turmaId)}
+                          {a.formandoNome ?? a.alunoNome ?? "—"}
                         </span>
                       </td>
-                      {/* Coluna Aluno */}
                       <td className="py-4 px-6">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {a.formandoNome || "Aluno Desconhecido"}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Coluna Módulo */}
-                      <td className="py-4 px-6">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {a.moduloNome || "Módulo Desconhecido"}
-                          </span>
-                        </div>
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {a.moduloNome ?? "—"}
+                        </span>
                       </td>
                       <td className="py-4 px-6">
                         <Gradebadge grade={a.avaliacao} />
                       </td>
                       <td className="py-4 px-6">
                         {a.observacoes ? (
-                          <span className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-                            {a.observacoes}
-                          </span>
+                          <span className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{a.observacoes}</span>
                         ) : (
                           <span className="text-sm text-gray-400">—</span>
                         )}
                       </td>
                       <td className="py-4 px-6">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => openEdit(a)}
-                            className="px-3 py-1.5 rounded-lg text-sm font-medium
-                                       bg-amber-100 text-amber-700 hover:bg-amber-200
-                                       dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50
-                                       transition-colors"
-                            type="button"
-                          >
-                            ✏ Editar
-                          </button>
+                        {!canManage ? (
+                          <span className="text-sm text-gray-400">—</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() => openEdit(a)}
+                              className="px-3 py-1.5 rounded-lg text-sm font-medium
+                                         bg-amber-100 text-amber-700 hover:bg-amber-200
+                                         dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50
+                                         transition-colors"
+                              type="button"
+                            >
+                              Editar
+                            </button>
 
-                          <button
-                            onClick={() => deleteEvaluation(a.id)}
-                            className="px-3 py-1.5 rounded-lg text-sm font-medium
-                                       bg-red-100 text-red-700 hover:bg-red-200
-                                       dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50
-                                       transition-colors"
-                            type="button"
-                          >
-                            🗑 Apagar
-                          </button>
-                        </div>
+                            <button
+                              onClick={() => deleteEvaluation(a)}
+                              className="px-3 py-1.5 rounded-lg text-sm font-medium
+                                         bg-red-100 text-red-700 hover:bg-red-200
+                                         dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50
+                                         transition-colors"
+                              type="button"
+                            >
+                              Apagar
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -629,6 +853,7 @@ export default function AdminEvaluations() {
         <Modal title={editing ? "Editar Avaliação" : "Nova Avaliação"} onClose={closeForm} disabled={saving}>
           <form onSubmit={saveEvaluation} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Turma */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Turma</label>
                 <select
@@ -642,14 +867,21 @@ export default function AdminEvaluations() {
                              focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 >
                   <option value="">Selecionar turma...</option>
-                  {turmas.map((t) => (
+                  {turmasForSelect.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.nome} (ID {t.id})
                     </option>
                   ))}
                 </select>
+
+                {isFormador && allowedTurmaIds.size === 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-300 mt-2">
+                    Nota: não consegui confirmar as tuas turmas (endpoint). Se isto estiver errado, diz-me qual é o endpoint correto.
+                  </p>
+                )}
               </div>
 
+              {/* Inscrição/Aluno */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Aluno / Inscrição
@@ -675,6 +907,7 @@ export default function AdminEvaluations() {
                 </select>
               </div>
 
+              {/* Módulo */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Módulo da Turma
@@ -698,8 +931,14 @@ export default function AdminEvaluations() {
                     </option>
                   ))}
                 </select>
+                {isFormador && teacherId && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    (Formador) só aparecem módulos associados a ti, se o backend devolver `formadorId` no módulo.
+                  </p>
+                )}
               </div>
 
+              {/* Nota */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Avaliação (0-20)
@@ -724,6 +963,7 @@ export default function AdminEvaluations() {
                 </p>
               </div>
 
+              {/* Observações */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Observações</label>
                 <textarea
