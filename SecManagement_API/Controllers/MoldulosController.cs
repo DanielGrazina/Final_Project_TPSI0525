@@ -19,7 +19,6 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Modulos
         [HttpGet]
-        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<ModuloDto>>> GetModulos()
         {
             return Ok(await _service.GetModulosAsync());
@@ -27,7 +26,6 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Modulos/5
         [HttpGet("{id}")]
-        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<ModuloDto>> GetModulo(int id)
         {
             var modulo = await _service.GetModuloByIdAsync(id);

@@ -21,7 +21,6 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Formadores
         [HttpGet]
-        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<FormadorDto>>> GetFormadores()
         {
             var list = await _context.Formadores

@@ -25,7 +25,6 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Profiles/formador/5 (Passar o UserID)
         [HttpGet("formador/{userId}")]
-        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<FormadorProfileDto>> GetFormador(int userId)
         {
             try
@@ -50,7 +49,6 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Profiles/formador/5/pdf
         [HttpGet("formador/{userId}/pdf")]
-        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> DownloadFormadorPdf(int userId)
         {
             try
@@ -68,7 +66,6 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Profiles/formando/5 (Passar o UserID)
         [HttpGet("formando/{userId}")]
-        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<FormandoProfileDto>> GetFormando(int userId)
         {
             try
@@ -93,7 +90,6 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Profiles/formando/5/pdf
         [HttpGet("formando/{userId}/pdf")]
-        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> DownloadFormandoPdf(int userId)
         {
             try
@@ -124,7 +120,6 @@ namespace SecManagement_API.Controllers
 
         // GET: api/Profiles/file/10 (Download por ID do Ficheiro)
         [HttpGet("file/{fileId}")]
-        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> DownloadFile(int fileId)
         {
             var result = await _service.GetFileContentAsync(fileId);
