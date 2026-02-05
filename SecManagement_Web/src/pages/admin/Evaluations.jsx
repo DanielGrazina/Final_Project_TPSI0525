@@ -1,8 +1,23 @@
-// src/pages/admin/Evaluations.jsx (ou AdminEvaluations.jsx)
+// src/pages/admin/Evaluations.jsx  (ou AdminEvaluations.jsx)
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { getToken, getUserRoleFromToken, decodeJwt } from "../../utils/auth";
+
+/*
+  ✅ REGRAS IMPLEMENTADAS
+  - Formando (e User): só vê as SUAS avaliações.
+  - Formador: só vê / cria / edita / apaga avaliações de alunos das SUAS turmas.
+  - Admin/Secretaria/SuperAdmin: vê tudo.
+
+  ⚠️ IMPORTANTE (backend):
+  - Ideal é existirem endpoints server-side (melhor segurança):
+      GET  /Avaliacoes/aluno/{formandoId}
+      GET  /Avaliacoes/formador/{formadorId}   (ou por turmas)
+  - Como pode não existir, este ficheiro tem FALLBACK:
+      GET /Avaliacoes e filtra no front.
+    (Isto melhora UX, mas NÃO substitui segurança no backend.)
+*/
 
 function Modal({ title, children, onClose, disabled }) {
   return (
@@ -40,7 +55,6 @@ function safeStr(x) {
 
 function extractError(err, fallback) {
   const data = err?.response?.data;
-
   if (!data) return fallback;
   if (typeof data === "string") return data;
   if (typeof data?.message === "string") return data.message;
@@ -75,9 +89,11 @@ function Gradebadge({ grade }) {
   }
 
   const colors = {
-    green: "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
+    green:
+      "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
     blue: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800",
-    amber: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800",
+    amber:
+      "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800",
     red: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800",
     gray: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
   };
@@ -89,12 +105,25 @@ function Gradebadge({ grade }) {
   );
 }
 
-// --- Helpers de claims ---
-function getIdFromToken(keys) {
-  const token = getToken();
-  const payload = decodeJwt(token);
-  if (!payload) return null;
+// tenta GET em várias rotas até uma funcionar (404 -> tenta próxima)
+async function tryGetFirst(paths) {
+  let lastErr = null;
+  for (const p of paths) {
+    try {
+      return await api.get(p);
+    } catch (err) {
+      if (err?.response?.status === 404) {
+        lastErr = err;
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr || new Error("Nenhum endpoint disponível.");
+}
 
+function getClaimNumber(payload, keys) {
+  if (!payload) return null;
   for (const k of keys) {
     const v = payload[k];
     if (v != null && Number.isFinite(Number(v))) return Number(v);
@@ -102,59 +131,43 @@ function getIdFromToken(keys) {
   return null;
 }
 
-function getFormandoId() {
-  // também tenta localStorage se usares isso
-  const ls = localStorage.getItem("formandoId");
-  if (ls && Number.isFinite(Number(ls))) return Number(ls);
-
-  return getIdFromToken(["FormandoId", "formandoId", "IdFormando", "idFormando", "formando_id"]);
-}
-
-function getFormadorId() {
-  return getIdFromToken(["FormadorId", "formadorId", "IdFormador", "idFormador", "formador_id"]);
-}
-
-// --- Tentativas de endpoints (para não te bloquear se o backend tiver nomes diferentes) ---
-async function tryGetFirst(endpoints) {
-  let lastErr = null;
-  for (const ep of endpoints) {
-    try {
-      const res = await api.get(ep);
-      return res;
-    } catch (err) {
-      lastErr = err;
-    }
-  }
-  throw lastErr || new Error("Falha nos endpoints.");
-}
-
-export default function AdminEvaluations() {
+export default function Evaluations() {
   const navigate = useNavigate();
 
-  // Se no Swagger estiver /Evaluations em vez de /Avaliacoes, muda só isto:
+  // Se no Swagger estiver /Evaluations em vez de /Avaliacoes, muda só esta linha:
   const BASE = "/Avaliacoes";
 
   const token = getToken();
-  const roleRaw = useMemo(() => getUserRoleFromToken(token) || "", [token]);
-  const role = String(roleRaw).trim().toLowerCase();
+  const roleRaw = useMemo(() => (token ? getUserRoleFromToken(token) : ""), [token]);
+  const roleLower = String(roleRaw || "").trim().toLowerCase();
 
-  const isUser = role === "user"; // candidato
-  const isFormando = role === "formando";
-  const isAluno = isUser || isFormando;
+  const payload = useMemo(() => (token ? decodeJwt(token) : null), [token]);
 
-  const isFormador = role === "formador";
+  // claims (do teu AuthService):
+  // - "FormandoId", "FormadorId"
+  const formandoId = useMemo(
+    () => getClaimNumber(payload, ["FormandoId", "formandoId", "idFormando", "IdFormando"]),
+    [payload]
+  );
+  const formadorId = useMemo(
+    () => getClaimNumber(payload, ["FormadorId", "formadorId", "idFormador", "IdFormador"]),
+    [payload]
+  );
 
-  const isAdminLike = role === "admin" || role === "superadmin" || role === "secretaria";
-
-  const canManage = isAdminLike || isFormador; // criar/editar/apagar (com limites no formador)
-  const formingId = useMemo(() => getFormandoId(), []);
-  const teacherId = useMemo(() => getFormadorId(), []);
+  // roles
+  const isAluno = roleLower === "formando" || roleLower === "user";
+  const isFormador = roleLower === "formador";
+  const isAdminLike = roleLower === "admin" || roleLower === "secretaria" || roleLower === "superadmin";
 
   const [avaliacoes, setAvaliacoes] = useState([]);
   const [turmas, setTurmas] = useState([]);
-  const [allowedTurmaIds, setAllowedTurmaIds] = useState(new Set()); // para formador
+
+  // dependências do form (alunos/módulos por turma)
   const [inscricoes, setInscricoes] = useState([]);
   const [turmaModulos, setTurmaModulos] = useState([]);
+
+  // formador: turmas permitidas
+  const [allowedTurmaIds, setAllowedTurmaIds] = useState(new Set());
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -174,139 +187,142 @@ export default function AdminEvaluations() {
     observacoes: "",
   });
 
-  function hardBlockIfNoToken() {
+  useEffect(() => {
     if (!token) {
       navigate("/", { replace: true });
-      return true;
+      return;
     }
-    return false;
+  }, [token, navigate]);
+
+  async function loadTurmasBase() {
+    try {
+      const res = await api.get("/Turmas");
+      return Array.isArray(res.data) ? res.data : [];
+    } catch {
+      return [];
+    }
   }
 
-  // Carrega turmas do formador (permitidas)
-  async function loadFormadorTurmas() {
-    if (!isFormador) {
+  // tenta descobrir turmas do formador (se houver endpoint)
+  async function loadTurmasDoFormador() {
+    if (!isFormador || !formadorId) {
       setAllowedTurmaIds(new Set());
-      return [];
+      return;
     }
 
-    if (!teacherId) {
-      setError("Não encontrei o FormadorId no token. Confirma a claim 'FormadorId' no JWT.");
-      setAllowedTurmaIds(new Set());
-      return [];
-    }
+    const candidates = [
+      `/Turmas/formador/${formadorId}`,
+      `/Formadores/${formadorId}/turmas`,
+      `/Turmas/me`, // se tiveres endpoint "as minhas turmas"
+    ];
 
     try {
-      // Ajusta se tiveres endpoint certo.
-      // Estes são “palpites” comuns:
-      const res = await tryGetFirst([
-        `/Turmas/formador/${teacherId}`,
-        `/Formadores/${teacherId}/turmas`,
-        `/Turmas?formadorId=${teacherId}`,
-      ]);
-
-      const list = Array.isArray(res.data) ? res.data : [];
+      const r = await tryGetFirst(candidates);
+      const list = Array.isArray(r.data) ? r.data : [];
       const ids = new Set(list.map((t) => Number(t.id)).filter((x) => Number.isFinite(x)));
       setAllowedTurmaIds(ids);
-      return list;
     } catch (err) {
-      // se não existir endpoint, ainda dá para limitar pelo que vier no /Turmas (menos seguro)
-      setError(extractError(err, "Falha ao carregar turmas do formador (endpoint)."));
+      // se não existir endpoint, fica vazio e nós damos msg clara (sem mostrar “tudo” por engano)
       setAllowedTurmaIds(new Set());
-      return [];
+      // não forçamos error aqui porque pode ser 404 — mostramos um aviso mais abaixo quando necessário
+      console.log("Turmas do formador endpoint não encontrado/erro:", err?.response?.status, err?.response?.data);
     }
   }
 
-  // Carregar avaliações consoante o perfil
+  // carregar avaliações com regras e fallback
   async function loadAvaliacoes() {
+    // ALUNO: só as dele
     if (isAluno) {
-      if (!formingId) {
+      if (!formandoId) {
         throw new Error("Não encontrei o FormandoId no token. Confirma a claim 'FormandoId' no JWT.");
       }
 
-      // endpoints típicos:
-      // - /Avaliacoes/aluno/{formandoId}
-      // - /Avaliacoes/formando/{formandoId}
-      // - /Avaliacoes?formandoId=...
-      const res = await tryGetFirst([
-        `${BASE}/aluno/${formingId}`,
-        `${BASE}/formando/${formingId}`,
-        `${BASE}?formandoId=${formingId}`,
-        `${BASE}?FormandoId=${formingId}`,
-      ]);
+      // tenta endpoints dedicados
+      try {
+        const res = await tryGetFirst([
+          `${BASE}/aluno/${formandoId}`,
+          `${BASE}/formando/${formandoId}`,
+          `${BASE}?formandoId=${formandoId}`,
+          `${BASE}?FormandoId=${formandoId}`,
+        ]);
+        return Array.isArray(res.data) ? res.data : [];
+      } catch {
+        // fallback: GET all + filtrar localmente pelo formandoId
+        const all = await api.get(BASE);
+        const list = Array.isArray(all.data) ? all.data : [];
 
-      return Array.isArray(res.data) ? res.data : [];
+        return list.filter((a) => {
+          const fid =
+            a.formandoId ??
+            a.FormandoId ??
+            a.alunoId ??
+            a.AlunoId ??
+            a.formando?.id ??
+            null;
+          return Number(fid) === Number(formandoId);
+        });
+      }
     }
 
-    // Admin/Secretaria/SuperAdmin: tudo
+    // ADMIN-LIKE: tudo
     if (isAdminLike) {
       const res = await api.get(BASE);
       return Array.isArray(res.data) ? res.data : [];
     }
 
-    // Formador: ideal -> endpoint próprio; fallback -> filtra por turmas permitidas
+    // FORMADOR: só turmas dele
     if (isFormador) {
-      // tenta endpoint próprio primeiro
-      if (teacherId) {
+      // tenta endpoint dedicado primeiro
+      if (formadorId) {
         try {
           const r = await tryGetFirst([
-            `${BASE}/formador/${teacherId}`,
-            `${BASE}?formadorId=${teacherId}`,
-            `${BASE}?FormadorId=${teacherId}`,
+            `${BASE}/formador/${formadorId}`,
+            `${BASE}?formadorId=${formadorId}`,
+            `${BASE}?FormadorId=${formadorId}`,
           ]);
           const list = Array.isArray(r.data) ? r.data : [];
           return list;
         } catch {
-          // fallback abaixo
+          // continua para fallback abaixo
         }
       }
 
-      // fallback: usa /Avaliacoes e filtra por turmaId permitida
+      // fallback: GET all + filtrar por turmas permitidas
       const res = await api.get(BASE);
       const list = Array.isArray(res.data) ? res.data : [];
+
+      if (allowedTurmaIds.size === 0) {
+        // segurança: não mostramos nada se não sabemos as turmas do formador
+        setError(
+          "Como Formador, preciso do endpoint para saber as tuas turmas (ex: GET /Turmas/formador/{id}). Sem isso, por segurança não posso listar avaliações."
+        );
+        return [];
+      }
+
       return list.filter((a) => allowedTurmaIds.has(Number(a.turmaId)));
     }
 
-    // Outros perfis: nada
     return [];
   }
 
-  // Carregar tudo (dependente da role)
+  // carregar tudo
   async function loadAll() {
-    if (hardBlockIfNoToken()) return;
-
     setLoading(true);
     setError("");
 
     try {
-      let turmasList = [];
-
-      // Turmas:
-      if (isAdminLike) {
-        const tRes = await api.get("/Turmas");
-        turmasList = Array.isArray(tRes.data) ? tRes.data : [];
-        setTurmas(turmasList);
-        setAllowedTurmaIds(new Set()); // admin não precisa
-      } else if (isFormador) {
-        // turmas do formador (permitidas)
-        turmasList = await loadFormadorTurmas();
-        setTurmas(turmasList);
-      } else {
-        // aluno: turmas podem não ser precisas; mas mantemos para mostrar nomes
-        try {
-          const tRes = await api.get("/Turmas");
-          turmasList = Array.isArray(tRes.data) ? tRes.data : [];
-          setTurmas(turmasList);
-        } catch {
-          setTurmas([]);
-        }
+      if (isFormador) {
+        await loadTurmasDoFormador();
       }
 
-      // Avaliações:
-      const list = await loadAvaliacoes();
-      setAvaliacoes(Array.isArray(list) ? list : []);
+      const [aList, tList] = await Promise.all([loadAvaliacoes(), loadTurmasBase()]);
+
+      setAvaliacoes(Array.isArray(aList) ? aList : []);
+      setTurmas(Array.isArray(tList) ? tList : []);
     } catch (err) {
       setAvaliacoes([]);
-      setError(extractError(err, "Falha ao carregar avaliações."));
+      setTurmas([]);
+      setError(extractError(err, "Falha ao carregar dados."));
     } finally {
       setLoading(false);
     }
@@ -315,97 +331,53 @@ export default function AdminEvaluations() {
   useEffect(() => {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [roleLower]);
 
-  // Quando o allowedTurmaIds muda (formador), recarrega avaliações para aplicar filtro
-  useEffect(() => {
-    if (!isFormador) return;
-    // se ainda não carregou turmas, não faz nada
-    if (allowedTurmaIds.size === 0) return;
-    loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowedTurmaIds.size]);
-
-  // Dependências da turma: alunos e módulos
   async function loadTurmaDependencias(turmaId) {
     setInscricoes([]);
     setTurmaModulos([]);
 
     if (!turmaId) return;
 
-    // BLOQUEIO: formador só pode carregar dependências de turmas permitidas
+    // regra: se for formador, só pode escolher turmas dele
     if (isFormador && allowedTurmaIds.size > 0 && !allowedTurmaIds.has(Number(turmaId))) {
-      setError("Não tens permissões para essa turma.");
+      setError("Não tens permissões para aceder a esta turma.");
       return;
     }
 
     try {
-      const [iRes, mRes] = await Promise.all([
-        api.get(`/Turmas/${turmaId}/alunos`),
-        api.get(`/Turmas/${turmaId}/modulos`),
-      ]);
+      // ajusta estas rotas se o teu backend tiver nomes diferentes
+      const [iRes, mRes] = await Promise.all([api.get(`/Turmas/${turmaId}/alunos`), api.get(`/Turmas/${turmaId}/modulos`)]);
 
-      const alunos = Array.isArray(iRes.data) ? iRes.data : [];
-      let mods = Array.isArray(mRes.data) ? mRes.data : [];
-
-      // Se for formador, opcionalmente filtra módulos para só aparecerem os dele
-      if (isFormador && teacherId) {
-        mods = mods.filter((x) => Number(x.formadorId ?? x.formador?.id) === Number(teacherId));
-      }
-
-      setInscricoes(alunos);
-      setTurmaModulos(mods);
+      setInscricoes(Array.isArray(iRes.data) ? iRes.data : []);
+      setTurmaModulos(Array.isArray(mRes.data) ? mRes.data : []);
     } catch (err) {
+      console.log("GET dependências FAIL", { turmaId, status: err.response?.status, data: err.response?.data });
       setError(extractError(err, "Falha a carregar alunos/módulos da turma."));
     }
   }
 
-  // Stats
+  // stats (o aluno só vê as dele; formador/admin vêem as que estão listadas)
   const stats = useMemo(() => {
     const total = avaliacoes.length;
-    const onlyWithGrade = avaliacoes.filter(
-      (a) => a.avaliacao !== null && a.avaliacao !== undefined && a.avaliacao !== ""
-    );
+    const onlyWithGrade = avaliacoes.filter((a) => a.avaliacao !== null && a.avaliacao !== undefined && a.avaliacao !== "");
     const withGrades = onlyWithGrade.length;
-
-    const avgGrade =
-      withGrades > 0
-        ? (onlyWithGrade.reduce((sum, a) => sum + Number(a.avaliacao), 0) / withGrades).toFixed(1)
-        : "—";
-
+    const avgGrade = withGrades > 0 ? (onlyWithGrade.reduce((sum, a) => sum + Number(a.avaliacao), 0) / withGrades).toFixed(1) : "—";
     return { total, withGrades, avgGrade };
   }, [avaliacoes]);
 
-  // Filtra turmas no dropdown (para formador só as permitidas)
-  const turmasForSelect = useMemo(() => {
+  const turmasParaSelect = useMemo(() => {
     if (isFormador && allowedTurmaIds.size > 0) {
       return turmas.filter((t) => allowedTurmaIds.has(Number(t.id)));
     }
     return turmas;
   }, [turmas, isFormador, allowedTurmaIds]);
 
-  // Filtra avaliações (UI)
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
 
-    let list = [...avaliacoes];
-
-    // Aluno: garante (extra) filtro por formandoId, caso backend devolva a mais
-    if (isAluno && formingId) {
-      list = list.filter(
-        (a) => Number(a.formandoId ?? a.alunoId ?? a.formando?.id) === Number(formingId)
-      );
-    }
-
-    // Formador: garante (extra) filtro por turmas permitidas
-    if (isFormador && allowedTurmaIds.size > 0) {
-      list = list.filter((a) => allowedTurmaIds.has(Number(a.turmaId)));
-    }
-
-    return list.filter((a) => {
-      const turmaNome =
-        (turmas.find((t) => Number(t.id) === Number(a.turmaId))?.nome ?? a.turmaNome ?? "").toLowerCase();
-
+    return avaliacoes.filter((a) => {
+      const turmaNome = (turmas.find((t) => Number(t.id) === Number(a.turmaId))?.nome ?? a.turmaNome ?? "").toLowerCase();
       const alunoNome = (a.formandoNome ?? a.alunoNome ?? a.userNome ?? a.nome ?? "").toLowerCase();
       const moduloNome = (a.moduloNome ?? "").toLowerCase();
 
@@ -420,41 +392,36 @@ export default function AdminEvaluations() {
         moduloNome.includes(s) ||
         safeStr(a.avaliacao).toLowerCase().includes(s);
 
-      const matchesTurma =
-        turmaFilter === "Todos" ? true : Number(turmaFilter) === Number(a.turmaId);
+      const matchesTurma = turmaFilter === "Todos" ? true : Number(turmaFilter) === Number(a.turmaId);
 
       return matchesSearch && matchesTurma;
     });
-  }, [avaliacoes, turmas, search, turmaFilter, isAluno, formingId, isFormador, allowedTurmaIds]);
-
-  function getTurmaNome(turmaId) {
-    const t = turmas.find((x) => Number(x.id) === Number(turmaId));
-    return t?.nome ?? `#${turmaId}`;
-  }
+  }, [avaliacoes, turmas, search, turmaFilter]);
 
   function openCreate() {
-    // Aluno não pode criar
-    if (!canManage) return;
+    // aluno não cria avaliações
+    if (isAluno) {
+      alert("Como formando, só podes consultar as tuas avaliações.");
+      return;
+    }
 
     setEditing(null);
-    setForm({
-      turmaId: "",
-      inscricaoId: "",
-      turmaModuloId: "",
-      avaliacao: "",
-      observacoes: "",
-    });
+    setForm({ turmaId: "", inscricaoId: "", turmaModuloId: "", avaliacao: "", observacoes: "" });
     setInscricoes([]);
     setTurmaModulos([]);
     setShowForm(true);
   }
 
   async function openEdit(a) {
-    if (!canManage) return;
+    // aluno não edita avaliações
+    if (isAluno) {
+      alert("Como formando, não podes editar avaliações.");
+      return;
+    }
 
-    // Formador: só edita se for das turmas permitidas
+    // formador só edita se for da sua turma
     if (isFormador && allowedTurmaIds.size > 0 && !allowedTurmaIds.has(Number(a.turmaId))) {
-      setError("Não tens permissões para editar avaliações fora das tuas turmas.");
+      alert("Não tens permissões para editar avaliações fora das tuas turmas.");
       return;
     }
 
@@ -483,23 +450,23 @@ export default function AdminEvaluations() {
     const { name, value } = e.target;
 
     if (name === "turmaId") {
-      // Formador: só pode escolher turmas permitidas
+      // formador só escolhe turmas dele
       if (isFormador && allowedTurmaIds.size > 0 && value && !allowedTurmaIds.has(Number(value))) {
-        setError("Não tens permissões para essa turma.");
+        alert("Não tens permissões para essa turma.");
         return;
       }
 
-      setForm((p) => ({
-        ...p,
-        turmaId: value,
-        inscricaoId: "",
-        turmaModuloId: "",
-      }));
+      setForm((p) => ({ ...p, turmaId: value, inscricaoId: "", turmaModuloId: "" }));
       loadTurmaDependencias(value);
       return;
     }
 
     setForm((p) => ({ ...p, [name]: value }));
+  }
+
+  function getTurmaNome(turmaId) {
+    const t = turmas.find((x) => Number(x.id) === Number(turmaId));
+    return t?.nome ?? `#${turmaId}`;
   }
 
   function getInscricaoLabel(i) {
@@ -520,7 +487,10 @@ export default function AdminEvaluations() {
     e.preventDefault();
     setError("");
 
-    if (!canManage) return;
+    if (isAluno) {
+      setError("Como formando, não podes criar/editar avaliações.");
+      return;
+    }
 
     const turmaIdNum = Number(form.turmaId);
     const inscricaoIdNum = Number(form.inscricaoId);
@@ -530,19 +500,16 @@ export default function AdminEvaluations() {
     if (!Number.isFinite(inscricaoIdNum) || inscricaoIdNum <= 0) return alert("Seleciona um aluno/inscrição.");
     if (!Number.isFinite(turmaModuloIdNum) || turmaModuloIdNum <= 0) return alert("Seleciona um módulo da turma.");
 
-    // Formador: bloqueio extra por turma
+    // formador: valida turma permitida
     if (isFormador && allowedTurmaIds.size > 0 && !allowedTurmaIds.has(Number(turmaIdNum))) {
-      return alert("Não tens permissões para essa turma.");
+      alert("Não tens permissões para criar/editar avaliações fora das tuas turmas.");
+      return;
     }
 
     const avaliacaoNum =
-      form.avaliacao === "" || form.avaliacao === null
-        ? null
-        : Number(String(form.avaliacao).replace(",", "."));
+      form.avaliacao === "" || form.avaliacao === null ? null : Number(String(form.avaliacao).replace(",", "."));
 
-    if (avaliacaoNum !== null && !Number.isFinite(avaliacaoNum)) {
-      return alert("A avaliação tem de ser um número.");
-    }
+    if (avaliacaoNum !== null && !Number.isFinite(avaliacaoNum)) return alert("A avaliação tem de ser um número.");
 
     const payload = {
       turmaId: turmaIdNum,
@@ -563,18 +530,26 @@ export default function AdminEvaluations() {
       closeForm();
       await loadAll();
     } catch (err) {
+      console.log("SAVE avaliação FAIL", {
+        endpoint: editing ? `${BASE}/${editing.id}` : BASE,
+        status: err.response?.status,
+        data: err.response?.data,
+        payloadSent: payload,
+      });
       setError(extractError(err, "Falha ao guardar avaliação."));
     } finally {
       setSaving(false);
     }
   }
 
-  async function deleteEvaluation(a) {
-    if (!canManage) return;
+  async function deleteEvaluation(id, turmaId) {
+    if (isAluno) {
+      alert("Como formando, não podes apagar avaliações.");
+      return;
+    }
 
-    // Formador: só apaga se for das turmas permitidas
-    if (isFormador && allowedTurmaIds.size > 0 && !allowedTurmaIds.has(Number(a.turmaId))) {
-      setError("Não tens permissões para apagar avaliações fora das tuas turmas.");
+    if (isFormador && allowedTurmaIds.size > 0 && !allowedTurmaIds.has(Number(turmaId))) {
+      alert("Não tens permissões para apagar avaliações fora das tuas turmas.");
       return;
     }
 
@@ -582,21 +557,15 @@ export default function AdminEvaluations() {
 
     setError("");
     try {
-      await api.delete(`${BASE}/${a.id}`);
-      setAvaliacoes((prev) => prev.filter((x) => x.id !== a.id));
+      await api.delete(`${BASE}/${id}`);
+      setAvaliacoes((prev) => prev.filter((x) => x.id !== id));
     } catch (err) {
+      console.log("DELETE avaliação FAIL", { endpoint: `${BASE}/${id}`, status: err.response?.status, data: err.response?.data });
       setError(extractError(err, "Falha ao apagar avaliação."));
     }
   }
 
-  const headerDesc = isAluno
-    ? "Aqui só vês as tuas avaliações"
-    : isFormador
-      ? "Só podes avaliar alunos das tuas turmas"
-      : "Gestão de avaliações por turma, aluno e módulo";
-
-  // Turma filter options: formador só as permitidas
-  const turmasForFilter = turmasForSelect;
+  const canManage = isAdminLike || isFormador;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
@@ -608,12 +577,23 @@ export default function AdminEvaluations() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
                   <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                    />
                   </svg>
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Avaliações</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{headerDesc}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {isAluno
+                      ? "Consulta apenas as tuas avaliações"
+                      : isFormador
+                      ? "Gerir avaliações apenas das tuas turmas"
+                      : "Gestão global de avaliações"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -647,6 +627,23 @@ export default function AdminEvaluations() {
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
+        {/* Avisos úteis */}
+        {isFormador && allowedTurmaIds.size === 0 && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800 rounded-xl p-4 text-sm text-amber-800 dark:text-amber-200">
+            Como Formador, não consegui descobrir as tuas turmas (falta endpoint). Por segurança, não vou listar/gerir avaliações até existir uma rota tipo{" "}
+            <b>GET /Turmas/formador/&#123;id&#125;</b> (ou equivalente).
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <svg className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="text-sm text-red-700 dark:text-red-300 flex-1">{error}</div>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
@@ -660,7 +657,7 @@ export default function AdminEvaluations() {
           <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 opacity-50" />
             <div className="relative">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Com Nota</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Com notas</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.withGrades}</div>
             </div>
           </div>
@@ -678,18 +675,13 @@ export default function AdminEvaluations() {
         <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             <div className="flex-1 relative">
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Pesquisar por ID, turma, aluno, módulo ou nota..."
+                placeholder="Pesquisar por turma, aluno, módulo, nota..."
                 className="w-full pl-10 pr-4 py-2.5 border rounded-lg
                            bg-gray-50 dark:bg-gray-950 dark:border-gray-800
                            text-gray-900 dark:text-gray-100 placeholder:text-gray-400
@@ -709,7 +701,7 @@ export default function AdminEvaluations() {
                              focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 >
                   <option value="Todos">Todas</option>
-                  {turmasForFilter.map((t) => (
+                  {turmasParaSelect.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.nome} (ID {t.id})
                     </option>
@@ -722,27 +714,9 @@ export default function AdminEvaluations() {
                   {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
                 </span>
               </div>
-
-              <button
-                onClick={loadAll}
-                className="px-4 py-2 rounded-lg border hover:bg-gray-100 transition-colors
-                           dark:border-gray-700 dark:hover:bg-gray-800 text-sm"
-                type="button"
-              >
-                Recarregar
-              </button>
             </div>
           </div>
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800 rounded-xl p-4 mb-6 flex items-start gap-3">
-            <svg className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="text-sm text-red-700 dark:text-red-300 flex-1">{error}</div>
-          </div>
-        )}
 
         {/* Table */}
         <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
@@ -775,9 +749,14 @@ export default function AdminEvaluations() {
                     <td colSpan="7" className="py-16 px-6">
                       <div className="flex flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
                         <svg className="w-16 h-16 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                          />
                         </svg>
-                        <span>Sem avaliações</span>
+                        <span>Sem avaliações para mostrar</span>
                       </div>
                     </td>
                   </tr>
@@ -791,14 +770,16 @@ export default function AdminEvaluations() {
                         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{getTurmaNome(a.turmaId)}</span>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {a.formandoNome ?? a.alunoNome ?? "—"}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {a.formandoNome || a.alunoNome || "Aluno"}
+                          </span>
+                        </div>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {a.moduloNome ?? "—"}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{a.moduloNome || "Módulo"}</span>
+                        </div>
                       </td>
                       <td className="py-4 px-6">
                         <Gradebadge grade={a.avaliacao} />
@@ -811,9 +792,7 @@ export default function AdminEvaluations() {
                         )}
                       </td>
                       <td className="py-4 px-6">
-                        {!canManage ? (
-                          <span className="text-sm text-gray-400">—</span>
-                        ) : (
+                        {canManage ? (
                           <div className="flex flex-wrap gap-2">
                             <button
                               onClick={() => openEdit(a)}
@@ -823,20 +802,22 @@ export default function AdminEvaluations() {
                                          transition-colors"
                               type="button"
                             >
-                              Editar
+                              ✏ Editar
                             </button>
 
                             <button
-                              onClick={() => deleteEvaluation(a)}
+                              onClick={() => deleteEvaluation(a.id, a.turmaId)}
                               className="px-3 py-1.5 rounded-lg text-sm font-medium
                                          bg-red-100 text-red-700 hover:bg-red-200
                                          dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50
                                          transition-colors"
                               type="button"
                             >
-                              Apagar
+                              🗑 Apagar
                             </button>
                           </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">—</span>
                         )}
                       </td>
                     </tr>
@@ -853,7 +834,6 @@ export default function AdminEvaluations() {
         <Modal title={editing ? "Editar Avaliação" : "Nova Avaliação"} onClose={closeForm} disabled={saving}>
           <form onSubmit={saveEvaluation} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Turma */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Turma</label>
                 <select
@@ -867,25 +847,16 @@ export default function AdminEvaluations() {
                              focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 >
                   <option value="">Selecionar turma...</option>
-                  {turmasForSelect.map((t) => (
+                  {turmasParaSelect.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.nome} (ID {t.id})
                     </option>
                   ))}
                 </select>
-
-                {isFormador && allowedTurmaIds.size === 0 && (
-                  <p className="text-xs text-amber-600 dark:text-amber-300 mt-2">
-                    Nota: não consegui confirmar as tuas turmas (endpoint). Se isto estiver errado, diz-me qual é o endpoint correto.
-                  </p>
-                )}
               </div>
 
-              {/* Inscrição/Aluno */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Aluno / Inscrição
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Aluno / Inscrição</label>
                 <select
                   name="inscricaoId"
                   value={form.inscricaoId}
@@ -896,9 +867,7 @@ export default function AdminEvaluations() {
                              text-gray-900 dark:text-gray-100 disabled:opacity-60
                              focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 >
-                  <option value="">
-                    {form.turmaId ? "Selecionar inscrição..." : "Seleciona primeiro uma turma"}
-                  </option>
+                  <option value="">{form.turmaId ? "Selecionar inscrição..." : "Seleciona primeiro uma turma"}</option>
                   {inscricoes.map((i) => (
                     <option key={i.id ?? i.inscricaoId} value={i.id ?? i.inscricaoId}>
                       {getInscricaoLabel(i)}
@@ -907,11 +876,8 @@ export default function AdminEvaluations() {
                 </select>
               </div>
 
-              {/* Módulo */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Módulo da Turma
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Módulo da Turma</label>
                 <select
                   name="turmaModuloId"
                   value={form.turmaModuloId}
@@ -922,27 +888,17 @@ export default function AdminEvaluations() {
                              text-gray-900 dark:text-gray-100 disabled:opacity-60
                              focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 >
-                  <option value="">
-                    {form.turmaId ? "Selecionar módulo..." : "Seleciona primeiro uma turma"}
-                  </option>
+                  <option value="">{form.turmaId ? "Selecionar módulo..." : "Seleciona primeiro uma turma"}</option>
                   {turmaModulos.map((tm) => (
                     <option key={tm.id} value={tm.id}>
                       {getTurmaModuloLabel(tm)}
                     </option>
                   ))}
                 </select>
-                {isFormador && teacherId && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    (Formador) só aparecem módulos associados a ti, se o backend devolver `formadorId` no módulo.
-                  </p>
-                )}
               </div>
 
-              {/* Nota */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Avaliação (0-20)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avaliação (0-20)</label>
                 <input
                   name="avaliacao"
                   type="number"
@@ -958,12 +914,9 @@ export default function AdminEvaluations() {
                              focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                   placeholder="Ex: 16"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Aceita decimais (ex: 14.5). Deixa vazio para null.
-                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Aceita decimais (ex: 14.5). Deixa vazio para null.</p>
               </div>
 
-              {/* Observações */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Observações</label>
                 <textarea
