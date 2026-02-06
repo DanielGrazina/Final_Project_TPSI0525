@@ -40,6 +40,7 @@ function Icon({ name }) {
           />
         </svg>
       );
+
     case "profile":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -48,7 +49,7 @@ function Icon({ name }) {
         </svg>
       );
 
-    // ✅ NOVO: Disponibilidades
+    // ✅ Disponibilidades
     case "availability":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -69,12 +70,33 @@ function Icon({ name }) {
         </svg>
       );
 
+    // ✅ Horários (grelha)
+    case "schedule":
+      return (
+        <svg className={common} viewBox="0 0 24 24" fill="none">
+          <path
+            d="M4 7h16M4 12h16M4 17h16"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M7 4v16M12 4v16M17 4v16"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            opacity="0.9"
+          />
+        </svg>
+      );
+
     case "areas":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
           <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
+
     case "courses":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -87,6 +109,7 @@ function Icon({ name }) {
           <path d="M6 17h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
+
     case "modules":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -94,6 +117,7 @@ function Icon({ name }) {
           <path d="M5 11h14v10H5V11Z" stroke="currentColor" strokeWidth="2" />
         </svg>
       );
+
     case "turmas":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -101,6 +125,7 @@ function Icon({ name }) {
           <path d="M10 20v-6h4v6" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
         </svg>
       );
+
     case "rooms":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -109,6 +134,7 @@ function Icon({ name }) {
           <path d="M8 10h1M11.5 10h1M15 10h1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
+
     case "eval":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -117,6 +143,7 @@ function Icon({ name }) {
           <path d="M9 11h6M9 15h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
+
     case "inscr":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -124,6 +151,7 @@ function Icon({ name }) {
           <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
+
     case "calendar":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -137,6 +165,7 @@ function Icon({ name }) {
           <path d="M7 12h5M7 16h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
+
     default:
       return null;
   }
@@ -174,11 +203,15 @@ function NavCard({ title, desc, onClick, badge, disabled, icon, accent = "blue" 
         disabled ? "opacity-50 cursor-not-allowed" : "hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
       ].join(" ")}
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+      <div
+        className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+      />
 
       <div className="relative">
         <div className="flex items-start justify-between gap-3 mb-4">
-          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colors.icon} transition-transform duration-300 group-hover:scale-110`}>
+          <div
+            className={`w-12 h-12 rounded-lg flex items-center justify-center ${colors.icon} transition-transform duration-300 group-hover:scale-110`}
+          >
             <Icon name={icon} />
           </div>
 
@@ -189,11 +222,15 @@ function NavCard({ title, desc, onClick, badge, disabled, icon, accent = "blue" 
         <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{desc}</p>
 
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{disabled ? "Indisponível" : "Clique para abrir"}</span>
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+            {disabled ? "Indisponível" : "Clique para abrir"}
+          </span>
           <span
             className={[
               "text-sm font-semibold",
-              disabled ? "text-gray-400 dark:text-gray-600" : "text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform",
+              disabled
+                ? "text-gray-400 dark:text-gray-600"
+                : "text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform",
             ].join(" ")}
           >
             {disabled ? "—" : "→"}
@@ -247,15 +284,20 @@ function QuickAccessCard({ title, count, enabled, onClick, color = "blue" }) {
     <button
       type="button"
       onClick={onClick}
-      className={`group relative overflow-hidden border rounded-xl p-5 text-left bg-white dark:bg-gray-900 ${c.border}
+      className={`group relative overflow-hidden border rounded-xl p-5 text-left
+                  bg-white dark:bg-gray-900 ${c.border}
                   hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95`}
     >
-      <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${c.bg} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`} />
+      <div
+        className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${c.bg} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`}
+      />
       <div className="relative">
         <div className={`text-xs font-medium ${c.text} mb-1`}>Acesso rápido</div>
         <div className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{title}</div>
         <div className="text-2xl font-black text-gray-400 dark:text-gray-600">{count}</div>
-        <div className={`mt-3 text-xs font-semibold ${c.text} group-hover:translate-x-1 transition-transform inline-block`}>Ver mais →</div>
+        <div className={`mt-3 text-xs font-semibold ${c.text} group-hover:translate-x-1 transition-transform inline-block`}>
+          Ver mais →
+        </div>
       </div>
     </button>
   ) : (
@@ -285,7 +327,7 @@ export default function Dashboard() {
 
   const role = useMemo(() => getUserRoleFromToken(token), [token]);
 
-  // ✅ Rotas alinhadas + NOVA rota availability
+  // ✅ Rotas alinhadas + Disponibilidades + Horários
   const R = {
     users: "/admin/users",
     areas: "/admin/areas",
@@ -297,9 +339,11 @@ export default function Dashboard() {
     sessoes: "/admin/sessions",
     recruit: "/recruit",
     profiles: "/profiles",
-    availability: "/availability", // ✅ NOVO
+    availability: "/availability",
+    horarios: "/horarios",
   };
 
+  // ✅ Permissões
   const perms = useMemo(() => {
     const isSuperAdmin = role === "SuperAdmin";
     const isAdmin = role === "Admin";
@@ -320,6 +364,7 @@ export default function Dashboard() {
       isUser,
 
       canUsers: adminish || isSecretaria,
+
       canAreas: adminish,
       canCourses: adminish,
       canModules: adminish,
@@ -332,8 +377,11 @@ export default function Dashboard() {
 
       canProfiles: true,
 
-      // ✅ NOVO: Disponibilidades (criar só Formador no backend; mas deixar adminish entrar para testar/ver)
+      // Disponibilidades: criar é Formador; Admin/SuperAdmin podem entrar para testar/ver
       canAvailability: isFormador || adminish,
+
+      // Horários: formador e formando
+      canHorarios: isFormador || isFormando,
     };
   }, [role]);
 
@@ -351,6 +399,7 @@ export default function Dashboard() {
         { label: "Profiles", go: R.profiles },
       ];
     }
+
     if (perms.isSecretaria) {
       return [
         { label: "Utilizadores", go: R.users },
@@ -358,21 +407,25 @@ export default function Dashboard() {
         { label: "Profiles", go: R.profiles },
       ];
     }
+
     if (perms.isFormador) {
       return [
-        { label: "Disponibilidades", go: R.availability }, // ✅ NOVO
+        { label: "Disponibilidades", go: R.availability },
+        { label: "Horários", go: R.horarios },
         { label: "Sessões", go: R.sessoes },
         { label: "Avaliações", go: R.evaluations },
-        { label: "Profile", go: R.profiles },
       ];
     }
+
     if (perms.isFormando) {
       return [
+        { label: "Horários", go: R.horarios },
         { label: "Avaliações", go: R.evaluations },
         { label: "Inscrições", go: R.recruit },
         { label: "Profile", go: R.profiles },
       ];
     }
+
     return [
       { label: "Inscrições", go: R.recruit },
       { label: "Profile", go: R.profiles },
@@ -383,8 +436,8 @@ export default function Dashboard() {
     if (perms.isSuperAdmin) return "Acesso total ao sistema. Tudo disponível.";
     if (perms.isAdmin) return "Controlo do sistema: utilizadores, cursos, módulos, turmas e salas.";
     if (perms.isSecretaria) return "Gestão operacional: utilizadores, inscrições e perfis (dados e ficheiros).";
-    if (perms.isFormador) return "Define disponibilidades, gere sessões, e lança/consulta avaliações.";
-    if (perms.isFormando) return "Consulta o teu profile, as tuas avaliações e acompanha as tuas inscrições.";
+    if (perms.isFormador) return "Define disponibilidades, consulta horários, gere sessões e avaliações.";
+    if (perms.isFormando) return "Consulta o teu horário, o teu profile, avaliações e estado das inscrições.";
     return "Faz a tua candidatura e acompanha o estado.";
   }, [perms]);
 
@@ -411,7 +464,7 @@ export default function Dashboard() {
       <TawkToWidget />
 
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
-        {/* Header */}
+        {/* Header / Top bar */}
         <div className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 dark:border-gray-800 shadow-sm">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
             <button type="button" className="flex items-center gap-3 group" onClick={() => navigate("/dashboard")}>
@@ -465,7 +518,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Hero */}
+        {/* Hero Section */}
         <div className="container mx-auto px-4 py-8">
           <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-950/20 dark:to-purple-950/20 dark:border-gray-800 shadow-xl">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
@@ -493,6 +546,7 @@ export default function Dashboard() {
 
               <p className="text-base text-gray-600 dark:text-gray-400 max-w-2xl mb-6">{summaryText}</p>
 
+              {/* Quick Actions */}
               <div className="flex flex-wrap gap-3">
                 {primaryActions.map((a) => (
                   <button
@@ -521,7 +575,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* 2FA */}
+          {/* ✅ 2FA */}
           <div className="mt-8">
             <div className="border rounded-2xl bg-white dark:bg-gray-900 dark:border-gray-800 shadow-sm p-6">
               <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -573,20 +627,55 @@ export default function Dashboard() {
           </div>
 
           {/* Quick Access Cards */}
-          <div className="mt-8 grid grid-cols-2 lg:grid-cols-6 gap-4">
-            <QuickAccessCard title="Sessões" count="—" enabled={perms.canSessoes} onClick={() => navigate(R.sessoes)} color="green" />
-            <QuickAccessCard title="Avaliações" count="—" enabled={perms.canEvaluations} onClick={() => navigate(R.evaluations)} color="purple" />
-            <QuickAccessCard title="Inscrições" count="—" enabled={perms.canInscricoes} onClick={() => navigate(R.recruit)} color="blue" />
-            <QuickAccessCard title="Salas" count="—" enabled={perms.canRooms} onClick={() => navigate(R.rooms)} color="amber" />
-            <QuickAccessCard title="Profiles" count="—" enabled={perms.canProfiles} onClick={() => navigate(R.profiles)} color="blue" />
-
-            {/* ✅ NOVO */}
+          <div className="mt-8 grid grid-cols-2 lg:grid-cols-7 gap-4">
+            <QuickAccessCard
+              title="Horários"
+              count="—"
+              enabled={perms.canHorarios}
+              onClick={() => navigate(R.horarios)}
+              color="blue"
+            />
             <QuickAccessCard
               title="Disponibilidades"
               count="—"
               enabled={perms.canAvailability}
               onClick={() => navigate(R.availability)}
               color="green"
+            />
+            <QuickAccessCard
+              title="Sessões"
+              count="—"
+              enabled={perms.canSessoes}
+              onClick={() => navigate(R.sessoes)}
+              color="green"
+            />
+            <QuickAccessCard
+              title="Avaliações"
+              count="—"
+              enabled={perms.canEvaluations}
+              onClick={() => navigate(R.evaluations)}
+              color="purple"
+            />
+            <QuickAccessCard
+              title="Inscrições"
+              count="—"
+              enabled={perms.canInscricoes}
+              onClick={() => navigate(R.recruit)}
+              color="blue"
+            />
+            <QuickAccessCard
+              title="Salas"
+              count="—"
+              enabled={perms.canRooms}
+              onClick={() => navigate(R.rooms)}
+              color="amber"
+            />
+            <QuickAccessCard
+              title="Profiles"
+              count="—"
+              enabled={perms.canProfiles}
+              onClick={() => navigate(R.profiles)}
+              color="blue"
             />
           </div>
 
@@ -624,7 +713,20 @@ export default function Dashboard() {
                 />
               )}
 
-              {/* ✅ NOVO */}
+              {perms.canHorarios && (
+                <NavCard
+                  title="Horários"
+                  desc="Consulta o teu horário semanal (aulas/sessões) em grelha."
+                  onClick={() => navigate(R.horarios)}
+                  icon="schedule"
+                  accent="blue"
+                  badge={{
+                    text: perms.isFormador ? "Formador" : "Formando",
+                    tone: perms.isFormador ? "blue" : "amber",
+                  }}
+                />
+              )}
+
               {perms.canAvailability && (
                 <NavCard
                   title="Disponibilidades"

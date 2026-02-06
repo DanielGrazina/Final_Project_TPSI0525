@@ -18,6 +18,7 @@ import Sessions from "./pages/admin/Sessions.jsx";
 import Recruit from "./pages/admin/Recruit.jsx";
 import Profiles from "./pages/Profiles.jsx";
 import Availability from "./pages/Availability.jsx";
+import Horarios from "./pages/Horarios.jsx";
 
 import RequireRole from "./components/RequireRole";
 
@@ -152,6 +153,13 @@ function App() {
           element={
             <RequireRole allow={["Formador", "Admin", "SuperAdmin"]}>
               <Sessions />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/horarios"
+          element={ <RequireRole allow={["Formando", "Formador", "Admin", "SuperAdmin", "Secretaria"]}>
+           <Horarios />
             </RequireRole>
           }
         />
