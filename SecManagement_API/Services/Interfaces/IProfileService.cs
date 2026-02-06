@@ -24,5 +24,7 @@ namespace SecManagement_API.Services.Interfaces
 
         Task<UserDto> UpdateDadosPessoaisAsync(int userId, UpdateDadosPessoaisDto dto);
         Task<string> UpdateAvatarAsync(int userId, IFormFile file);
+        Task<IEnumerable<FormadorProfileDto>> GetAllFormadoresAsync();
+        Task<IEnumerable<FormandoProfileDto>> GetAllFormandosAsync();
     }
 }
