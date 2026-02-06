@@ -10,6 +10,12 @@ function safeStr(x) {
   return (x ?? "").toString();
 }
 
+function safeUrl(x) {
+  const s = safeStr(x).trim();
+  if (!s) return "";
+  return s;
+}
+
 function extractError(err, fallback = "Ocorreu um erro.") {
   const data = err?.response?.data;
   if (!data) return fallback;
@@ -52,7 +58,6 @@ function getUserIdFromToken(token) {
   const p = decodeJwt(token);
   if (!p) return null;
 
-  // Common claim keys
   const candidates = [
     "nameid",
     "sub",
@@ -70,7 +75,6 @@ function getUserIdFromToken(token) {
     }
   }
 
-  // às vezes vem em "unique_name" ou "sid" (fallback)
   const extra = ["unique_name", "sid"];
   for (const k of extra) {
     const v = p[k];
@@ -88,9 +92,7 @@ function SegmentTabs({ value, onChange, left, right }) {
         type="button"
         onClick={() => onChange(left.value)}
         className={`px-4 py-2 text-sm font-medium transition-colors
-          ${value === left.value
-            ? "bg-blue-600 text-white"
-            : "bg-transparent text-gray-300 hover:bg-white/10"}`}
+          ${value === left.value ? "bg-blue-600 text-white" : "bg-transparent text-gray-300 hover:bg-white/10"}`}
       >
         {left.label}
       </button>
@@ -98,9 +100,7 @@ function SegmentTabs({ value, onChange, left, right }) {
         type="button"
         onClick={() => onChange(right.value)}
         className={`px-4 py-2 text-sm font-medium transition-colors
-          ${value === right.value
-            ? "bg-blue-600 text-white"
-            : "bg-transparent text-gray-300 hover:bg-white/10"}`}
+          ${value === right.value ? "bg-blue-600 text-white" : "bg-transparent text-gray-300 hover:bg-white/10"}`}
       >
         {right.label}
       </button>
@@ -138,6 +138,33 @@ function Modal({ title, children, onClose, disabled }) {
   );
 }
 
+function Avatar({ url, name, size = 44 }) {
+  const s = Number(size);
+  const initials = (safeStr(name).trim() || "?")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("");
+
+  const u = safeUrl(url);
+
+  return (
+    <div
+      className="rounded-full overflow-hidden border border-white/10 bg-white/10 flex items-center justify-center flex-shrink-0"
+      style={{ width: s, height: s }}
+      title={safeStr(name)}
+    >
+      {u ? (
+        // eslint-disable-next-line jsx-a11y/img-redundant-alt
+        <img src={u} alt="Avatar" className="w-full h-full object-cover" />
+      ) : (
+        <span className="text-xs font-bold text-gray-200">{initials || "?"}</span>
+      )}
+    </div>
+  );
+}
+
 /* ---------------- main page ---------------- */
 
 export default function Profiles() {
@@ -151,7 +178,7 @@ export default function Profiles() {
   // Permissões
   const canManage = role === "Admin" || role === "Secretaria" || role === "SuperAdmin";
 
-  // Para UI tabs
+  // UI tabs
   const [tab, setTab] = useState("formandos"); // "formandos" | "formadores"
 
   // Data
@@ -163,14 +190,14 @@ export default function Profiles() {
 
   // filtros
   const [search, setSearch] = useState("");
-  const [turmaFilter, setTurmaFilter] = useState(""); // só para formandos (se existir no dto)
-  const [areaFilter, setAreaFilter] = useState(""); // só para formadores
+  const [turmaFilter, setTurmaFilter] = useState("");
+  const [areaFilter, setAreaFilter] = useState("");
 
   // detalhe selecionado
   const [selected, setSelected] = useState(null); // { type, data }
   const [openDetail, setOpenDetail] = useState(false);
 
-  // edição dados pessoais (só admin/secretaria/super)
+  // edição dados pessoais
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     nome: "",
@@ -180,9 +207,13 @@ export default function Profiles() {
     cc: "",
   });
 
-  // upload ficheiros (só admin/secretaria/super)
+  // upload ficheiros (docs) (admin/secretaria)
   const [uploading, setUploading] = useState(false);
   const [fileToUpload, setFileToUpload] = useState(null);
+
+  // upload avatar (admin/secretaria)
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarFile, setAvatarFile] = useState(null);
 
   async function loadAll() {
     setLoading(true);
@@ -201,14 +232,8 @@ export default function Profiles() {
     }
 
     try {
-      // Regras:
-      // - Admin/Secretaria/SuperAdmin: podem listar tudo
-      // - Formador/Formando/User: só podem ver a sua própria profile
       if (canManage) {
-        const results = await Promise.allSettled([
-          api.get("/Profiles/formandos"),
-          api.get("/Profiles/formadores"),
-        ]);
+        const results = await Promise.allSettled([api.get("/Profiles/formandos"), api.get("/Profiles/formadores")]);
 
         const [f1, f2] = results;
 
@@ -218,10 +243,6 @@ export default function Profiles() {
         if (f2.status === "fulfilled") setFormadores(Array.isArray(f2.value.data) ? f2.value.data : []);
         else setError((p) => p || extractError(f2.reason, "Falha ao carregar formadores."));
       } else {
-        // só eu
-        // Se o user for Formador, tenta buscar formador/{myUserId}.
-        // Se for Formando ou User (candidato), tenta formando/{myUserId}.
-        // (e deixamos os arrays com 1 elemento para a UI funcionar)
         const wantsFormador = role === "Formador";
         if (wantsFormador) {
           const r = await api.get(`/Profiles/formador/${myUserId}`);
@@ -256,7 +277,6 @@ export default function Profiles() {
       const id = safeStr(f.id);
       const userId = safeStr(f.userId);
 
-      // Alguns backends podem já incluir Nome/Telefone/NIF etc no dto — suportamos se existir:
       const nome = safeStr(f.nome ?? f.userNome ?? f.formandoNome ?? "");
       const email = safeStr(f.email ?? "");
       const numeroAluno = safeStr(f.numeroAluno ?? "");
@@ -271,10 +291,7 @@ export default function Profiles() {
         email.toLowerCase().includes(s) ||
         numeroAluno.toLowerCase().includes(s);
 
-      const matchTurma =
-        !t ||
-        turmaNome.toLowerCase().includes(t) ||
-        turmaId.toLowerCase().includes(t);
+      const matchTurma = !t || turmaNome.toLowerCase().includes(t) || turmaId.toLowerCase().includes(t);
 
       return matchSearch && matchTurma;
     });
@@ -293,11 +310,7 @@ export default function Profiles() {
       const area = safeStr(f.areaEspecializacao ?? "");
 
       const matchSearch =
-        !s ||
-        id.includes(s) ||
-        userId.includes(s) ||
-        nome.toLowerCase().includes(s) ||
-        email.toLowerCase().includes(s);
+        !s || id.includes(s) || userId.includes(s) || nome.toLowerCase().includes(s) || email.toLowerCase().includes(s);
 
       const matchArea = !a || area.toLowerCase().includes(a);
 
@@ -309,8 +322,6 @@ export default function Profiles() {
     setSelected({ type, data });
     setOpenDetail(true);
 
-    // Preencher formulário de edição com o que existir no DTO
-    // (Se o teu backend não enviar estes campos no GET, o formulário fica vazio e podes preencher manualmente)
     setEditForm({
       nome: safeStr(data.nome ?? data.userNome ?? ""),
       telefone: safeStr(data.telefone ?? ""),
@@ -320,12 +331,28 @@ export default function Profiles() {
     });
 
     setFileToUpload(null);
+    setAvatarFile(null);
   }
 
   function closeDetail() {
-    if (saving || uploading) return;
+    if (saving || uploading || avatarUploading) return;
     setOpenDetail(false);
     setSelected(null);
+  }
+
+  function patchSelectedAndLists(userId, patch) {
+    const uid = Number(userId);
+
+    // update selected
+    setSelected((prev) => {
+      if (!prev?.data) return prev;
+      if (Number(prev.data.userId) !== uid) return prev;
+      return { ...prev, data: { ...prev.data, ...patch } };
+    });
+
+    // update in lists
+    setFormandos((prev) => prev.map((x) => (Number(x.userId) === uid ? { ...x, ...patch } : x)));
+    setFormadores((prev) => prev.map((x) => (Number(x.userId) === uid ? { ...x, ...patch } : x)));
   }
 
   async function refreshSelected() {
@@ -337,7 +364,6 @@ export default function Profiles() {
     try {
       if (type === "formador") {
         const r = await api.get(`/Profiles/formador/${userId}`);
-        // atualizar lista
         setFormadores((prev) => prev.map((x) => (Number(x.userId) === Number(userId) ? r.data : x)));
         setSelected({ type, data: r.data });
       } else {
@@ -359,8 +385,6 @@ export default function Profiles() {
     const userId = selected?.data?.userId;
     if (!userId) return;
 
-    // obrigatórios (tu pediste “obrigatórios” na candidatura; aqui não pediste.
-    // Mas para evitar lixo, validamos o mínimo: nome opcional, os restantes podem ser vazios.
     const payload = {
       nome: editForm.nome?.trim() || null,
       telefone: editForm.telefone?.trim() || null,
@@ -377,6 +401,51 @@ export default function Profiles() {
       setError(extractError(err, "Falha ao guardar dados pessoais."));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function uploadAvatar() {
+    if (!canManage) return;
+
+    const userId = selected?.data?.userId;
+    if (!userId) return;
+
+    if (!avatarFile) {
+      setError("Seleciona uma imagem primeiro.");
+      return;
+    }
+
+    // validação leve: imagens apenas
+    if (!avatarFile.type?.startsWith("image/")) {
+      setError("O avatar tem de ser uma imagem (png/jpg/webp).");
+      return;
+    }
+
+    setError("");
+    setAvatarUploading(true);
+
+    try {
+      const fd = new FormData();
+      fd.append("Ficheiro", avatarFile);
+
+      const res = await api.post(`/Profiles/user/${userId}/avatar`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const avatarUrl = res?.data?.avatarUrl || "";
+      if (avatarUrl) {
+        // Atualiza o UI imediatamente (mesmo que os GETs ainda não tragam avatar)
+        patchSelectedAndLists(userId, { avatar: avatarUrl, avatarUrl });
+      }
+
+      setAvatarFile(null);
+
+      // tenta refrescar do backend também
+      await refreshSelected();
+    } catch (err) {
+      setError(extractError(err, "Falha ao atualizar avatar."));
+    } finally {
+      setAvatarUploading(false);
     }
   }
 
@@ -413,7 +482,6 @@ export default function Profiles() {
 
     try {
       const fd = new FormData();
-      // no backend o dto tem IFormFile Ficheiro => key "Ficheiro"
       fd.append("Ficheiro", fileToUpload);
 
       await api.post(`/Profiles/upload/${userId}`, fd, {
@@ -446,22 +514,13 @@ export default function Profiles() {
     const userId = selected?.data?.userId;
     if (!userId) return;
 
-    // Define o endpoint correto
-    const endpoint = selected.type === "formador"
-      ? `/Profiles/formador/${userId}/pdf`
-      : `/Profiles/formando/${userId}/pdf`;
+    const endpoint = selected.type === "formador" ? `/Profiles/formador/${userId}/pdf` : `/Profiles/formando/${userId}/pdf`;
 
     try {
-      const res = await api.get(endpoint, {
-        responseType: "blob",
-      });
-
+      const res = await api.get(endpoint, { responseType: "blob" });
       const blob = new Blob([res.data], { type: "application/pdf" });
-
       const url = window.URL.createObjectURL(blob);
-
       window.open(url, "_blank");
-
     } catch (err) {
       setError(extractError(err, "Falha ao gerar ou abrir o PDF."));
     }
@@ -477,7 +536,7 @@ export default function Profiles() {
           <div>
             <h1 className="text-xl font-bold">Profiles</h1>
             <p className="text-sm text-gray-300">
-              {canManage ? "Ver, editar dados pessoais e gerir ficheiros." : "A tua informação (só leitura)."}
+              {canManage ? "Ver, editar dados pessoais e gerir ficheiros/avatars." : "A tua informação (só leitura)."}
             </p>
           </div>
 
@@ -521,27 +580,23 @@ export default function Profiles() {
             </div>
 
             {tab === "formandos" ? (
-              <div className="flex items-center gap-2">
-                <input
-                  value={turmaFilter}
-                  onChange={(e) => setTurmaFilter(e.target.value)}
-                  placeholder="Filtrar por turma (nome ou id)"
-                  className="w-full lg:w-[280px] px-4 py-2.5 rounded-lg border border-white/10 bg-gray-950
-                             text-gray-100 placeholder:text-gray-500
-                             focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-                />
-              </div>
+              <input
+                value={turmaFilter}
+                onChange={(e) => setTurmaFilter(e.target.value)}
+                placeholder="Filtrar por turma (nome ou id)"
+                className="w-full lg:w-[280px] px-4 py-2.5 rounded-lg border border-white/10 bg-gray-950
+                           text-gray-100 placeholder:text-gray-500
+                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              />
             ) : (
-              <div className="flex items-center gap-2">
-                <input
-                  value={areaFilter}
-                  onChange={(e) => setAreaFilter(e.target.value)}
-                  placeholder="Filtrar por área"
-                  className="w-full lg:w-[240px] px-4 py-2.5 rounded-lg border border-white/10 bg-gray-950
-                             text-gray-100 placeholder:text-gray-500
-                             focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-                />
-              </div>
+              <input
+                value={areaFilter}
+                onChange={(e) => setAreaFilter(e.target.value)}
+                placeholder="Filtrar por área"
+                className="w-full lg:w-[240px] px-4 py-2.5 rounded-lg border border-white/10 bg-gray-950
+                           text-gray-100 placeholder:text-gray-500
+                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              />
             )}
 
             <div className="px-3 py-2 rounded-lg bg-blue-600/20 border border-blue-500/30 text-sm font-semibold">
@@ -579,6 +634,8 @@ export default function Profiles() {
                   ? `UserId: ${item.userId} • Nº: ${safeStr(item.numeroAluno ?? "—")} • Email: ${safeStr(item.email ?? "—")}`
                   : `UserId: ${item.userId} • Área: ${safeStr(item.areaEspecializacao ?? "—")} • Email: ${safeStr(item.email ?? "—")}`;
 
+                const avatarUrl = item.avatar ?? item.avatarUrl ?? item.userAvatar ?? item.user?.avatar;
+
                 return (
                   <button
                     key={`${type}-${item.userId}-${item.id}`}
@@ -587,11 +644,16 @@ export default function Profiles() {
                     className="w-full text-left p-4 hover:bg-white/5 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <div className="font-semibold text-gray-100">{title}</div>
-                        <div className="text-sm text-gray-400 mt-1">{sub}</div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar url={avatarUrl} name={title} size={42} />
+
+                        <div className="min-w-0">
+                          <div className="font-semibold text-gray-100 truncate">{title}</div>
+                          <div className="text-sm text-gray-400 mt-1 truncate">{sub}</div>
+                        </div>
                       </div>
-                      <div className="text-sm text-blue-300 font-semibold">Abrir →</div>
+
+                      <div className="text-sm text-blue-300 font-semibold flex-shrink-0">Abrir →</div>
                     </div>
                   </button>
                 );
@@ -606,38 +668,82 @@ export default function Profiles() {
         <Modal
           title={selected.type === "formador" ? "Profile — Formador" : "Profile — Formando"}
           onClose={closeDetail}
-          disabled={saving || uploading}
+          disabled={saving || uploading || avatarUploading}
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: Info */}
+            {/* Left: Info + Avatar + Files */}
             <div className="space-y-4">
               <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <div className="text-sm text-gray-400">Identificação</div>
-                <div className="mt-2 space-y-1 text-sm">
-                  <div>
-                    <span className="text-gray-400">UserId:</span>{" "}
-                    <span className="text-gray-100 font-semibold">{safeStr(selected.data.userId)}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Email:</span>{" "}
-                    <span className="text-gray-100 font-semibold">{safeStr(selected.data.email ?? "—")}</span>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <Avatar
+                      url={selected.data.avatar ?? selected.data.avatarUrl ?? selected.data.userAvatar ?? selected.data.user?.avatar}
+                      name={safeStr(selected.data.nome ?? selected.data.userNome ?? selected.data.formandoNome ?? "")}
+                      size={56}
+                    />
+
+                    <div>
+                      <div className="text-sm text-gray-400">Identificação</div>
+                      <div className="mt-1 text-sm">
+                        <div className="text-gray-100 font-semibold">
+                          {safeStr(selected.data.nome ?? selected.data.userNome ?? selected.data.formandoNome ?? "—")}
+                        </div>
+                        <div className="text-gray-400">
+                          UserId: <span className="text-gray-100 font-semibold">{safeStr(selected.data.userId)}</span>
+                        </div>
+                        <div className="text-gray-400">
+                          Email: <span className="text-gray-100 font-semibold">{safeStr(selected.data.email ?? "—")}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
+                  {/* Avatar Upload (Admin/Secretaria/SuperAdmin only) */}
+                  {canManage && (
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="text-xs text-gray-400">Foto de perfil</div>
+                      <div className="flex items-center gap-2">
+                        <label className="px-3 py-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors cursor-pointer text-sm">
+                          Escolher
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setAvatarFile(e.target.files?.[0] ?? null)}
+                            className="hidden"
+                            disabled={avatarUploading}
+                          />
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={uploadAvatar}
+                          disabled={avatarUploading || !avatarFile}
+                          className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700
+                                     disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {avatarUploading ? "A enviar..." : "Upload"}
+                        </button>
+                      </div>
+
+                      {avatarFile && (
+                        <div className="text-xs text-gray-400 max-w-[220px] truncate" title={avatarFile.name}>
+                          {avatarFile.name}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 space-y-1 text-sm">
                   {selected.type === "formador" ? (
                     <>
-                      <div>
-                        <span className="text-gray-400">Nome:</span>{" "}
-                        <span className="text-gray-100 font-semibold">{safeStr(selected.data.nome ?? "—")}</span>
-                      </div>
                       <div>
                         <span className="text-gray-400">Telefone:</span>{" "}
                         <span className="text-gray-100 font-semibold">{safeStr(selected.data.telefone ?? "—")}</span>
                       </div>
                       <div>
                         <span className="text-gray-400">Área:</span>{" "}
-                        <span className="text-gray-100 font-semibold">
-                          {safeStr(selected.data.areaEspecializacao ?? "—")}
-                        </span>
+                        <span className="text-gray-100 font-semibold">{safeStr(selected.data.areaEspecializacao ?? "—")}</span>
                       </div>
                       <div>
                         <span className="text-gray-400">Cor calendário:</span>{" "}
@@ -646,9 +752,6 @@ export default function Profiles() {
                     </>
                   ) : (
                     <>
-                      {/* O FormandoProfileDto do teu ficheiro só tem NumeroAluno e DataNascimento.
-                          Se o teu backend já manda Nome/Telefone/etc aqui, o UI mostra.
-                          Se não manda, podes editar na direita (admin/secretaria) e depois o refresh vai mostrar se o backend devolver. */}
                       <div>
                         <span className="text-gray-400">Nº Aluno:</span>{" "}
                         <span className="text-gray-100 font-semibold">{safeStr(selected.data.numeroAluno ?? "—")}</span>
@@ -661,19 +764,13 @@ export default function Profiles() {
                             : "—"}
                         </span>
                       </div>
-                      {selected.data.nome !== undefined && (
-                        <div>
-                          <span className="text-gray-400">Nome:</span>{" "}
-                          <span className="text-gray-100 font-semibold">{safeStr(selected.data.nome ?? "—")}</span>
-                        </div>
-                      )}
                     </>
                   )}
                 </div>
 
                 {!canManage && (
                   <div className="mt-4 text-xs text-gray-400">
-                    Nota: Formandos e Formadores não podem editar nem fazer upload.
+                    Nota: Formandos e Formadores não podem editar nem fazer upload (ficheiros/avatars).
                   </div>
                 )}
               </div>
@@ -752,13 +849,11 @@ export default function Profiles() {
               </div>
             </div>
 
-            {/* Right: Edit (Admin/Secretaria/SuperAdmin only) */}
+            {/* Right: Edit */}
             <div className="space-y-4">
               <div className="bg-white/5 border border-white/10 rounded-xl p-4">
                 <div className="text-sm font-semibold text-gray-100">Dados pessoais</div>
-                <div className="text-xs text-gray-400">
-                  {canManage ? "Admin/Secretaria podem editar." : "Só leitura (não tens permissões)."}
-                </div>
+                <div className="text-xs text-gray-400">{canManage ? "Admin/Secretaria podem editar." : "Só leitura."}</div>
 
                 <form onSubmit={saveDadosPessoais} className="mt-4 space-y-3">
                   <div>
@@ -843,12 +938,12 @@ export default function Profiles() {
 
               <div className="bg-white/5 border border-white/10 rounded-xl p-4">
                 <div className="text-sm font-semibold text-gray-100">PDF</div>
-                <div className="text-xs text-gray-400">Disponível para download (se quiseres usar).</div>
+                <div className="text-xs text-gray-400">Relatório do perfil.</div>
 
                 <div className="mt-3 flex gap-2 flex-wrap">
                   <button
                     type="button"
-                    onClick={openPdf} // <--- Alterado aqui
+                    onClick={openPdf}
                     className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
                   >
                     Abrir PDF
@@ -863,6 +958,13 @@ export default function Profiles() {
                   </button>
                 </div>
               </div>
+
+              {/* Só para segurança visual */}
+              {!canManage && (
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-xs text-gray-400">
+                  Estás em modo só leitura. Admin/Secretaria/SuperAdmin conseguem editar dados pessoais e gerir uploads.
+                </div>
+              )}
             </div>
           </div>
         </Modal>

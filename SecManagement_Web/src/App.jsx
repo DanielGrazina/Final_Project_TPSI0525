@@ -17,6 +17,7 @@ import Users from "./pages/admin/Users.jsx";
 import Sessions from "./pages/admin/Sessions.jsx";
 import Recruit from "./pages/admin/Recruit.jsx";
 import Profiles from "./pages/Profiles.jsx";
+import Availability from "./pages/Availability.jsx";
 
 import RequireRole from "./components/RequireRole";
 
@@ -106,6 +107,14 @@ function App() {
           element={
             <RequireRole allow={["Admin", "SuperAdmin"]}>
               <Turmas />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/availability"
+          element={
+            <RequireRole allow={["Formador", "Admin", "SuperAdmin"]}>
+              <Availability />
             </RequireRole>
           }
         />
