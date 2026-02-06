@@ -40,6 +40,22 @@ function Icon({ name }) {
           />
         </svg>
       );
+    case "profile":
+      return (
+        <svg className={common} viewBox="0 0 24 24" fill="none">
+          <path
+            d="M20 21a8 8 0 0 0-16 0"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M12 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+        </svg>
+      );
     case "areas":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -269,7 +285,7 @@ export default function Dashboard() {
 
   const role = useMemo(() => getUserRoleFromToken(token), [token]);
 
-  // ✅ Rotas alinhadas com o App.jsx novo (lowercase + /recruit)
+  // ✅ Rotas alinhadas com o App.jsx + adiciona Profiles
   const R = {
     users: "/admin/users",
     areas: "/admin/areas",
@@ -280,9 +296,10 @@ export default function Dashboard() {
     evaluations: "/admin/evaluations",
     sessoes: "/admin/sessions",
     recruit: "/recruit",
+    profiles: "/profiles",
   };
 
-  // ✅ Permissões alinhadas com o backend + teu print
+  // ✅ Permissões alinhadas com o backend
   const perms = useMemo(() => {
     const isSuperAdmin = role === "SuperAdmin";
     const isAdmin = role === "Admin";
@@ -302,28 +319,23 @@ export default function Dashboard() {
       isFormando,
       isUser,
 
-      // UsersController: GET/PUT -> SuperAdmin/Admin/Secretaria
       canUsers: adminish || isSecretaria,
 
-      // Pedagogico/Areas/Cursos/Modulos/Turmas: Admin/SuperAdmin
       canAreas: adminish,
       canCourses: adminish,
       canModules: adminish,
       canTurmas: adminish,
 
-      // SalasController: Admin/SuperAdmin
       canRooms: adminish,
 
-      // Sessões: POST agendar -> Admin/SuperAdmin/Formador, GET horários -> auth (mas UI faz sentido p/ formador/admin)
       canSessoes: adminish || isFormador,
 
-      // Avaliações: Admin/SuperAdmin/Formador/Formando
       canEvaluations: adminish || isFormador || isFormando,
 
-      // Inscrições (teu print):
-      // - User/Formando: candidatar e ver
-      // - Secretaria/Admin/SuperAdmin: aprovar/rejeitar/colocar
       canInscricoes: isUser || isFormando || isSecretaria || adminish,
+
+      // Profiles: está aberto a qualquer user logado (como no App.jsx)
+      canProfiles: true,
     };
   }, [role]);
 
@@ -338,36 +350,42 @@ export default function Dashboard() {
         { label: "Utilizadores", go: R.users },
         { label: "Cursos", go: R.courses },
         { label: "Turmas", go: R.turmas },
+        { label: "Profiles", go: R.profiles },
       ];
     }
     if (perms.isSecretaria) {
       return [
         { label: "Utilizadores", go: R.users },
         { label: "Inscrições", go: R.recruit },
-        { label: "Avaliações", go: R.evaluations },
+        { label: "Profiles", go: R.profiles },
       ];
     }
     if (perms.isFormador) {
       return [
         { label: "Sessões", go: R.sessoes },
         { label: "Avaliações", go: R.evaluations },
+        { label: "Profile", go: R.profiles },
       ];
     }
     if (perms.isFormando) {
       return [
         { label: "Avaliações", go: R.evaluations },
         { label: "Inscrições", go: R.recruit },
+        { label: "Profile", go: R.profiles },
       ];
     }
-    return [{ label: "Inscrições", go: R.recruit }];
+    return [
+      { label: "Inscrições", go: R.recruit },
+      { label: "Profile", go: R.profiles },
+    ];
   }, [perms, R]);
 
   const summaryText = useMemo(() => {
     if (perms.isSuperAdmin) return "Acesso total ao sistema. Tudo disponível.";
     if (perms.isAdmin) return "Controlo do sistema: utilizadores, cursos, módulos, turmas e salas.";
-    if (perms.isSecretaria) return "Gestão operacional: utilizadores, inscrições e apoio pedagógico.";
-    if (perms.isFormador) return "Gestão de sessões e avaliações do teu trabalho diário.";
-    if (perms.isFormando) return "Consulta as tuas avaliações e gere as tuas inscrições.";
+    if (perms.isSecretaria) return "Gestão operacional: utilizadores, inscrições e perfis (dados e ficheiros).";
+    if (perms.isFormador) return "Consulta o teu profile e gere as tuas sessões e avaliações.";
+    if (perms.isFormando) return "Consulta o teu profile, as tuas avaliações e acompanha as tuas inscrições.";
     return "Faz a tua candidatura e acompanha o estado.";
   }, [perms]);
 
@@ -376,8 +394,8 @@ export default function Dashboard() {
       setTwoFaError("");
       setTwoFaLoading(true);
 
-      // ⚠️ isto depende do teu AuthController.
-      // Se o endpoint devolver { qrCodeUrl: "otpauth://..." } está ok.
+      // ⚠️ depende do teu AuthController:
+      // espera-se { qrCodeUrl: "otpauth://..." }
       const res = await api.post("/Auth/enable-2fa");
       if (!res?.data?.qrCodeUrl) throw new Error("Resposta inválida: qrCodeUrl em falta.");
 
@@ -416,6 +434,17 @@ export default function Dashboard() {
                 <span className="text-xs text-gray-500 dark:text-gray-400">Perfil</span>
                 <RolePill role={perms.role} />
               </div>
+
+              {perms.canProfiles && (
+                <button
+                  type="button"
+                  onClick={() => navigate(R.profiles)}
+                  className="px-3 py-2 rounded-lg border text-gray-700 hover:bg-gray-100 transition
+                             dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
+                >
+                  Profiles
+                </button>
+              )}
 
               {perms.canUsers && (
                 <button
@@ -548,11 +577,42 @@ export default function Dashboard() {
           </div>
 
           {/* Quick Access Cards */}
-          <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <QuickAccessCard title="Sessões" count="—" enabled={perms.canSessoes} onClick={() => navigate(R.sessoes)} color="green" />
-            <QuickAccessCard title="Avaliações" count="—" enabled={perms.canEvaluations} onClick={() => navigate(R.evaluations)} color="purple" />
-            <QuickAccessCard title="Inscrições" count="—" enabled={perms.canInscricoes} onClick={() => navigate(R.recruit)} color="blue" />
-            <QuickAccessCard title="Salas" count="—" enabled={perms.canRooms} onClick={() => navigate(R.rooms)} color="amber" />
+          <div className="mt-8 grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <QuickAccessCard
+              title="Sessões"
+              count="—"
+              enabled={perms.canSessoes}
+              onClick={() => navigate(R.sessoes)}
+              color="green"
+            />
+            <QuickAccessCard
+              title="Avaliações"
+              count="—"
+              enabled={perms.canEvaluations}
+              onClick={() => navigate(R.evaluations)}
+              color="purple"
+            />
+            <QuickAccessCard
+              title="Inscrições"
+              count="—"
+              enabled={perms.canInscricoes}
+              onClick={() => navigate(R.recruit)}
+              color="blue"
+            />
+            <QuickAccessCard
+              title="Salas"
+              count="—"
+              enabled={perms.canRooms}
+              onClick={() => navigate(R.rooms)}
+              color="amber"
+            />
+            <QuickAccessCard
+              title="Profiles"
+              count="—"
+              enabled={perms.canProfiles}
+              onClick={() => navigate(R.profiles)}
+              color="blue"
+            />
           </div>
 
           {/* Main Navigation Cards */}
@@ -568,6 +628,24 @@ export default function Dashboard() {
                   icon="users"
                   accent="green"
                   badge={{ text: perms.isSecretaria ? "Secretaria" : "Admin", tone: perms.isSecretaria ? "blue" : "green" }}
+                />
+              )}
+
+              {perms.canProfiles && (
+                <NavCard
+                  title="Profiles"
+                  desc={
+                    perms.isAdmin || perms.isSuperAdmin || perms.isSecretaria
+                      ? "Ver perfis, editar dados pessoais e gerir ficheiros (upload/download)."
+                      : "Ver o teu profile e os teus dados."
+                  }
+                  onClick={() => navigate(R.profiles)}
+                  icon="profile"
+                  accent="blue"
+                  badge={{
+                    text: perms.isAdmin || perms.isSuperAdmin ? "Admin" : perms.isSecretaria ? "Secretaria" : "Consulta",
+                    tone: perms.isAdmin || perms.isSuperAdmin ? "green" : perms.isSecretaria ? "blue" : "amber",
+                  }}
                 />
               )}
 
@@ -657,15 +735,31 @@ export default function Dashboard() {
               {perms.canInscricoes && (
                 <NavCard
                   title="Inscrições"
-                  desc={perms.isSecretaria || perms.isAdmin || perms.isSuperAdmin
-                    ? "Gerir candidaturas pendentes, aprovar/rejeitar e colocar em turma."
-                    : "Criar candidatura e acompanhar o estado."}
+                  desc={
+                    perms.isSecretaria || perms.isAdmin || perms.isSuperAdmin
+                      ? "Gerir candidaturas pendentes, aprovar/rejeitar e colocar em turma."
+                      : "Criar candidatura e acompanhar o estado."
+                  }
                   onClick={() => navigate(R.recruit)}
                   icon="inscr"
                   accent="blue"
                   badge={{
-                    text: perms.isAdmin || perms.isSuperAdmin ? "Admin" : perms.isSecretaria ? "Secretaria" : perms.isFormando ? "Formando" : "User",
-                    tone: perms.isAdmin || perms.isSuperAdmin ? "green" : perms.isSecretaria ? "blue" : perms.isFormando ? "amber" : "neutral",
+                    text:
+                      perms.isAdmin || perms.isSuperAdmin
+                        ? "Admin"
+                        : perms.isSecretaria
+                        ? "Secretaria"
+                        : perms.isFormando
+                        ? "Formando"
+                        : "User",
+                    tone:
+                      perms.isAdmin || perms.isSuperAdmin
+                        ? "green"
+                        : perms.isSecretaria
+                        ? "blue"
+                        : perms.isFormando
+                        ? "amber"
+                        : "neutral",
                   }}
                 />
               )}
