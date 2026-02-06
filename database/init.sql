@@ -91,32 +91,27 @@ CREATE TABLE "Turmas" (
     "DataInicio" TIMESTAMP,
     "DataFim" TIMESTAMP,
     "Local" VARCHAR(100),
-    
-    "Estado" VARCHAR(50) DEFAULT 'Planeada' 
+    "Estado" VARCHAR(50) DEFAULT 'Planeada',
     CHECK ("Estado" IN ('Planeada', 'Decorrer', 'Terminada', 'Cancelada'))
 );
 
 CREATE TABLE "Turma_Modulos" (
     "Id" SERIAL PRIMARY KEY,
-    "TurmaId" INT REFERENCES "Turmas"("Id") ON DELETE CASCADE,
-    "ModuloId" INT REFERENCES "Modulos"("Id"),
-    "FormadorId" INT REFERENCES "Formadores"("Id"),
+    "TurmaId" INT REFERENCES "Turmas"("Id") ON DELETE CASCADE, 
+    "ModuloId" INT REFERENCES "Modulos"("Id") ON DELETE RESTRICT,
+    "FormadorId" INT REFERENCES "Formadores"("Id") ON DELETE RESTRICT,
     "Sequencia" INT NOT NULL,
     UNIQUE("TurmaId", "ModuloId")
 );
 
 CREATE TABLE "Inscricoes" (
     "Id" SERIAL PRIMARY KEY,
-    
-    "TurmaId" INT REFERENCES "Turmas"("Id"),
-    "CursoId" INT NOT NULL REFERENCES "Cursos"("Id"),
-    "FormandoId" INT NOT NULL REFERENCES "Formandos"("Id"),
-
+    "TurmaId" INT REFERENCES "Turmas"("Id") ON DELETE RESTRICT,
+    "CursoId" INT NOT NULL REFERENCES "Cursos"("Id") ON DELETE RESTRICT,
+    "FormandoId" INT NOT NULL REFERENCES "Formandos"("Id") ON DELETE RESTRICT,
     "DataInscricao" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
     "Estado" VARCHAR(50) DEFAULT 'Candidatura'
-    CHECK ("Estado" IN ('Candidatura', 'Pendente', 'Ativo', 'Concluido', 'Desistiu', 'Rejeitado')),
-
+    CHECK ("Estado" IN ('Candidatura', 'Ativo', 'Concluido', 'Desistiu', 'Rejeitado')),
     UNIQUE("Id", "TurmaId"), 
     UNIQUE("CursoId", "FormandoId") 
 );
@@ -125,14 +120,11 @@ ALTER TABLE "Turma_Modulos" ADD CONSTRAINT uq_turmamodulo_turma UNIQUE ("Id", "T
 
 CREATE TABLE "Avaliacoes" (
     "Id" SERIAL PRIMARY KEY,
-    "TurmaId" INT NOT NULL REFERENCES "Turmas"("Id"),
-    
+    "TurmaId" INT NOT NULL REFERENCES "Turmas"("Id") ON DELETE RESTRICT,
     "InscricaoId" INT NOT NULL,
-    FOREIGN KEY ("InscricaoId", "TurmaId") REFERENCES "Inscricoes"("Id", "TurmaId") ON DELETE CASCADE,
-    
+    FOREIGN KEY ("InscricaoId", "TurmaId") REFERENCES "Inscricoes"("Id", "TurmaId") ON DELETE RESTRICT,
     "TurmaModuloId" INT NOT NULL,
-    FOREIGN KEY ("TurmaModuloId", "TurmaId") REFERENCES "Turma_Modulos"("Id", "TurmaId") ON DELETE CASCADE,
-    
+    FOREIGN KEY ("TurmaModuloId", "TurmaId") REFERENCES "Turma_Modulos"("Id", "TurmaId") ON DELETE RESTRICT,
     "Avaliacao" DECIMAL(4,2),
     "Observacoes" TEXT
 );

@@ -5,6 +5,10 @@
     {
         public int CursoId { get; set; }
         public int FormandoId { get; set; }
+        public string? Telefone { get; set; }
+        public string? NIF { get; set; }
+        public string? Morada { get; set; }
+        public string? CC { get; set; }
     }
 
     // Usado pelo BACKOFFICE para colocar o aluno na turma

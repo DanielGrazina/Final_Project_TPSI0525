@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Npgsql;
 using QuestPDF.Infrastructure;
 using SecManagement_API.Data;
 using SecManagement_API.Models;
@@ -14,17 +13,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 QuestPDF.Settings.License = LicenseType.Community;
 
-// DB Context
-var dataSourceBuilder = new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
-dataSourceBuilder.MapEnum<UserRole>("user_role");
-dataSourceBuilder.MapEnum<EstadoTurma>("estado_turma");
-dataSourceBuilder.MapEnum<TipoSala>("tipo_sala");
-dataSourceBuilder.MapEnum<EstadoInscricao>("estado_inscricao");
-
-var dataSource = dataSourceBuilder.Build();
-
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(dataSource));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -113,7 +104,6 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<SecManagement_API.Data.AppDbContext>();
 
-        // Esta linha é que chama o teu código de criação de users
         SecManagement_API.Data.DbInitializer.Initialize(context);
     }
     catch (Exception ex)
