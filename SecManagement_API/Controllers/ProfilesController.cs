@@ -157,5 +157,37 @@ namespace SecManagement_API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        // PUT: api/Profiles/user/5/dados
+        [HttpPut("user/{userId}/dados")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
+        public async Task<ActionResult<UserDto>> UpdateDadosPessoais(int userId, [FromBody] UpdateDadosPessoaisDto dto)
+        {
+            try
+            {
+                var result = await _service.UpdateDadosPessoaisAsync(userId, dto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // POST: api/Profiles/user/5/avatar
+        [HttpPost("user/{userId}/avatar")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
+        public async Task<IActionResult> UploadAvatar(int userId, [FromForm] UploadFicheiroDto dto)
+        {
+            try
+            {
+                var avatarUrl = await _service.UpdateAvatarAsync(userId, dto.Ficheiro);
+                return Ok(new { avatarUrl });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
