@@ -442,6 +442,31 @@ export default function Profiles() {
     }
   }
 
+  async function openPdf() {
+    const userId = selected?.data?.userId;
+    if (!userId) return;
+
+    // Define o endpoint correto
+    const endpoint = selected.type === "formador"
+      ? `/Profiles/formador/${userId}/pdf`
+      : `/Profiles/formando/${userId}/pdf`;
+
+    try {
+      const res = await api.get(endpoint, {
+        responseType: "blob",
+      });
+
+      const blob = new Blob([res.data], { type: "application/pdf" });
+
+      const url = window.URL.createObjectURL(blob);
+
+      window.open(url, "_blank");
+
+    } catch (err) {
+      setError(extractError(err, "Falha ao gerar ou abrir o PDF."));
+    }
+  }
+
   const list = tab === "formandos" ? filteredFormandos : filteredFormadores;
 
   return (
@@ -823,19 +848,7 @@ export default function Profiles() {
                 <div className="mt-3 flex gap-2 flex-wrap">
                   <button
                     type="button"
-                    onClick={() => {
-                      const userId = selected?.data?.userId;
-                      if (!userId) return;
-
-                      // abre no browser (api axios baseURL já trata, mas aqui é download direto)
-                      const base = api.defaults.baseURL?.replace(/\/$/, "") || "";
-                      const url =
-                        selected.type === "formador"
-                          ? `${base}/Profiles/formador/${userId}/pdf`
-                          : `${base}/Profiles/formando/${userId}/pdf`;
-
-                      window.open(url, "_blank");
-                    }}
+                    onClick={openPdf} // <--- Alterado aqui
                     className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
                   >
                     Abrir PDF
