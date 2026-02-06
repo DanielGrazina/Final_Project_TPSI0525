@@ -197,5 +197,61 @@ namespace SecManagement_API.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<UserDto> UpdateDadosPessoaisAsync(int userId, UpdateDadosPessoaisDto dto)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) throw new Exception("Utilizador não encontrado.");
+
+            // Atualiza apenas se o campo não for nulo (permite atualizações parciais)
+            if (dto.Telefone != null) user.Telefone = dto.Telefone;
+            if (dto.NIF != null) user.NIF = dto.NIF;
+            if (dto.Morada != null) user.Morada = dto.Morada;
+            if (dto.CC != null) user.CC = dto.CC;
+            if (dto.Nome != null) user.Nome = dto.Nome; // Atualiza o nome de exibição
+
+            await _context.SaveChangesAsync();
+
+            // Retorna um DTO simples com os dados atualizados
+            return new UserDto
+            {
+                Id = user.Id,
+                Email = user.Email,
+                Role = user.Role,
+                IsActive = user.IsActive
+            };
+        }
+
+        public async Task<string> UpdateAvatarAsync(int userId, IFormFile file)
+        {
+            // A lógica mantém-se a mesma, mas agora será chamada pela Secretaria
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) throw new Exception("Utilizador não encontrado.");
+
+            if (!file.ContentType.StartsWith("image/"))
+                throw new Exception("O ficheiro deve ser uma imagem.");
+
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+
+            var userFicheiro = new UserFicheiro
+            {
+                UserId = userId,
+                NomeFicheiro = "avatar_" + file.FileName,
+                ContentType = file.ContentType,
+                Ficheiro = memoryStream.ToArray()
+            };
+
+            _context.UserFicheiros.Add(userFicheiro);
+            await _context.SaveChangesAsync();
+
+            // Atualiza link no User
+            string avatarUrl = $"/api/Profiles/file/{userFicheiro.Id}";
+            user.Avatar = avatarUrl;
+
+            await _context.SaveChangesAsync();
+
+            return avatarUrl;
+        }
     }
 }

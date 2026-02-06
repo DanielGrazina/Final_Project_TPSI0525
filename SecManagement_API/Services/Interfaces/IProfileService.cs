@@ -21,5 +21,8 @@ namespace SecManagement_API.Services.Interfaces
 
         Task<bool> DeleteFileAsync(int fileId);
         Task<FormandoProfileDto> UpdateNumeroAlunoAsync(int userId, string novoNumero);
+
+        Task<UserDto> UpdateDadosPessoaisAsync(int userId, UpdateDadosPessoaisDto dto);
+        Task<string> UpdateAvatarAsync(int userId, IFormFile file);
     }
 }

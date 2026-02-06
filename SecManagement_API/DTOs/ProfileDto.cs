@@ -65,4 +65,12 @@ namespace SecManagement_API.DTOs
 
         public DateTime DataNascimento { get; set; }
     }
+
+    public class UpdateProfileDto
+    {
+        public string? Telefone { get; set; }
+        public string? NIF { get; set; }
+        public string? Morada { get; set; }
+        public string? CC { get; set; }
+    }
 }
