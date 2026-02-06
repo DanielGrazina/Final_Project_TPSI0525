@@ -69,6 +69,33 @@ namespace SecManagement_API.Services
 
             return await GetFormadorProfileAsync(dto.UserId);
         }
+        public async Task<IEnumerable<FormadorProfileDto>> GetAllFormadoresAsync()
+        {
+            var list = await _context.Formadores
+                .Include(f => f.User).ThenInclude(u => u.Ficheiros)
+                .ToListAsync();
+
+            return list.Select(f => new FormadorProfileDto
+            {
+                Id = f.Id,
+                UserId = f.UserId,
+                Nome = f.User?.Nome ?? "N/A",
+                Email = f.User?.Email ?? "",
+                Telefone = f.User?.Telefone,
+                AreaEspecializacao = f.AreaEspecializacao,
+                CorCalendario = f.CorCalendario,
+                Ficheiros = f.User?.Ficheiros
+                    .Where(x => x.ContentType.StartsWith("image/")) // Opcional: só retornar avatar na lista
+                    .Select(file => new UserFicheiroDto
+                    {
+                        Id = file.Id,
+                        NomeFicheiro = file.NomeFicheiro,
+                        ContentType = file.ContentType
+                    }).ToList() ?? new List<UserFicheiroDto>()
+            });
+        }
+
+        
 
         // --- FORMANDOS ---
 
@@ -94,6 +121,29 @@ namespace SecManagement_API.Services
                     ContentType = f.ContentType
                 }).ToList() ?? new List<UserFicheiroDto>()
             };
+        }
+        public async Task<IEnumerable<FormandoProfileDto>> GetAllFormandosAsync()
+        {
+            var list = await _context.Formandos
+                .Include(f => f.User).ThenInclude(u => u.Ficheiros)
+                .ToListAsync();
+
+            return list.Select(f => new FormandoProfileDto
+            {
+                Id = f.Id,
+                UserId = f.UserId,
+                Email = f.User?.Email ?? "",
+                NumeroAluno = f.NumeroAluno,
+                DataNascimento = f.DataNascimento,
+                Ficheiros = f.User?.Ficheiros
+                    .Where(x => x.ContentType.StartsWith("image/"))
+                    .Select(file => new UserFicheiroDto
+                    {
+                        Id = file.Id,
+                        NomeFicheiro = file.NomeFicheiro,
+                        ContentType = file.ContentType
+                    }).ToList() ?? new List<UserFicheiroDto>()
+            });
         }
 
         public async Task<FormandoProfileDto> CreateFormandoProfileAsync(CreateFormandoProfileDto dto)
