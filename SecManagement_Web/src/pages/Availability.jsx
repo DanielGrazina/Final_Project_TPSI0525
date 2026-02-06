@@ -202,28 +202,37 @@ export default function Availability() {
       const res = await api.get(`/Disponibilidades/formador/${fid}`);
       const arr = Array.isArray(res.data) ? res.data : [];
 
-      // Normalização (tentamos ler Data e HoraInicio)
-      // Esperado (provável): { id, formadorId, data, horaInicio, horaFim } OU { diaSemana, ... }
       const map = new Map();
 
       for (const item of arr) {
         const id = item?.id;
-        const data = item?.data || item?.dia || item?.date; // tenta
-        const horaInicio = item?.horaInicio || item?.inicio || item?.startTime;
-        // HoraInicio pode vir como "09:00:00" ou "09:00"
-        // Se não houver data e houver diaSemana, não dá para encaixar num dia concreto -> ignoramos (ajusta se for o teu caso)
-        if (!data || !horaInicio) continue;
+        
+        // --- CORREÇÃO AQUI ---
+        // O Backend envia "dataInicio" (DateTime ISO). Temos de extrair o dia e a hora.
+        let dataISO = null;
+        let hour = null;
 
-        const d = new Date(data);
-        if (Number.isNaN(d.getTime())) continue;
+        if (item.dataInicio) {
+            const d = new Date(item.dataInicio);
+            dataISO = toISODate(d); // "2026-02-09"
+            hour = d.getHours();    // Extrai a hora (ex: 9)
+        } else {
+            // Fallback para o código antigo (caso haja dados legacy)
+            const rawDate = item?.data || item?.dia || item?.date;
+            const rawTime = item?.horaInicio || item?.inicio || item?.startTime;
+            if (rawDate && rawTime) {
+                const d = new Date(rawDate);
+                dataISO = toISODate(d);
+                hour = Number(safeStr(rawTime).slice(0, 2));
+            }
+        }
 
-        const iso = toISODate(d);
-        const hour = Number(safeStr(horaInicio).slice(0, 2));
-        if (!Number.isFinite(hour)) continue;
+        // Se não conseguimos determinar data ou hora, ignora
+        if (!dataISO || hour === null || isNaN(hour)) continue;
 
-        const key = `${iso}|${hour}`;
+        const key = `${dataISO}|${hour}`;
 
-        // só mostramos a semana visível (para não poluir)
+        // Só mostramos a semana visível
         if (!weekKeySet.has(key)) continue;
 
         map.set(key, { ...item, id });
@@ -264,27 +273,30 @@ export default function Availability() {
     const fid = formadorId ?? (await resolveFormadorId());
     if (!formadorId) setFormadorId(fid);
 
-    const iso = toISODate(dateObj);
-    const horaInicio = `${pad2(hour)}:00:00`;
-    const horaFim = `${pad2(hour + 1)}:00:00`;
+    if (!fid) {
+      console.error("Erro: ID de Formador não encontrado.");
+      return;
+    }
 
-    // ⚠️ DTO: como não mostraste o CreateDisponibilidadeDto,
-    // mando "data" + "horaInicio" + "horaFim" + "formadorId" + "diaSemana" (extra).
-    // Se no teu backend os nomes forem diferentes, diz-me os campos e eu ajusto.
+    const isoDate = toISODate(dateObj); 
+    const dataInicio = `${isoDate}T${pad2(hour)}:00:00`; 
+    const dataFim = `${isoDate}T${pad2(hour + 1)}:00:00`;
+
+    // Agora enviamos o entidadeId (que é igual ao formadorId neste caso)
     const dto = {
+      entidadeId: fid,       // <--- CAMPO NOVO
+      tipoEntidade: "Formador",
       formadorId: fid,
-      data: iso,
-      horaInicio,
-      horaFim,
-      // extra (se o backend usar)
-      diaSemana: (() => {
-        const js = dateObj.getDay(); // 0..6
-        return js === 0 ? 7 : js; // 1..7 (Mon=1)
-      })(),
+      salaId: null,
+      dataInicio: dataInicio,
+      dataFim: dataFim,
+      disponivel: true
     };
 
+    console.log("JSON enviado:", JSON.stringify(dto));
+
     const res = await api.post("/Disponibilidades", dto);
-    return res?.data; // deve vir DisponibilidadeDto com id
+    return res?.data;
   }
 
   async function deleteSlot(id) {
@@ -552,12 +564,6 @@ export default function Availability() {
                         onMouseDown={() => beginDrag(d, h)}
                         onMouseEnter={() => enterDrag(d, h)}
                         onMouseUp={() => endDrag()}
-                        onClick={() => {
-                          // clique simples (sem arrastar)
-                          // se o user só clicou (mouse down + up sem mexer), o beginDrag já tratou a 1ª célula.
-                          // para não duplicar, só fazemos toggle se não estiver em drag.
-                          if (!dragRef.current.active) toggleOne(d, h);
-                        }}
                         title={available ? "Disponível (clicar para remover)" : "Não definido (clicar para marcar disponível)"}
                       >
                         {available && (

@@ -21,8 +21,12 @@ namespace SecManagement_API.DTOs
     public class CreateDisponibilidadeDto
     {
         [Required]
+        public int EntidadeId { get; set; }
+
+        [Required]
         [RegularExpression("Formador|Sala", ErrorMessage = "O tipo deve ser 'Formador' ou 'Sala'.")]
         public string TipoEntidade { get; set; } = string.Empty;
+
         public int? FormadorId { get; set; }
         public int? SalaId { get; set; }
 

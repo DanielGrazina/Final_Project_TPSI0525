@@ -24,7 +24,7 @@ namespace SecManagement_API.Services
             if (dto.TipoEntidade == "Formador")
             {
                 if (dto.FormadorId == null) throw new Exception("FormadorId é obrigatório para tipo 'Formador'.");
-                dto.SalaId = null; // Garante que não vai lixo
+                dto.SalaId = null;
             }
             else if (dto.TipoEntidade == "Sala")
             {
@@ -34,19 +34,18 @@ namespace SecManagement_API.Services
 
             var disp = new Disponibilidade
             {
+                EntidadeId = dto.EntidadeId,
                 TipoEntidade = dto.TipoEntidade,
                 FormadorId = dto.FormadorId,
                 SalaId = dto.SalaId,
-                EntidadeId = dto.FormadorId ?? dto.SalaId ?? 0, // Campo auxiliar legacy, se o SQL pedir
-                DataInicio = dto.DataInicio,
-                DataFim = dto.DataFim,
+                DataInicio = DateTime.SpecifyKind(dto.DataInicio, DateTimeKind.Utc),
+                DataFim = DateTime.SpecifyKind(dto.DataFim, DateTimeKind.Utc),
                 Disponivel = dto.Disponivel
             };
 
             _context.Disponibilidades.Add(disp);
             await _context.SaveChangesAsync();
 
-            // Recarregar para trazer nomes
             return await MapToDto(disp.Id);
         }
 
