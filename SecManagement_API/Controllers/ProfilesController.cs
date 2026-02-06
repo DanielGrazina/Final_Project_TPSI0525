@@ -23,6 +23,22 @@ namespace SecManagement_API.Controllers
 
         // --- FORMADORES ---
 
+        // GET: api/Profiles/formadores
+        [HttpGet("formadores")]
+        [Authorize] // Qualquer utilizador logado pode ver a lista (ajusta Roles se quiseres restringir)
+        public async Task<ActionResult<IEnumerable<FormadorProfileDto>>> GetTodosFormadores()
+        {
+            try
+            {
+                var result = await _service.GetAllFormadoresAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         // GET: api/Profiles/formador/5 (Passar o UserID)
         [HttpGet("formador/{userId}")]
         public async Task<ActionResult<FormadorProfileDto>> GetFormador(int userId)
@@ -63,6 +79,22 @@ namespace SecManagement_API.Controllers
         }
 
         // --- FORMANDOS ---
+
+        // GET: api/Profiles/formandos
+        [HttpGet("formandos")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin},{Roles.Formador}")]
+        public async Task<ActionResult<IEnumerable<FormandoProfileDto>>> GetTodosFormandos()
+        {
+            try
+            {
+                var result = await _service.GetAllFormandosAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
         // GET: api/Profiles/formando/5 (Passar o UserID)
         [HttpGet("formando/{userId}")]
