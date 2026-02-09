@@ -8,6 +8,8 @@ import TawkToWidget from "../components/TawkToWidget";
 import { QRCodeCanvas } from "qrcode.react";
 import api from "../api/axios";
 
+/* ---------------- UI helpers ---------------- */
+
 function Badge({ children, tone = "neutral" }) {
   const tones = {
     neutral: "border-gray-200 text-gray-700 dark:border-gray-700 dark:text-gray-200",
@@ -25,6 +27,19 @@ function Badge({ children, tone = "neutral" }) {
   );
 }
 
+function RolePill({ role }) {
+  const map = {
+    SuperAdmin: { tone: "purple", label: "SuperAdmin" },
+    Admin: { tone: "green", label: "Admin" },
+    Secretaria: { tone: "blue", label: "Secretaria" },
+    Formador: { tone: "blue", label: "Formador" },
+    Formando: { tone: "amber", label: "Formando" },
+    User: { tone: "neutral", label: "User" },
+  };
+  const r = map[role] || { tone: "neutral", label: role || "—" };
+  return <Badge tone={r.tone}>{r.label}</Badge>;
+}
+
 function Icon({ name }) {
   const common = "w-5 h-5";
   switch (name) {
@@ -40,7 +55,6 @@ function Icon({ name }) {
           />
         </svg>
       );
-
     case "profile":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -48,8 +62,6 @@ function Icon({ name }) {
           <path d="M12 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" strokeWidth="2" />
         </svg>
       );
-
-    // ✅ Disponibilidades
     case "availability":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -60,43 +72,22 @@ function Icon({ name }) {
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <path
-            d="M12 12v4l3 2"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <path d="M12 12v4l3 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
-
-    // ✅ Horários (grelha)
     case "schedule":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
-          <path
-            d="M4 7h16M4 12h16M4 17h16"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M7 4v16M12 4v16M17 4v16"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            opacity="0.9"
-          />
+          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <path d="M7 4v16M12 4v16M17 4v16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.9" />
         </svg>
       );
-
     case "areas":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
           <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
-
     case "courses":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -109,7 +100,6 @@ function Icon({ name }) {
           <path d="M6 17h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
-
     case "modules":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -117,7 +107,6 @@ function Icon({ name }) {
           <path d="M5 11h14v10H5V11Z" stroke="currentColor" strokeWidth="2" />
         </svg>
       );
-
     case "turmas":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -125,7 +114,6 @@ function Icon({ name }) {
           <path d="M10 20v-6h4v6" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
         </svg>
       );
-
     case "rooms":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -134,7 +122,6 @@ function Icon({ name }) {
           <path d="M8 10h1M11.5 10h1M15 10h1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
-
     case "eval":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -143,7 +130,6 @@ function Icon({ name }) {
           <path d="M9 11h6M9 15h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
-
     case "inscr":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -151,7 +137,6 @@ function Icon({ name }) {
           <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
-
     case "calendar":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none">
@@ -165,7 +150,6 @@ function Icon({ name }) {
           <path d="M7 12h5M7 16h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
-
     default:
       return null;
   }
@@ -203,15 +187,11 @@ function NavCard({ title, desc, onClick, badge, disabled, icon, accent = "blue" 
         disabled ? "opacity-50 cursor-not-allowed" : "hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
       ].join(" ")}
     >
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-      />
+      <div className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
 
       <div className="relative">
         <div className="flex items-start justify-between gap-3 mb-4">
-          <div
-            className={`w-12 h-12 rounded-lg flex items-center justify-center ${colors.icon} transition-transform duration-300 group-hover:scale-110`}
-          >
+          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colors.icon} transition-transform duration-300 group-hover:scale-110`}>
             <Icon name={icon} />
           </div>
 
@@ -222,17 +202,8 @@ function NavCard({ title, desc, onClick, badge, disabled, icon, accent = "blue" 
         <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{desc}</p>
 
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-            {disabled ? "Indisponível" : "Clique para abrir"}
-          </span>
-          <span
-            className={[
-              "text-sm font-semibold",
-              disabled
-                ? "text-gray-400 dark:text-gray-600"
-                : "text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform",
-            ].join(" ")}
-          >
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{disabled ? "Indisponível" : "Clique para abrir"}</span>
+          <span className={["text-sm font-semibold", disabled ? "text-gray-400 dark:text-gray-600" : "text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform"].join(" ")}>
             {disabled ? "—" : "→"}
           </span>
         </div>
@@ -241,43 +212,13 @@ function NavCard({ title, desc, onClick, badge, disabled, icon, accent = "blue" 
   );
 }
 
-function RolePill({ role }) {
-  const map = {
-    SuperAdmin: { tone: "purple", label: "SuperAdmin" },
-    Admin: { tone: "green", label: "Admin" },
-    Secretaria: { tone: "blue", label: "Secretaria" },
-    Formador: { tone: "blue", label: "Formador" },
-    Formando: { tone: "amber", label: "Formando" },
-    User: { tone: "neutral", label: "User" },
-  };
-  const r = map[role] || { tone: "neutral", label: role || "—" };
-  return <Badge tone={r.tone}>{r.label}</Badge>;
-}
-
-function QuickAccessCard({ title, count, enabled, onClick, color = "blue" }) {
+function QuickAccessCard({ title, enabled, onClick, color = "blue" }) {
   const colors = {
-    blue: {
-      bg: "from-blue-500 to-blue-600",
-      text: "text-blue-600 dark:text-blue-400",
-      border: "border-blue-200 dark:border-blue-800",
-    },
-    green: {
-      bg: "from-green-500 to-green-600",
-      text: "text-green-600 dark:text-green-400",
-      border: "border-green-200 dark:border-green-800",
-    },
-    amber: {
-      bg: "from-amber-500 to-amber-600",
-      text: "text-amber-600 dark:text-amber-400",
-      border: "border-amber-200 dark:border-amber-800",
-    },
-    purple: {
-      bg: "from-purple-500 to-purple-600",
-      text: "text-purple-600 dark:text-purple-400",
-      border: "border-purple-200 dark:border-purple-800",
-    },
+    blue: { bg: "from-blue-500 to-blue-600", text: "text-blue-600 dark:text-blue-400", border: "border-blue-200 dark:border-blue-800" },
+    green: { bg: "from-green-500 to-green-600", text: "text-green-600 dark:text-green-400", border: "border-green-200 dark:border-green-800" },
+    amber: { bg: "from-amber-500 to-amber-600", text: "text-amber-600 dark:text-amber-400", border: "border-amber-200 dark:border-amber-800" },
+    purple: { bg: "from-purple-500 to-purple-600", text: "text-purple-600 dark:text-purple-400", border: "border-purple-200 dark:border-purple-800" },
   };
-
   const c = colors[color] || colors.blue;
 
   return enabled ? (
@@ -288,27 +229,23 @@ function QuickAccessCard({ title, count, enabled, onClick, color = "blue" }) {
                   bg-white dark:bg-gray-900 ${c.border}
                   hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95`}
     >
-      <div
-        className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${c.bg} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`}
-      />
+      <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${c.bg} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`} />
       <div className="relative">
         <div className={`text-xs font-medium ${c.text} mb-1`}>Acesso rápido</div>
         <div className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{title}</div>
-        <div className="text-2xl font-black text-gray-400 dark:text-gray-600">{count}</div>
-        <div className={`mt-3 text-xs font-semibold ${c.text} group-hover:translate-x-1 transition-transform inline-block`}>
-          Ver mais →
-        </div>
+        <div className={`mt-3 text-xs font-semibold ${c.text} group-hover:translate-x-1 transition-transform inline-block`}>Ver mais →</div>
       </div>
     </button>
   ) : (
     <div className={`border rounded-xl p-5 text-left opacity-40 bg-gray-50 dark:bg-gray-900 ${c.border}`}>
       <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sem acesso</div>
       <div className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{title}</div>
-      <div className="text-2xl font-black text-gray-400 dark:text-gray-600">—</div>
       <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">Bloqueado</div>
     </div>
   );
 }
+
+/* ---------------- Dashboard ---------------- */
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -316,10 +253,15 @@ export default function Dashboard() {
 
   const token = getToken();
 
-  // --- 2FA ---
-  const [twoFaUrl, setTwoFaUrl] = useState("");
+  // --- 2FA state ---
   const [twoFaLoading, setTwoFaLoading] = useState(false);
   const [twoFaError, setTwoFaError] = useState("");
+  const [twoFaInfo, setTwoFaInfo] = useState("");
+
+  const [twoFaQrUrl, setTwoFaQrUrl] = useState("");
+  const [twoFaManualKey, setTwoFaManualKey] = useState("");
+  const [twoFaCode, setTwoFaCode] = useState("");
+  const [twoFaBackupCodes, setTwoFaBackupCodes] = useState([]);
 
   useEffect(() => {
     if (!token) navigate("/", { replace: true });
@@ -327,7 +269,7 @@ export default function Dashboard() {
 
   const role = useMemo(() => getUserRoleFromToken(token), [token]);
 
-  // ✅ Rotas alinhadas + Disponibilidades + Horários
+  // Rotas (iguais ao teu dashboard anterior)
   const R = {
     users: "/admin/users",
     areas: "/admin/areas",
@@ -343,7 +285,7 @@ export default function Dashboard() {
     horarios: "/horarios",
   };
 
-  // ✅ Permissões
+  // Permissões (iguais ao teu dashboard anterior)
   const perms = useMemo(() => {
     const isSuperAdmin = role === "SuperAdmin";
     const isAdmin = role === "Admin";
@@ -351,7 +293,6 @@ export default function Dashboard() {
     const isFormador = role === "Formador";
     const isFormando = role === "Formando";
     const isUser = role === "User";
-
     const adminish = isAdmin || isSuperAdmin;
 
     return {
@@ -377,10 +318,7 @@ export default function Dashboard() {
 
       canProfiles: true,
 
-      // Disponibilidades: criar é Formador; Admin/SuperAdmin podem entrar para testar/ver
       canAvailability: isFormador || adminish,
-
-      // Horários: formador e formando
       canHorarios: isFormador || isFormando,
     };
   }, [role]);
@@ -441,21 +379,99 @@ export default function Dashboard() {
     return "Faz a tua candidatura e acompanha o estado.";
   }, [perms]);
 
-  const enable2FA = async () => {
+  // JSON helper: aceita camelCase e PascalCase
+  const pick = (obj, camel, pascal) => obj?.[camel] ?? obj?.[pascal];
+
+  const reset2FAUi = () => {
+    setTwoFaQrUrl("");
+    setTwoFaManualKey("");
+    setTwoFaCode("");
+    setTwoFaBackupCodes([]);
+  };
+
+  // 2FA: PASSO 1 (setup) -> devolve { QrCodeUrl, ManualEntryKey }
+  const setup2FA = async () => {
     try {
       setTwoFaError("");
+      setTwoFaInfo("");
+      setTwoFaBackupCodes([]);
+      setTwoFaCode("");
       setTwoFaLoading(true);
 
-      const res = await api.post("/Auth/enable-2fa");
-      if (!res?.data?.qrCodeUrl) throw new Error("Resposta inválida: qrCodeUrl em falta.");
+      const res = await api.post("/Auth/2fa/setup");
+      const data = res?.data || {};
 
-      setTwoFaUrl(res.data.qrCodeUrl);
+      const qr = pick(data, "qrCodeUrl", "QrCodeUrl");
+      const key = pick(data, "manualEntryKey", "ManualEntryKey");
+
+      if (!qr || !key) throw new Error("Resposta inválida: QrCodeUrl/ManualEntryKey em falta.");
+
+      setTwoFaQrUrl(qr);
+      setTwoFaManualKey(key);
+      setTwoFaInfo("QR gerado. Lê no Authenticator e confirma com o código.");
     } catch (e) {
-      setTwoFaUrl("");
-      const msg = e?.response?.data?.message || e?.message || "Erro inesperado.";
+      reset2FAUi();
+      const msg = e?.response?.data?.message || e?.message || "Erro ao gerar 2FA.";
       setTwoFaError(msg);
     } finally {
       setTwoFaLoading(false);
+    }
+  };
+
+  // 2FA: PASSO 2 (confirm) -> envia { code } e devolve { BackupCodes, Message }
+  const confirm2FA = async () => {
+    try {
+      setTwoFaError("");
+      setTwoFaInfo("");
+      setTwoFaLoading(true);
+
+      const code = (twoFaCode || "").trim();
+      if (!code) throw new Error("Insere o código 2FA.");
+
+      const res = await api.post("/Auth/2fa/confirm", { code });
+      const data = res?.data || {};
+
+      const codes = pick(data, "backupCodes", "BackupCodes") || [];
+      const msg = pick(data, "message", "Message") || "2FA ativado.";
+
+      setTwoFaBackupCodes(Array.isArray(codes) ? codes : []);
+      setTwoFaInfo(msg);
+      setTwoFaCode("");
+    } catch (e) {
+      const msg = e?.response?.data?.message || e?.message || "Código inválido.";
+      setTwoFaError(msg);
+    } finally {
+      setTwoFaLoading(false);
+    }
+  };
+
+  // Cancelar setup -> limpa secret + desativa (como no teu controller anterior)
+  const cancel2FA = async () => {
+    try {
+      setTwoFaError("");
+      setTwoFaInfo("");
+      setTwoFaLoading(true);
+
+      const res = await api.post("/Auth/2fa/cancel");
+      const msg = res?.data?.message || "Setup cancelado.";
+
+      reset2FAUi();
+      setTwoFaInfo(msg);
+    } catch (e) {
+      const msg = e?.response?.data?.message || e?.message || "Erro ao cancelar setup.";
+      setTwoFaError(msg);
+    } finally {
+      setTwoFaLoading(false);
+    }
+  };
+
+  const copyText = async (value) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setTwoFaInfo("Copiado para a área de transferência.");
+      setTimeout(() => setTwoFaInfo(""), 1200);
+    } catch {
+      // ignora
     }
   };
 
@@ -464,7 +480,7 @@ export default function Dashboard() {
       <TawkToWidget />
 
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
-        {/* Header / Top bar */}
+        {/* Header */}
         <div className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 dark:border-gray-800 shadow-sm">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
             <button type="button" className="flex items-center gap-3 group" onClick={() => navigate("/dashboard")}>
@@ -518,12 +534,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Hero Section */}
+        {/* Hero */}
         <div className="container mx-auto px-4 py-8">
           <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-950/20 dark:to-purple-950/20 dark:border-gray-800 shadow-xl">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
-
             <div
               className="absolute inset-0 opacity-30 dark:opacity-10"
               style={{
@@ -546,7 +561,6 @@ export default function Dashboard() {
 
               <p className="text-base text-gray-600 dark:text-gray-400 max-w-2xl mb-6">{summaryText}</p>
 
-              {/* Quick Actions */}
               <div className="flex flex-wrap gap-3">
                 {primaryActions.map((a) => (
                   <button
@@ -582,43 +596,141 @@ export default function Dashboard() {
                 <div>
                   <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">2FA</h2>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Gera o QR code para configurar autenticação de dois fatores na tua conta.
+                    O 2FA só fica ativo depois de confirmares com um código válido (não há lockout).
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={enable2FA}
-                  disabled={twoFaLoading}
-                  className={[
-                    "px-4 py-2 rounded-lg font-medium text-white transition shadow-sm",
-                    twoFaLoading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700",
-                  ].join(" ")}
-                >
-                  {twoFaLoading ? "A gerar..." : twoFaUrl ? "Mostrar novamente" : "Gerar QR Code"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={setup2FA}
+                    disabled={twoFaLoading}
+                    className={[
+                      "px-4 py-2 rounded-lg font-medium text-white transition shadow-sm",
+                      twoFaLoading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700",
+                    ].join(" ")}
+                  >
+                    {twoFaLoading ? "A gerar..." : twoFaQrUrl ? "Gerar novo QR" : "Gerar QR Code"}
+                  </button>
+
+                  {twoFaQrUrl && (
+                    <button
+                      type="button"
+                      onClick={cancel2FA}
+                      disabled={twoFaLoading}
+                      className={[
+                        "px-4 py-2 rounded-lg font-medium transition shadow-sm border",
+                        twoFaLoading
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600 dark:border-gray-700"
+                          : "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800",
+                      ].join(" ")}
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </div>
               </div>
 
               {twoFaError && <div className="mt-4 text-sm text-red-600 dark:text-red-400">{twoFaError}</div>}
+              {twoFaInfo && <div className="mt-4 text-sm text-green-700 dark:text-green-300">{twoFaInfo}</div>}
 
-              {twoFaUrl && (
-                <div className="mt-5 flex flex-col md:flex-row items-start gap-6">
-                  <div className="p-4 rounded-xl border bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
-                    <QRCodeCanvas value={twoFaUrl} size={180} includeMargin />
+              {twoFaQrUrl && (
+                <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-4 rounded-xl border bg-gray-50 dark:bg-gray-800 dark:border-gray-700 flex flex-col items-center">
+                    <QRCodeCanvas value={twoFaQrUrl} size={180} includeMargin />
+                    <div className="mt-3 text-xs text-gray-600 dark:text-gray-300 text-center">
+                      Lê este QR no Authenticator.
+                    </div>
                   </div>
 
                   <div className="flex-1">
                     <div className="text-sm text-gray-700 dark:text-gray-300">
-                      1) Abre o Google Authenticator / Microsoft Authenticator<br />
-                      2) Lê o QR code<br />
-                      3) Guarda o backup abaixo (opcional)
+                      1) Abre Google/Microsoft Authenticator<br />
+                      2) Lê o QR ou usa a key manual<br />
+                      3) Escreve o código (6 dígitos) e confirma
                     </div>
 
                     <div className="mt-3">
-                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Backup (otpauth URL)</div>
-                      <div className="text-xs break-all rounded-lg border p-3 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 text-gray-700 dark:text-gray-200">
-                        {twoFaUrl}
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">Manual Entry Key</div>
+                        <button
+                          type="button"
+                          onClick={() => copyText(twoFaManualKey)}
+                          className="px-3 py-1.5 rounded-lg border text-xs font-semibold text-gray-700 hover:bg-gray-100 transition
+                                     dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
+                        >
+                          Copiar
+                        </button>
                       </div>
+                      <div className="text-xs break-all rounded-lg border p-3 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 text-gray-700 dark:text-gray-200">
+                        {twoFaManualKey}
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                        Código 2FA
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          value={twoFaCode}
+                          onChange={(e) => setTwoFaCode(e.target.value)}
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          placeholder="123456"
+                          className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-900 dark:border-gray-700
+                                     text-gray-900 dark:text-gray-100 placeholder:text-gray-400
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                        />
+                        <button
+                          type="button"
+                          onClick={confirm2FA}
+                          disabled={twoFaLoading}
+                          className={[
+                            "px-4 py-2 rounded-lg font-semibold text-white transition shadow-sm whitespace-nowrap",
+                            twoFaLoading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700",
+                          ].join(" ")}
+                        >
+                          Confirmar
+                        </button>
+                      </div>
+                    </div>
+
+                    {twoFaBackupCodes.length > 0 && (
+                      <div className="mt-5">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="text-sm font-bold text-gray-900 dark:text-gray-100">Códigos de recuperação</div>
+                          <button
+                            type="button"
+                            onClick={() => copyText(twoFaBackupCodes.join("\n"))}
+                            className="px-3 py-1.5 rounded-lg border text-xs font-semibold text-gray-700 hover:bg-gray-100 transition
+                                       dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
+                          >
+                            Copiar
+                          </button>
+                        </div>
+
+                        <div className="rounded-xl border bg-gray-50 dark:bg-gray-800 dark:border-gray-700 p-4">
+                          <div className="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                            Guarda estes códigos num local seguro. Se perderes o telemóvel, servem para entrar.
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {twoFaBackupCodes.map((c) => (
+                              <div
+                                key={c}
+                                className="text-xs font-mono rounded-lg border px-2 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700
+                                           text-gray-800 dark:text-gray-200 text-center"
+                              >
+                                {c}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                      Se não confirmares, o 2FA não ativa. Podes cancelar e gerar outro QR quando quiseres.
                     </div>
                   </div>
                 </div>
@@ -626,60 +738,18 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Quick Access Cards */}
+          {/* Quick Access */}
           <div className="mt-8 grid grid-cols-2 lg:grid-cols-7 gap-4">
-            <QuickAccessCard
-              title="Horários"
-              count="—"
-              enabled={perms.canHorarios}
-              onClick={() => navigate(R.horarios)}
-              color="blue"
-            />
-            <QuickAccessCard
-              title="Disponibilidades"
-              count="—"
-              enabled={perms.canAvailability}
-              onClick={() => navigate(R.availability)}
-              color="green"
-            />
-            <QuickAccessCard
-              title="Sessões"
-              count="—"
-              enabled={perms.canSessoes}
-              onClick={() => navigate(R.sessoes)}
-              color="green"
-            />
-            <QuickAccessCard
-              title="Avaliações"
-              count="—"
-              enabled={perms.canEvaluations}
-              onClick={() => navigate(R.evaluations)}
-              color="purple"
-            />
-            <QuickAccessCard
-              title="Inscrições"
-              count="—"
-              enabled={perms.canInscricoes}
-              onClick={() => navigate(R.recruit)}
-              color="blue"
-            />
-            <QuickAccessCard
-              title="Salas"
-              count="—"
-              enabled={perms.canRooms}
-              onClick={() => navigate(R.rooms)}
-              color="amber"
-            />
-            <QuickAccessCard
-              title="Profiles"
-              count="—"
-              enabled={perms.canProfiles}
-              onClick={() => navigate(R.profiles)}
-              color="blue"
-            />
+            <QuickAccessCard title="Horários" enabled={perms.canHorarios} onClick={() => navigate(R.horarios)} color="blue" />
+            <QuickAccessCard title="Disponibilidades" enabled={perms.canAvailability} onClick={() => navigate(R.availability)} color="green" />
+            <QuickAccessCard title="Sessões" enabled={perms.canSessoes} onClick={() => navigate(R.sessoes)} color="green" />
+            <QuickAccessCard title="Avaliações" enabled={perms.canEvaluations} onClick={() => navigate(R.evaluations)} color="purple" />
+            <QuickAccessCard title="Inscrições" enabled={perms.canInscricoes} onClick={() => navigate(R.recruit)} color="blue" />
+            <QuickAccessCard title="Salas" enabled={perms.canRooms} onClick={() => navigate(R.rooms)} color="amber" />
+            <QuickAccessCard title="Profiles" enabled={perms.canProfiles} onClick={() => navigate(R.profiles)} color="blue" />
           </div>
 
-          {/* Main Navigation Cards */}
+          {/* Main Navigation */}
           <div className="mt-8">
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Navegação Principal</h2>
 
@@ -700,7 +770,7 @@ export default function Dashboard() {
                   title="Profiles"
                   desc={
                     perms.isAdmin || perms.isSuperAdmin || perms.isSecretaria
-                      ? "Ver perfis, editar dados pessoais e gerir ficheiros (upload/download)."
+                      ? "Ver perfis, editar dados pessoais e gerir ficheiros."
                       : "Ver o teu profile e os teus dados."
                   }
                   onClick={() => navigate(R.profiles)}
@@ -716,35 +786,29 @@ export default function Dashboard() {
               {perms.canHorarios && (
                 <NavCard
                   title="Horários"
-                  desc="Consulta o teu horário semanal (aulas/sessões) em grelha."
+                  desc="Consulta o teu horário semanal em grelha."
                   onClick={() => navigate(R.horarios)}
                   icon="schedule"
                   accent="blue"
-                  badge={{
-                    text: perms.isFormador ? "Formador" : "Formando",
-                    tone: perms.isFormador ? "blue" : "amber",
-                  }}
+                  badge={{ text: perms.isFormador ? "Formador" : "Formando", tone: perms.isFormador ? "blue" : "amber" }}
                 />
               )}
 
               {perms.canAvailability && (
                 <NavCard
                   title="Disponibilidades"
-                  desc="Define os dias e horas em que estás disponível para dar formação."
+                  desc="Define os dias e horas em que estás disponível."
                   onClick={() => navigate(R.availability)}
                   icon="availability"
                   accent="green"
-                  badge={{
-                    text: perms.isFormador ? "Formador" : "Admin",
-                    tone: perms.isFormador ? "blue" : "green",
-                  }}
+                  badge={{ text: perms.isFormador ? "Formador" : "Admin", tone: perms.isFormador ? "blue" : "green" }}
                 />
               )}
 
               {perms.canAreas && (
                 <NavCard
                   title="Áreas"
-                  desc="Gestão de áreas de formação: criar, editar e eliminar."
+                  desc="Gestão de áreas de formação."
                   onClick={() => navigate(R.areas)}
                   icon="areas"
                   accent="blue"
@@ -755,7 +819,7 @@ export default function Dashboard() {
               {perms.canCourses && (
                 <NavCard
                   title="Cursos"
-                  desc="Criar e gerir cursos, associando-os às respetivas áreas de formação."
+                  desc="Criar e gerir cursos."
                   onClick={() => navigate(R.courses)}
                   icon="courses"
                   accent="purple"
@@ -766,7 +830,7 @@ export default function Dashboard() {
               {perms.canModules && (
                 <NavCard
                   title="Módulos"
-                  desc="Catálogo de módulos formativos disponíveis no sistema."
+                  desc="Catálogo de módulos formativos."
                   onClick={() => navigate(R.modules)}
                   icon="modules"
                   accent="blue"
@@ -777,7 +841,7 @@ export default function Dashboard() {
               {perms.canTurmas && (
                 <NavCard
                   title="Turmas"
-                  desc="Gestão de turmas: criar, gerir estado e módulos associados."
+                  desc="Gestão de turmas."
                   onClick={() => navigate(R.turmas)}
                   icon="turmas"
                   accent="amber"
@@ -788,21 +852,18 @@ export default function Dashboard() {
               {perms.canSessoes && (
                 <NavCard
                   title="Sessões"
-                  desc="Agendar sessões e consultar horários por turma/formador/sala."
+                  desc="Agendar sessões e consultar horários."
                   onClick={() => navigate(R.sessoes)}
                   icon="calendar"
                   accent="green"
-                  badge={{
-                    text: perms.isFormador ? "Formador" : "Admin",
-                    tone: perms.isFormador ? "blue" : "green",
-                  }}
+                  badge={{ text: perms.isFormador ? "Formador" : "Admin", tone: perms.isFormador ? "blue" : "green" }}
                 />
               )}
 
               {perms.canRooms && (
                 <NavCard
                   title="Salas"
-                  desc="Gestão de salas (Admin/SuperAdmin)."
+                  desc="Gestão de salas."
                   onClick={() => navigate(R.rooms)}
                   icon="rooms"
                   accent="blue"
@@ -813,14 +874,11 @@ export default function Dashboard() {
               {perms.canEvaluations && (
                 <NavCard
                   title="Avaliações"
-                  desc={perms.isFormando ? "Consulta as tuas avaliações e resultados obtidos." : "Registo e gestão de avaliações."}
+                  desc={perms.isFormando ? "Consulta as tuas avaliações." : "Registo e gestão de avaliações."}
                   onClick={() => navigate(R.evaluations)}
                   icon="eval"
                   accent="purple"
-                  badge={{
-                    text: perms.isFormando ? "Consulta" : "Gestão",
-                    tone: perms.isFormando ? "amber" : "green",
-                  }}
+                  badge={{ text: perms.isFormando ? "Consulta" : "Gestão", tone: perms.isFormando ? "amber" : "green" }}
                 />
               )}
 
@@ -829,29 +887,15 @@ export default function Dashboard() {
                   title="Inscrições"
                   desc={
                     perms.isSecretaria || perms.isAdmin || perms.isSuperAdmin
-                      ? "Gerir candidaturas pendentes, aprovar/rejeitar e colocar em turma."
+                      ? "Gerir candidaturas pendentes, aprovar/rejeitar."
                       : "Criar candidatura e acompanhar o estado."
                   }
                   onClick={() => navigate(R.recruit)}
                   icon="inscr"
                   accent="blue"
                   badge={{
-                    text:
-                      perms.isAdmin || perms.isSuperAdmin
-                        ? "Admin"
-                        : perms.isSecretaria
-                        ? "Secretaria"
-                        : perms.isFormando
-                        ? "Formando"
-                        : "User",
-                    tone:
-                      perms.isAdmin || perms.isSuperAdmin
-                        ? "green"
-                        : perms.isSecretaria
-                        ? "blue"
-                        : perms.isFormando
-                        ? "amber"
-                        : "neutral",
+                    text: perms.isAdmin || perms.isSuperAdmin ? "Admin" : perms.isSecretaria ? "Secretaria" : perms.isFormando ? "Formando" : "User",
+                    tone: perms.isAdmin || perms.isSuperAdmin ? "green" : perms.isSecretaria ? "blue" : perms.isFormando ? "amber" : "neutral",
                   }}
                 />
               )}
