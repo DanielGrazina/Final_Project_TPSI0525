@@ -137,6 +137,108 @@ namespace SecManagement_API.Services
 
             return cargaTotal - horasUsadas; // Retorna as horas livres atuais
         }
+        public async Task<List<FormadorDisponibilidadeDto>> CheckDisponibilidadeFormadoresAsync(int turmaId, DateTime start, DateTime end)
+        {
+            // 1. Identificar formadores da turma
+            var formadoresDaTurma = await _context.TurmaModulos
+                .Where(tm => tm.TurmaId == turmaId && tm.FormadorId != null)
+                .Select(tm => new { tm.FormadorId, tm.Formador.User.Nome, tm.Formador.User.Avatar })
+                .Distinct()
+                .ToListAsync();
+
+            var resultado = new List<FormadorDisponibilidadeDto>();
+
+            foreach (var f in formadoresDaTurma)
+            {
+                var dto = new FormadorDisponibilidadeDto
+                {
+                    FormadorId = (int)f.FormadorId!,
+                    FormadorNome = f.Nome ?? "Sem Nome",
+                    Avatar = f.Avatar,
+                    Disponivel = false,
+                    MotivoIndisponibilidade = "Sem disponibilidade definida."
+                };
+
+                // --- PASSO 1: Verificar Bloqueios Explícitos (Vermelhos) ---
+                // Se tiver marcado "Indisponível" (ex: Médico) em qualquer parte deste horário, falha logo.
+                bool temBloqueio = await _context.Disponibilidades
+                    .AnyAsync(d => d.FormadorId == f.FormadorId
+                                && d.Disponivel == false
+                                && d.DataInicio < end
+                                && d.DataFim > start);
+
+                if (temBloqueio)
+                {
+                    dto.MotivoIndisponibilidade = "Marcado como Indisponível (Agenda Pessoal).";
+                    resultado.Add(dto);
+                    continue; // Passa ao próximo formador
+                }
+
+                // --- PASSO 2: Verificar Aulas Existentes (Conflitos) ---
+                bool temAula = await _context.Sessoes
+                    .Include(s => s.TurmaModulo)
+                    .AnyAsync(s => s.TurmaModulo.FormadorId == f.FormadorId
+                                && s.HorarioInicio < end
+                                && s.HorarioFim > start);
+
+                if (temAula)
+                {
+                    dto.MotivoIndisponibilidade = "Já tem aula marcada neste horário.";
+                    resultado.Add(dto);
+                    continue;
+                }
+
+                // --- PASSO 3: Algoritmo de Cobertura (Costurar Blocos) ---
+                // Vamos buscar todos os blocos "Verdes" que intersectam o horário pedido
+                var blocosDisponiveis = await _context.Disponibilidades
+                    .Where(d => d.FormadorId == f.FormadorId
+                             && d.Disponivel == true
+                             && d.DataInicio < end
+                             && d.DataFim > start)
+                    .OrderBy(d => d.DataInicio)
+                    .ToListAsync();
+
+                if (!blocosDisponiveis.Any())
+                {
+                    resultado.Add(dto); // Motivo mantém-se "Sem disponibilidade definida"
+                    continue;
+                }
+
+                // Algoritmo: Verificar se os blocos cobrem o intervalo [start, end] continuamente
+                DateTime cobertoAte = start;
+
+                foreach (var bloco in blocosDisponiveis)
+                {
+                    // Se o bloco começa depois de onde já cobrimos, há um buraco!
+                    // Ex: Cobrimos até 10:00, mas o próximo bloco só começa às 10:30.
+                    if (bloco.DataInicio > cobertoAte)
+                        break;
+
+                    // Estendemos a cobertura até ao fim deste bloco (se ele for mais longe)
+                    if (bloco.DataFim > cobertoAte)
+                        cobertoAte = bloco.DataFim;
+
+                    // Se já cobrimos tudo até ao fim da aula, podemos parar
+                    if (cobertoAte >= end)
+                        break;
+                }
+
+                // Se a nossa "agulha" conseguiu chegar ao fim do horário, está disponível!
+                if (cobertoAte >= end)
+                {
+                    dto.Disponivel = true;
+                    dto.MotivoIndisponibilidade = "";
+                }
+                else
+                {
+                    dto.MotivoIndisponibilidade = "Disponibilidade parcial (não cobre o horário todo).";
+                }
+
+                resultado.Add(dto);
+            }
+
+            return resultado;
+        }
 
         private static SessaoDto MapToDto(Sessao s, TurmaModulo? tm, Sala? sala)
         {
