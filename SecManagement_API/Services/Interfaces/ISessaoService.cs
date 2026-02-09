@@ -8,6 +8,6 @@ namespace SecManagement_API.Services.Interfaces
         Task<IEnumerable<SessaoDto>> GetHorarioTurmaAsync(int turmaId, DateTime start, DateTime end);
         Task<IEnumerable<SessaoDto>> GetHorarioFormadorAsync(int formadorId, DateTime start, DateTime end);
         Task<IEnumerable<SessaoDto>> GetHorarioSalaAsync(int salaId, DateTime start, DateTime end);
-        Task<bool> DeleteSessaoAsync(int id);
+        Task<double> DeleteSessaoAsync(int id);
     }
 }

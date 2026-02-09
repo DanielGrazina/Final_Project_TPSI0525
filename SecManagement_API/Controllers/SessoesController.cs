@@ -39,13 +39,20 @@ namespace SecManagement_API.Controllers
         [HttpGet("turma/{turmaId}")]
         public async Task<ActionResult<IEnumerable<SessaoDto>>> GetHorarioTurma(int turmaId, DateTime start, DateTime end)
         {
+            // FORÇAR UTC
+            start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
+            end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
+
             return Ok(await _service.GetHorarioTurmaAsync(turmaId, start, end));
         }
 
-        // GET: api/Sessoes/formador/10?start=2024-01-01&end=2024-01-07
         [HttpGet("formador/{formadorId}")]
         public async Task<ActionResult<IEnumerable<SessaoDto>>> GetHorarioFormador(int formadorId, DateTime start, DateTime end)
         {
+            // FORÇAR UTC
+            start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
+            end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
+
             return Ok(await _service.GetHorarioFormadorAsync(formadorId, start, end));
         }
 
@@ -54,6 +61,10 @@ namespace SecManagement_API.Controllers
         {
             try
             {
+                // FORÇAR UTC
+                start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
+                end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
+
                 return Ok(await _service.GetHorarioSalaAsync(salaId, start, end));
             }
             catch (Exception ex)
@@ -65,8 +76,10 @@ namespace SecManagement_API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            if (await _service.DeleteSessaoAsync(id)) return NoContent();
-            return NotFound();
+            double horasRestantes = await _service.DeleteSessaoAsync(id);
+            if (horasRestantes == -1) return NotFound();
+
+            return Ok(new { message = "Sessão apagada", horasRestantes = horasRestantes });
         }
     }
 }

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { getToken, getUserRoleFromToken } from "../utils/auth";
 
-/* ---------------- helpers (iguais ao teu estilo) ---------------- */
+/* ---------------- helpers ---------------- */
 
 function safeStr(x) {
   return (x ?? "").toString();
@@ -112,144 +112,62 @@ function formatDayLabel(d) {
   return wd.charAt(0).toUpperCase() + wd.slice(1);
 }
 
-function parseHour(value) {
-  // aceita "09:00:00", "09:00", "9", 9, Date etc
-  if (value === null || value === undefined) return null;
+/* ---------------- normalização de Sessões (ROBUSTA) ---------------- */
 
-  if (value instanceof Date) {
-    if (Number.isNaN(value.getTime())) return null;
-    return value.getHours();
-  }
-
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-
-  const s = safeStr(value).trim();
-  if (!s) return null;
-
-  // "2026-02-06T09:00:00"
-  const d = new Date(s);
-  if (!Number.isNaN(d.getTime()) && s.includes("T")) return d.getHours();
-
-  // "09:00:00" / "09:00"
-  const hh = Number(s.slice(0, 2));
-  if (Number.isFinite(hh)) return hh;
-
-  return null;
-}
-
-function parseDateOnly(value) {
-  if (!value) return null;
-
-  // Date instance
-  if (value instanceof Date) {
-    if (Number.isNaN(value.getTime())) return null;
-    return value;
-  }
-
-  const s = safeStr(value);
-
-  // tenta como Date
-  const d = new Date(s);
-  if (!Number.isNaN(d.getTime())) return d;
-
-  return null;
-}
-
-/* ---------------- normalização de Sessões ---------------- */
+/* ---------------- normalização de Sessões (CORRIGIDA) ---------------- */
 
 function normalizeSessao(raw) {
-  // tenta apanhar campos típicos, sem depender de nomes exatos
-  const id = raw?.id ?? raw?.sessionId ?? raw?.sessaoId;
+  if (!raw) return null;
 
-  const dtStart =
-    raw?.dataHoraInicio ??
-    raw?.dataInicio ??
-    raw?.inicio ??
-    raw?.start ??
-    raw?.startDateTime ??
-    raw?.data; // às vezes "data" já inclui hora
+  // --- 1. DATAS ---
+  // O Backend envia "horarioInicio" e "horarioFim"
+  const rawStart = raw.HorarioInicio || raw.horarioInicio || raw.DataInicio || raw.start;
+  const rawEnd = raw.HorarioFim || raw.horarioFim || raw.DataFim || raw.end;
 
-  const dtEnd =
-    raw?.dataHoraFim ??
-    raw?.dataFim ??
-    raw?.fim ??
-    raw?.end ??
-    raw?.endDateTime;
+  if (!rawStart) return null;
 
-  // se não vier datetime completo, tenta data + horaInicio/horaFim
-  const datePart =
-    raw?.data ??
-    raw?.dia ??
-    raw?.date ??
-    raw?.dataSessao;
+  const start = new Date(rawStart);
+  let end = rawEnd ? new Date(rawEnd) : null;
 
-  const horaInicio =
-    raw?.horaInicio ??
-    raw?.inicioHora ??
-    raw?.startTime;
-
-  const horaFim =
-    raw?.horaFim ??
-    raw?.fimHora ??
-    raw?.endTime;
-
-  let start = parseDateOnly(dtStart);
-  let end = parseDateOnly(dtEnd);
-
-  if (!start) {
-    const d = parseDateOnly(datePart);
-    const h = parseHour(horaInicio);
-    if (d && Number.isFinite(h)) {
-      start = new Date(d);
-      start.setHours(h, 0, 0, 0);
-    }
+  // Se a data for inválida ou nula, definir 1h de duração por defeito
+  if (!end || isNaN(end.getTime())) {
+    end = new Date(start);
+    end.setHours(start.getHours() + 1);
   }
 
-  if (!end && start) {
-    const h2 = parseHour(horaFim);
-    if (Number.isFinite(h2)) {
-      end = new Date(start);
-      end.setHours(h2, 0, 0, 0);
-    } else {
-      // default 1h
-      end = new Date(start);
-      end.setHours(start.getHours() + 1, 0, 0, 0);
-    }
-  }
+  // --- 2. ID ---
+  const id = raw.Id || raw.id || `temp-${start.getTime()}`;
 
-  if (!start) return null;
+  // --- 3. CAMPOS DE TEXTO (Aqui estava o problema provável) ---
+  
+  // TURMA
+  let turma = "—";
+  if (raw.TurmaNome || raw.turmaNome) turma = raw.TurmaNome || raw.turmaNome;
+  else if (raw.Turma?.Nome) turma = raw.Turma.Nome;
 
-  const turma =
-    raw?.turmaNome ??
-    raw?.turma ??
-    raw?.nomeTurma;
+  // SALA
+  let sala = "—";
+  if (raw.SalaNome || raw.salaNome) sala = raw.SalaNome || raw.salaNome;
+  else if (raw.Sala?.Nome) sala = raw.Sala.Nome;
 
-  const sala =
-    raw?.salaNome ??
-    raw?.sala ??
-    raw?.roomNome ??
-    raw?.room;
+  // MÓDULO
+  let modulo = "Aula";
+  if (raw.ModuloNome || raw.moduloNome) modulo = raw.ModuloNome || raw.moduloNome;
+  else if (raw.UnidadeCurricularNome) modulo = raw.UnidadeCurricularNome;
 
-  const modulo =
-    raw?.moduloNome ??
-    raw?.modulo ??
-    raw?.moduleNome ??
-    raw?.module;
-
-  const formador =
-    raw?.formadorNome ??
-    raw?.professorNome ??
-    raw?.teacherNome ??
-    raw?.formador;
+  // FORMADOR (Essencial para o aluno saber quem dá a aula)
+  let formador = "—";
+  if (raw.FormadorNome || raw.formadorNome) formador = raw.FormadorNome || raw.formadorNome;
+  else if (raw.User?.Nome) formador = raw.User.Nome;
 
   return {
-    id: id ?? `${start.toISOString()}-${Math.random().toString(16).slice(2)}`,
+    id: String(id),
     start,
     end,
-    turma: safeStr(turma || "—"),
-    sala: safeStr(sala || "—"),
-    modulo: safeStr(modulo || "Aula"),
-    formador: safeStr(formador || "—"),
+    turma: safeStr(turma),
+    sala: safeStr(sala),
+    modulo: safeStr(modulo),
+    formador: safeStr(formador),
     raw,
   };
 }
@@ -284,15 +202,13 @@ export default function Horarios() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // ids
   const [formadorId, setFormadorId] = useState(null);
   const [formandoId, setFormandoId] = useState(null);
   const [turmaId, setTurmaId] = useState(null);
 
-  // sessões normalizadas
   const [sessions, setSessions] = useState([]);
 
-  // grid: key `${yyyy-mm-dd}|${hour}` -> array sessions
+  // Grid
   const grid = useMemo(() => {
     const map = new Map();
 
@@ -314,7 +230,7 @@ export default function Horarios() {
       map.get(key).push(s);
     }
 
-    // ordenar dentro da célula (por start)
+    // ordenar
     for (const [k, arr] of map.entries()) {
       arr.sort((a, b) => a.start - b.start);
       map.set(k, arr);
@@ -332,79 +248,70 @@ export default function Horarios() {
   }
 
   async function resolveMyIds() {
-    if (!token) throw new Error("Sem token. Faz login novamente.");
-    if (!myUserId) throw new Error("Não consegui ler o teu UserId do token.");
+  if (!token) throw new Error("Sem token. Faz login novamente.");
+  if (!myUserId) throw new Error("Não consegui ler o teu UserId do token.");
 
-    // Formador -> Profiles/formador/{userId} e apanha id
-    if (isFormador) {
-      const r = await api.get(`/Profiles/formador/${myUserId}`);
-      const fid = r?.data?.id;
-      if (!Number.isFinite(Number(fid))) {
-        throw new Error("Não encontrei o FormadorId no /Profiles/formador/{userId} (campo 'id').");
-      }
-      setFormadorId(Number(fid));
-      return { formadorId: Number(fid) };
+  // --- LÓGICA FORMADOR ---
+  if (isFormador) {
+    const r = await api.get(`/Profiles/formador/${myUserId}`);
+    const fid = r?.data?.id || r?.data?.Id; 
+    if (Number.isFinite(Number(fid))) {
+       setFormadorId(Number(fid));
+       return { formadorId: Number(fid) };
     }
-
-    // Formando -> Profiles/formando/{userId} e tenta apanhar id e turma
-    if (isFormando) {
-      const r = await api.get(`/Profiles/formando/${myUserId}`);
-      const foid = r?.data?.id;
-      const tid = r?.data?.turmaId ?? r?.data?.turmaAtualId;
-
-      if (Number.isFinite(Number(foid))) setFormandoId(Number(foid));
-      if (Number.isFinite(Number(tid))) setTurmaId(Number(tid));
-
-      return {
-        formandoId: Number.isFinite(Number(foid)) ? Number(foid) : null,
-        turmaId: Number.isFinite(Number(tid)) ? Number(tid) : null,
-      };
-    }
-
-    return {};
   }
 
-  async function fetchSessionsForMe(ids) {
-    // ⚠️ não sabemos os endpoints exatos do teu SessionsController,
-    // então tentamos vários comuns e usamos o que funcionar.
-    // Dá “zero perguntas” e tu só ajustas se algum endpoint tiver nome diferente.
+  // --- LÓGICA FORMANDO (AQUI ESTÁ O PROBLEMA) ---
+  if (isFormando) {
+    const r = await api.get(`/Profiles/formando/${myUserId}`);
 
-    const tries = [];
+    // Tentar ler ID do Formando
+    const foid = r?.data?.id || r?.data?.Id;
+    
+    // Tentar ler ID da Turma (Várias hipoteses de nome)
+    const tid = r?.data?.turmaId || r?.data?.TurmaId || r?.data?.turmaAtualId;
 
-    // 1) endpoint genérico
-    tries.push(api.get("/Sessions"));
-
-    // 2) por formador / formando / turma (os mais prováveis)
-    if (ids?.formadorId) {
-      tries.push(api.get(`/Sessions/formador/${ids.formadorId}`));
-      tries.push(api.get(`/Sessions/professor/${ids.formadorId}`));
-    }
-    if (ids?.formandoId) {
-      tries.push(api.get(`/Sessions/formando/${ids.formandoId}`));
-      tries.push(api.get(`/Sessions/aluno/${ids.formandoId}`));
-    }
-    if (ids?.turmaId) {
-      tries.push(api.get(`/Sessions/turma/${ids.turmaId}`));
-      tries.push(api.get(`/Sessions/class/${ids.turmaId}`));
+    if (Number.isFinite(Number(foid))) setFormandoId(Number(foid));
+    
+    if (Number.isFinite(Number(tid))) {
+        setTurmaId(Number(tid));
+        console.log("TURMA ID ENCONTRADO:", tid);
+    } else {
+        console.warn("AVISO: Este aluno não tem 'turmaId' no perfil. Está inscrito numa turma?");
     }
 
-    const settled = await Promise.allSettled(tries);
+    return {
+      formandoId: Number.isFinite(Number(foid)) ? Number(foid) : null,
+      turmaId: Number.isFinite(Number(tid)) ? Number(tid) : null,
+    };
+  }
 
-    // escolhe a primeira resposta fulfilled que seja array
-    for (const r of settled) {
-      if (r.status !== "fulfilled") continue;
-      const data = r.value?.data;
-      if (Array.isArray(data)) return data;
+  return {};
+}
+
+  // --- FUNÇÃO CORRIGIDA: Usa /Sessoes e query string ---
+  async function fetchSessionsForMe(ids, start, end) {
+    // Converter datas para ISO string (yyyy-MM-dd)
+    const s = toISODate(start);
+    const e = toISODate(end);
+    const query = `?start=${s}&end=${e}`;
+
+    // 1. Se for Formador
+    if (isFormador && ids.formadorId) {
+      const res = await api.get(`/Sessoes/formador/${ids.formadorId}${query}`);
+      return res.data;
     }
 
-    // se nenhuma devolveu array, devolve erro mais útil possível
-    const firstErr = settled.find((x) => x.status === "rejected");
-    if (firstErr?.status === "rejected") throw firstErr.reason;
+    // 2. Se for Formando (Aluno) - vê horário da TURMA
+    if (isFormando && ids.turmaId) {
+      const res = await api.get(`/Sessoes/turma/${ids.turmaId}${query}`);
+      return res.data;
+    }
 
-    // fallback: vazio
     return [];
   }
 
+  // --- FUNÇÃO CORRIGIDA: Filtro e datas ---
   async function loadWeek() {
     setLoading(true);
     setError("");
@@ -417,20 +324,44 @@ export default function Horarios() {
       }
 
       const ids = await resolveMyIds();
-      const raw = await fetchSessionsForMe(ids);
 
+      // Calcular intervalo correto da semana
+      const start = new Date(weekStart);
+      const end = addDays(start, 7);
+
+      // Buscar dados
+      const raw = await fetchSessionsForMe(ids, start, end);
+
+      if (!Array.isArray(raw)) {
+        console.warn("API não devolveu array:", raw);
+        setSessions([]);
+        return;
+      }
+
+      // Normalizar
       const norm = raw
         .map(normalizeSessao)
         .filter(Boolean);
 
-      // filtra só para a semana atual (segunda..domingo)
-      const start = new Date(weekStart);
-      const end = addDays(start, 7);
-      const weekOnly = norm.filter((s) => s.start >= start && s.start < end);
+      // Filtro de segurança (para garantir que só mostramos a semana certa)
+      // Ajustamos as horas para apanhar o dia completo
+      const filterStart = new Date(weekStart);
+      filterStart.setHours(0, 0, 0, 0);
+
+      const filterEnd = addDays(filterStart, 7);
+      filterEnd.setHours(23, 59, 59, 999);
+
+      const weekOnly = norm.filter((s) => s.start >= filterStart && s.start <= filterEnd);
 
       setSessions(weekOnly);
     } catch (e) {
-      setError(extractError(e, "Falha ao carregar o horário."));
+      if (isFormando && !formandoId) {
+        setError("Não foi possível encontrar o teu perfil de aluno.");
+      } else if (isFormando && !turmaId) {
+        setError("Ainda não estás colocado em nenhuma turma, por isso não tens horário.");
+      } else {
+        setError(extractError(e, "Falha ao carregar o horário."));
+      }
       setSessions([]);
     } finally {
       setLoading(false);
@@ -566,43 +497,77 @@ export default function Horarios() {
                     return (
                       <div
                         key={key}
-                        className="relative border-r border-white/10 h-12 bg-white/0 hover:bg-white/5 transition-colors"
+                        // 1. IMPORTANTE: overflow-visible para permitir que o card saia da célula
+                        // h-14 define a altura fixa da linha (aprox 56px)
+                        className="relative border-r border-white/10 h-14 hover:bg-white/5 transition-colors z-0"
+                        style={{ overflow: 'visible' }}
                         title={cellSessions.length ? "Aula/Sessão marcada" : "Livre"}
                       >
                         {cellSessions.length > 0 && (
-                          <div className="absolute inset-0 p-1 flex flex-col gap-1 overflow-hidden">
-                            {cellSessions.slice(0, 2).map((s) => {
+                          <>
+                            {cellSessions.map((s) => {
+                              // Calcular duração
+                              const durationMs = s.end - s.start;
+                              const durationHours = durationMs > 0 ? durationMs / (1000 * 60 * 60) : 1;
+
+                              // 2. ESTILO DO WRAPPER (Posicionamento)
+                              // O Wrapper ocupa a altura total das N células.
+                              // O zIndex deve ser alto (20) para ficar por cima das linhas de baixo.
+                              const wrapperStyle = {
+                                height: `calc(${durationHours * 100}% + ${Math.floor(durationHours)}px)`,
+                                zIndex: 20,
+                              };
+
                               const hh = pad2(s.start.getHours());
                               const mm = pad2(s.start.getMinutes());
                               const labelTop = `${hh}:${mm} • ${s.modulo}`;
 
-                              // Para formando: mostra sala + formador
-                              // Para formador: mostra turma + sala
                               const sub = isFormando
-                                ? `Sala: ${s.sala} • ${s.formador !== "—" ? `Formador: ${s.formador}` : ""}`
+                                ? `Sala: ${s.sala}`
                                 : `Turma: ${s.turma} • Sala: ${s.sala}`;
 
                               return (
                                 <div
                                   key={s.id}
-                                  className="rounded-lg bg-blue-500/20 border border-blue-500/30 px-2 py-1"
+                                  style={wrapperStyle}
+                                  // 3. ABSOLUTE TOP-0 LEFT-0
+                                  // Removemos o 'inset-0' e o padding do pai. 
+                                  // O padding (p-1) agora é aplicado aqui para dar margem visual, 
+                                  // mas a altura real é calculada sobre a célula inteira.
+                                  className="absolute top-0 left-0 w-full p-1 pointer-events-none"
                                 >
-                                  <div className="text-[11px] font-bold text-blue-100 truncate">
-                                    {labelTop}
-                                  </div>
-                                  <div className="text-[10px] text-blue-200/80 truncate">
-                                    {sub}
+                                  {/* 4. O CARTÃO VISUAL (Blue Box) */}
+                                  {/* pointer-events-auto reativa os cliques no cartão */}
+                                  <div className="h-full w-full rounded-lg bg-blue-600 border border-blue-400/50 shadow-xl overflow-hidden pointer-events-auto relative group hover:z-30 transition-all cursor-pointer">
+
+                                    {/* Conteúdo do Cartão */}
+                                    <div className="px-2 py-1">
+                                      <div className="text-[11px] font-bold text-white leading-tight">
+                                        {labelTop}
+                                      </div>
+                                      <div className="text-[10px] text-blue-100/90 mt-0.5 truncate">
+                                        {sub}
+                                      </div>
+
+                                      {isFormando && s.formador !== "—" && (
+                                        <div className="text-[10px] text-blue-200 mt-0.5 truncate italic">
+                                          Prof. {s.formador.split(' ')[0]}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Tooltip on Hover (útil para aulas pequenas) */}
+                                    <div className="hidden group-hover:block absolute left-0 top-full mt-1 w-max max-w-[200px] bg-gray-900 border border-white/20 text-white text-xs p-2 rounded shadow-xl z-50">
+                                      <div className="font-bold mb-1">{s.modulo}</div>
+                                      <div>{sub}</div>
+                                      <div>{pad2(s.start.getHours())}:{pad2(s.start.getMinutes())} - {pad2(s.end.getHours())}:{pad2(s.end.getMinutes())}</div>
+                                    </div>
+
                                   </div>
                                 </div>
                               );
                             })}
-
-                            {cellSessions.length > 2 && (
-                              <div className="text-[10px] text-blue-200/80 px-2">
-                                +{cellSessions.length - 2} mais…
-                              </div>
-                            )}
-                          </div>
+                          </>
                         )}
                       </div>
                     );
@@ -615,8 +580,7 @@ export default function Horarios() {
 
         {/* footer hint */}
         <div className="mt-4 text-xs text-gray-400">
-          Nota: se a API devolver nomes de campos diferentes no SessionsController, diz-me o DTO/JSON da sessão (um exemplo)
-          e eu ajusto o normalizador para ficar 100% certo.
+          Nota: O horário baseia-se na tua colocação atual (Turma ou Atribuição como Formador).
         </div>
       </div>
     </div>

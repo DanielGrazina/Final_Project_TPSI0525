@@ -1,3 +1,6 @@
+# Ficheiro para facilitar o rebase do docker - IGNORAR
+docker.bat
+
 # Logs
 logs
 *.log
