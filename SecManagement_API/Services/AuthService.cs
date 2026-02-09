@@ -79,40 +79,73 @@ namespace SecManagement_API.Services
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
         {
+            // 1. Verificar User
             var user = await _context.Users
-                .Include(u => u.FormandoProfile)
                 .Include(u => u.FormadorProfile)
+                .Include(u => u.FormandoProfile)
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-                throw new Exception("Credenciais inválidas.");
+            if (user == null) 
+                throw new Exception("Utilizador não encontrado.");
 
-            if (!user.IsActive)
+            if (!user.IsActive) 
                 throw new Exception("Conta inativa. Verifique o seu email.");
 
-            // ✅ 2FA
+            // 2. Verificar Password
+            if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+                throw new Exception("Password incorreta.");
+
+            // ============================================================
+            // 3. LÓGICA 2FA (AQUI ESTÁ A MAGIA)
+            // ============================================================
             if (user.IsTwoFactorEnabled)
             {
-                if (string.IsNullOrWhiteSpace(dto.TwoFactorCode))
+                // Se o utilizador tem 2FA, mas não enviou código no DTO
+                if (string.IsNullOrEmpty(dto.TwoFactorCode))
                 {
+                    // Retornamos um DTO especial a dizer ao Frontend: "Pede o código!"
                     return new AuthResponseDto
                     {
-                        RequiresTwoFactor = true,
-                        Message = "Insira o código 2FA"
+                        Token = null,
+                        RequiresTwoFactor = true, // <--- Frontend usa isto para mudar de ecrã
+                        Message = "2FA Required"
                     };
                 }
 
-                if (string.IsNullOrWhiteSpace(user.TwoFactorSecret))
-                    throw new Exception("2FA ativo mas secret não configurado.");
+                // Se enviou código, vamos validar
+                var totp = new OtpNet.Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
+        
+                // Verifica código (janela de tempo de +-30s)
+                bool validCode = totp.VerifyTotp(dto.TwoFactorCode.Trim(), out _, new OtpNet.VerificationWindow(2, 2));
 
-                var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
-                if (!totp.VerifyTotp(dto.TwoFactorCode.Trim(), out long _))
-                    throw new Exception("Código 2FA incorreto.");
+                // Se falhar o TOTP, verificar se é um código de recuperação (Backup Code)
+                if (!validCode && !string.IsNullOrEmpty(user.BackupCodes))
+                {
+                    var backupCodes = user.BackupCodes.Split(';').ToList();
+                    if (backupCodes.Contains(dto.TwoFactorCode.Trim()))
+                    {
+                        validCode = true;
+                        // Opcional: Remover o código usado da lista para não ser usado 2x
+                        backupCodes.Remove(dto.TwoFactorCode.Trim());
+                        user.BackupCodes = string.Join(";", backupCodes);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                if (!validCode)
+                    throw new Exception("Código de autenticação inválido.");
             }
 
-            string token = CreateToken(user);
-            return new AuthResponseDto { Token = token, Message = "Login com sucesso" };
-        }
+    // 4. Se chegou aqui, gera o Token (JWT)
+    string token = CreateToken(user);
+
+    return new AuthResponseDto
+    {
+        Token = token,
+        RequiresTwoFactor = false,
+        Message = "Login efetuado com sucesso."
+    };
+}
 
         public async Task<string> ActivateAccountAsync(string email, string token)
         {

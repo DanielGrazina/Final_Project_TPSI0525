@@ -37,6 +37,7 @@ CREATE TABLE "Users" (
     "ResetTokenExpires" TIMESTAMP,
     "TwoFactorSecret" VARCHAR(255),
     "IsTwoFactorEnabled" BOOLEAN DEFAULT FALSE,
+    "BackupCodes" TEXT,
     
     "CreatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
