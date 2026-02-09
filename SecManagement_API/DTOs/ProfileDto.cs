@@ -52,6 +52,8 @@ namespace SecManagement_API.DTOs
         public string NumeroAluno { get; set; } = string.Empty;
         public DateTime DataNascimento { get; set; }
 
+        public int? TurmaId { get; set; }
+        public string? TurmaNome { get; set; }
         public List<UserFicheiroDto> Ficheiros { get; set; } = new List<UserFicheiroDto>();
     }
 

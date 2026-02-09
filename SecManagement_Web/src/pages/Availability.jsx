@@ -293,8 +293,6 @@ export default function Availability() {
       disponivel: true
     };
 
-    console.log("JSON enviado:", JSON.stringify(dto));
-
     const res = await api.post("/Disponibilidades", dto);
     return res?.data;
   }

@@ -95,7 +95,7 @@ namespace SecManagement_API.Services
             });
         }
 
-        
+
 
         // --- FORMANDOS ---
 
@@ -107,6 +107,10 @@ namespace SecManagement_API.Services
 
             if (formando == null) throw new Exception("Perfil de formando não encontrado.");
 
+            var inscricaoAtiva = await _context.Inscricoes
+                .Include(i => i.Turma)
+                .FirstOrDefaultAsync(i => i.FormandoId == formando.Id && i.Estado == "Ativo");
+
             return new FormandoProfileDto
             {
                 Id = formando.Id,
@@ -114,6 +118,9 @@ namespace SecManagement_API.Services
                 Email = formando.User?.Email ?? "",
                 NumeroAluno = formando.NumeroAluno,
                 DataNascimento = formando.DataNascimento,
+                TurmaId = inscricaoAtiva?.TurmaId,
+                TurmaNome = inscricaoAtiva?.Turma?.Nome,
+
                 Ficheiros = formando.User?.Ficheiros.Select(f => new UserFicheiroDto
                 {
                     Id = f.Id,

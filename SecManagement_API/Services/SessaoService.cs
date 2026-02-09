@@ -48,24 +48,24 @@ namespace SecManagement_API.Services
             int formadorId = turmaModulo.FormadorId;
 
             // VERIFICAR CONFLITO DE SALA
-            // Existe alguma sessão NESTA sala, que se sobreponha ao horário pedido?
-            bool conflitoSala = await _context.Sessoes
-                .AnyAsync(s => s.SalaId == dto.SalaId &&
-                               s.HorarioInicio < dto.HorarioFim &&
-                               s.HorarioFim > dto.HorarioInicio);
+            bool salaBloqueada = await _context.Disponibilidades
+                    .AnyAsync(d => d.SalaId == dto.SalaId
+                    && d.Disponivel == false
+                    && d.DataInicio < dto.HorarioFim
+                    && d.DataFim > dto.HorarioInicio);
 
-            if (conflitoSala) throw new Exception("A Sala já está ocupada neste horário.");
+            if (salaBloqueada)
+                throw new Exception("A Sala está marcada como indisponível (Manutenção/Outro) neste horário.");
 
             // VERIFICAR CONFLITO DE FORMADOR
-            // O formador pode estar a dar aula noutra turma ao mesmo tempo?
-            // Temos de ver todas as sessões onde o formador é o mesmo.
-            bool conflitoFormador = await _context.Sessoes
-                .Include(s => s.TurmaModulo)
-                .AnyAsync(s => s.TurmaModulo.FormadorId == formadorId &&
-                               s.HorarioInicio < dto.HorarioFim &&
-                               s.HorarioFim > dto.HorarioInicio);
+            bool formadorBloqueado = await _context.Disponibilidades
+                    .AnyAsync(d => d.FormadorId == formadorId
+                    && d.Disponivel == false
+                    && d.DataInicio < dto.HorarioFim
+                    && d.DataFim > dto.HorarioInicio);
 
-            if (conflitoFormador) throw new Exception("O Formador já tem aula marcada neste horário noutra turma.");
+            if (formadorBloqueado)
+                throw new Exception($"O formador {turmaModulo.Formador?.User?.Nome} está indisponível (Férias/Ausência) neste horário.");
 
             // Criar Sessão
             var sessao = new Sessao
@@ -114,14 +114,28 @@ namespace SecManagement_API.Services
             return sessoes.Select(s => MapToDto(s, s.TurmaModulo, s.Sala));
         }
 
-        public async Task<bool> DeleteSessaoAsync(int id)
+        public async Task<double> DeleteSessaoAsync(int id)
         {
-            var s = await _context.Sessoes.FindAsync(id);
-            if (s == null) return false;
+            var s = await _context.Sessoes
+                .Include(x => x.TurmaModulo).ThenInclude(tm => tm.Modulo)
+                .FirstOrDefaultAsync(x => x.Id == id); // Precisamos dos dados para recalcular
+
+            if (s == null) return -1; // -1 indica erro
+
+            int turmaModuloId = s.TurmaModuloId;
+            int cargaTotal = s.TurmaModulo.Modulo.CargaHoraria;
 
             _context.Sessoes.Remove(s);
-            await _context.SaveChangesAsync();
-            return true;
+            await _context.SaveChangesAsync(); // A sessão desapareceu da BD
+
+            // Recalcular o que sobra agora
+            var sessoesRestantes = await _context.Sessoes
+                .Where(x => x.TurmaModuloId == turmaModuloId)
+                .ToListAsync();
+
+            double horasUsadas = sessoesRestantes.Sum(x => (x.HorarioFim - x.HorarioInicio).TotalHours);
+
+            return cargaTotal - horasUsadas; // Retorna as horas livres atuais
         }
 
         private static SessaoDto MapToDto(Sessao s, TurmaModulo? tm, Sala? sala)
