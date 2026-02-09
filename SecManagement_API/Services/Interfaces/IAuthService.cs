@@ -11,10 +11,12 @@ namespace SecManagement_API.Services.Interfaces
         Task<string> ForgotPasswordAsync(string email);
         Task<string> ResetPasswordAsync(ResetPasswordDto dto);
 
-        Task<string> EnableTwoFactorAsync(int userId);
+        Task<TwoFactorSetupDto> SetupTwoFactorAsync(int userId);
+        Task<TwoFactorRecoveryDto> ConfirmTwoFactorAsync(int userId, string code);
         Task<string> ActivateAccountAsync(string email, string token);
 
-        // ✅ ALTERADO: agora aceita twoFactorCode opcional para login social
+
+
         Task<AuthResponseDto> SocialLoginAsync(
             string email,
             string provider,

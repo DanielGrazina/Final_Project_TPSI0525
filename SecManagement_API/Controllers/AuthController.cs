@@ -102,19 +102,33 @@ namespace SecManagement_API.Controllers
 
         // POST: api/Auth/enable-2fa
         [Authorize]
-        [HttpPost("enable-2fa")]
-        public async Task<IActionResult> Enable2FA()
+        [HttpPost("2fa/setup")]
+        public async Task<IActionResult> Setup2FA()
         {
             try
             {
-                var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrWhiteSpace(userIdStr))
-                    return Unauthorized(new { message = "Token inválido: NameIdentifier em falta." });
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var result = await _authService.SetupTwoFactorAsync(userId);
+                return Ok(result); // Retorna { qrCodeUrl, manualEntryKey }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
-                var userId = int.Parse(userIdStr);
+        // PASSO 2: Confirmar (Recebe código e ativa)
+        [Authorize]
+        [HttpPost("2fa/confirm")]
+        public async Task<IActionResult> Confirm2FA([FromBody] TwoFactorConfirmDto dto)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var result = await _authService.ConfirmTwoFactorAsync(userId, dto.Code);
 
-                var qrCodeUrl = await _authService.EnableTwoFactorAsync(userId);
-                return Ok(new { qrCodeUrl });
+                // Retorna os códigos de backup para o user guardar
+                return Ok(result);
             }
             catch (Exception ex)
             {
