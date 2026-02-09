@@ -35,22 +35,18 @@ namespace SecManagement_API.Controllers
 
         // POST: api/Auth/login
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginDto request)
+        public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto dto)
         {
             try
             {
-                var result = await _authService.LoginAsync(request);
+                var result = await _authService.LoginAsync(dto);
 
-                // ✅ 2FA challenge -> frontend deve mostrar input de código
-                if (result.RequiresTwoFactor)
-                {
-                    return Accepted(result); // 202
-                }
-
+                // Se pedir 2FA, retornamos 200 OK na mesma, mas o frontend vê o flag "RequiresTwoFactor"
                 return Ok(result);
             }
             catch (Exception ex)
             {
+                // Aqui é gerado o erro 400 que vês no browser
                 return BadRequest(new { message = ex.Message });
             }
         }

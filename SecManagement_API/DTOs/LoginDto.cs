@@ -1,16 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace SecManagement_API.DTOs
+public class LoginDto
 {
-    public class LoginDto
-    {
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty;
+    [Required]
+    public string Email { get; set; } = string.Empty;
 
-        [Required]
-        public string Password { get; set; } = string.Empty;
+    [Required]
+    public string Password { get; set; } = string.Empty;
 
-        public string? TwoFactorCode { get; set; }
-    }
+    public string? TwoFactorCode { get; set; }
 }
