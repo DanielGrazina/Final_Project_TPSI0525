@@ -9,28 +9,28 @@ import { getToken } from "../../utils/auth";
 function Modal({ title, children, onClose, disableClose }) {
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn"
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
       onClick={() => !disableClose && onClose()}
     >
       <div
-        className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden animate-slideUp"
+        className="w-full max-w-2xl bg-[#0f1419] rounded-2xl shadow-2xl border border-gray-800 overflow-hidden animate-slideUp flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 border-b border-emerald-600">
-          <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-            <span className="text-2xl">{title.split(' ')[0]}</span>
-            <span>{title.split(' ').slice(1).join(' ')}</span>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-[#1a1f2e]">
+          <h3 className="text-lg font-bold text-white tracking-tight">
+            {title}
           </h3>
           <button
             onClick={onClose}
             disabled={disableClose}
-            className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white
-                       disabled:opacity-50 transition-all duration-200 font-medium text-sm backdrop-blur-sm"
+            className="text-gray-400 hover:text-white transition-colors text-xl font-bold px-2"
           >
-            Fechar
+            ✕
           </button>
         </div>
-        <div className="p-6 max-h-[75vh] overflow-y-auto">{children}</div>
+        <div className="p-0 overflow-y-auto flex-1 custom-scrollbar relative">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -41,40 +41,10 @@ function extractError(err, fallback) {
   if (!data) return fallback;
   if (typeof data === "string") return data;
   if (typeof data?.message === "string") return data.message;
-
-  if (data?.errors && typeof data.errors === "object") {
-    const k = Object.keys(data.errors)[0];
-    const arr = data.errors[k];
-    if (Array.isArray(arr) && arr.length) return arr[0];
-    return "Dados inválidos.";
-  }
-
-  try {
-    return JSON.stringify(data);
-  } catch {
-    return fallback;
-  }
+  return fallback;
 }
 
-function tmLabel(tm) {
-  const modulo =
-    tm?.moduloNome ??
-    tm?.modulo ??
-    tm?.nomeModulo ??
-    tm?.moduloTitle ??
-    "Módulo";
-
-  const formador =
-    tm?.formadorEmail ??
-    tm?.formadorNome ??
-    tm?.nomeFormador ??
-    tm?.formador ??
-    "";
-
-  return formador ? `${modulo} — ${formador}` : `${modulo}`;
-}
-
-// Junta date + time e devolve ISO UTC (string)
+// Helpers de Data/Hora
 function dateTimeToIsoUtc(dateStr, timeStr) {
   if (!dateStr || !timeStr) return null;
   const local = new Date(`${dateStr}T${timeStr}:00`);
@@ -87,67 +57,44 @@ function isoUtcFromDate(dateStr, endOfDay = false) {
   return `${dateStr}T${endOfDay ? "23:59:59" : "00:00:00"}Z`;
 }
 
-function toLocalDateTime(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString();
+function toYmd(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
-function durationLabel(ini, fim) {
-  const a = new Date(ini);
-  const b = new Date(fim);
-  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return "—";
-  const mins = Math.max(0, Math.round((b - a) / 60000));
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  if (h <= 0) return `${m} min`;
-  return `${h}h ${m}m`;
+function durationLabel(iniIso, fimIso) {
+    const a = new Date(iniIso);
+    const b = new Date(fimIso);
+    if(isNaN(a) || isNaN(b)) return "--";
+    const mins = Math.max(0, Math.round((b - a) / 60000));
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? `${h}h ${m > 0 ? `${m}m` : ""}` : `${m} min`;
 }
 
-/* ---- JWT helpers (FormadorId + Role) ---- */
-
+/* ---- JWT helpers ---- */
 function parseJwt(token) {
   try {
-    const payload = token.split(".")[1];
-    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-    return JSON.parse(decodeURIComponent(escape(json)));
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
   } catch {
     return null;
   }
 }
 
-function getClaim(jwt, key) {
-  if (!jwt) return null;
-  // tenta várias formas comuns
-  if (jwt[key] != null) return jwt[key];
-  if (jwt[`http://schemas.xmlsoap.org/ws/2005/05/identity/claims/${key}`] != null)
-    return jwt[`http://schemas.xmlsoap.org/ws/2005/05/identity/claims/${key}`];
-  if (jwt[`http://schemas.microsoft.com/ws/2008/06/identity/claims/${key}`] != null)
-    return jwt[`http://schemas.microsoft.com/ws/2008/06/identity/claims/${key}`];
-
-  // Role costuma vir como claim types
-  if (key === "role") {
-    return (
-      jwt["role"] ??
-      jwt["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ??
-      jwt["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role"] ??
-      null
-    );
-  }
-
-  return null;
-}
-
 /* ---------------- Calendar utilities ---------------- */
-
 const WEEK_DAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
-const WEEK_DAYS_FULL = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 
 function startOfWeek(date) {
   const d = new Date(date);
-  const day = d.getDay(); // 0 dom, 1 seg...
-  const diff = (day === 0 ? -6 : 1) - day; // seg como início
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -159,46 +106,13 @@ function addDays(date, n) {
   return d;
 }
 
-function toYmd(d) {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function sameDay(a, b) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function timeToMinutes(hhmm) {
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + m;
-}
-
-function minutesToTime(mins) {
-  const h = String(Math.floor(mins / 60)).padStart(2, "0");
-  const m = String(mins % 60).padStart(2, "0");
-  return `${h}:${m}`;
-}
-
-function overlaps(aStart, aEnd, bStart, bEnd) {
-  return new Date(aStart) < new Date(bEnd) && new Date(aEnd) > new Date(bStart);
-}
-
-// Cores vibrantes para as sessões (como na imagem)
+// Cores para sessões
 const SESSION_COLORS = [
-  { bg: 'bg-gradient-to-br from-purple-500 to-purple-600', border: 'border-purple-400', text: 'text-white', hover: 'hover:from-purple-600 hover:to-purple-700' },
-  { bg: 'bg-gradient-to-br from-blue-500 to-blue-600', border: 'border-blue-400', text: 'text-white', hover: 'hover:from-blue-600 hover:to-blue-700' },
-  { bg: 'bg-gradient-to-br from-emerald-500 to-emerald-600', border: 'border-emerald-400', text: 'text-white', hover: 'hover:from-emerald-600 hover:to-emerald-700' },
-  { bg: 'bg-gradient-to-br from-orange-500 to-orange-600', border: 'border-orange-400', text: 'text-white', hover: 'hover:from-orange-600 hover:to-orange-700' },
-  { bg: 'bg-gradient-to-br from-pink-500 to-pink-600', border: 'border-pink-400', text: 'text-white', hover: 'hover:from-pink-600 hover:to-pink-700' },
-  { bg: 'bg-gradient-to-br from-teal-500 to-teal-600', border: 'border-teal-400', text: 'text-white', hover: 'hover:from-teal-600 hover:to-teal-700' },
-  { bg: 'bg-gradient-to-br from-indigo-500 to-indigo-600', border: 'border-indigo-400', text: 'text-white', hover: 'hover:from-indigo-600 hover:to-indigo-700' },
-  { bg: 'bg-gradient-to-br from-rose-500 to-rose-600', border: 'border-rose-400', text: 'text-white', hover: 'hover:from-rose-600 hover:to-rose-700' },
+  { bg: 'bg-indigo-600', border: 'border-indigo-400' },
+  { bg: 'bg-blue-600', border: 'border-blue-400' },
+  { bg: 'bg-emerald-600', border: 'border-emerald-400' },
+  { bg: 'bg-purple-600', border: 'border-purple-400' },
+  { bg: 'bg-rose-600', border: 'border-rose-400' },
 ];
 
 function getSessionColor(sessionId) {
@@ -209,775 +123,604 @@ function getSessionColor(sessionId) {
 
 export default function AdminSessions() {
   const navigate = useNavigate();
-
   const token = getToken();
   const jwt = useMemo(() => (token ? parseJwt(token) : null), [token]);
+  
+  // Roles e IDs
+  const role = jwt?.role || jwt?.Role || "User";
+  const formadorId = jwt?.FormadorId || jwt?.formadorId;
+  const isAdminLike = ["Admin", "SuperAdmin", "Secretaria"].includes(role);
 
-  const role = useMemo(() => String(getClaim(jwt, "role") || ""), [jwt]);
-  const formadorId = useMemo(() => {
-    const v = jwt?.FormadorId ?? jwt?.formadorId ?? null;
-    const n = Number(v);
-    return Number.isFinite(n) && n > 0 ? n : null;
-  }, [jwt]);
-
-  const isAdminLike = useMemo(() => ["Admin", "SuperAdmin", "Secretaria"].includes(role), [role]);
-  const isCoordinatorCandidate = useMemo(() => !!formadorId, [formadorId]);
-
+  // Estados de Dados Base
   const [turmas, setTurmas] = useState([]);
   const [salas, setSalas] = useState([]);
-  const [turmaModulos, setTurmaModulos] = useState([]);
-  const [loadingTM, setLoadingTM] = useState(false);
-
-  const [loadingBase, setLoadingBase] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const [uiMode, setUiMode] = useState("calendar");
-
-  const [selectedTurmaId, setSelectedTurmaId] = useState("");
+  const [turmaModulos, setTurmaModulos] = useState([]); // Lista crua para referência
   const [sessions, setSessions] = useState([]);
+
+  // Estados de UI
+  const [selectedTurmaId, setSelectedTurmaId] = useState("");
+  const [loadingBase, setLoadingBase] = useState(true);
   const [loadingSessions, setLoadingSessions] = useState(false);
-
-  const [weekAnchor, setWeekAnchor] = useState(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
-
-  const [dayStart, setDayStart] = useState("08:00");
-  const [dayEnd, setDayEnd] = useState("23:00");
-  const [slotMins, setSlotMins] = useState(60);
-
+  
+  // Calendário
+  const [weekAnchor, setWeekAnchor] = useState(new Date());
   const weekStart = useMemo(() => startOfWeek(weekAnchor), [weekAnchor]);
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
+  // --- WIZARD STATES ---
+  const [showModal, setShowModal] = useState(false);
+  const [step, setStep] = useState(1); // 1: Time, 2: Formador, 3: Modulo, 4: Sala
+  const [saving, setSaving] = useState(false);
+  const [wizardError, setWizardError] = useState("");
+  
+  // Estado para Disponibilidade (NOVO)
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [formadoresStatus, setFormadoresStatus] = useState([]); // Vem do endpoint novo
+
+  // Dados do formulário
+  const [formData, setFormData] = useState({
     turmaId: "",
-    turmaModuloId: "",
-    salaId: "",
     inicioDate: "",
     inicioTime: "",
     fimDate: "",
     fimTime: "",
+    selectedFormadorId: null,
+    turmaModuloId: "",
+    salaId: ""
   });
 
-  const [search, setSearch] = useState("");
-
-  /* ------------------------ Load Base ------------------------ */
-
-  async function loadTurmasForUser() {
-    try {
-      const res = await api.get("/Turmas/coordenador");
-      if (Array.isArray(res.data)) return res.data;
-    } catch (e) {
-      // fallback
-    }
-
-    const res = await api.get("/Turmas");
-    const all = Array.isArray(res.data) ? res.data : [];
-
-    if (isAdminLike) return all;
-
-    if (formadorId) {
-      return all.filter((t) => Number(t?.coordenadorId) === Number(formadorId));
-    }
-
-    return all;
-  }
+  /* ------------------------ Loads ------------------------ */
 
   async function loadBase() {
     setLoadingBase(true);
-    setError("");
     try {
-      const [turmasList, salasRes] = await Promise.all([
-        loadTurmasForUser(),
+      const [resSalas, resTurmasAll] = await Promise.all([
         api.get("/Salas"),
+        api.get("/Turmas")
       ]);
 
-      const s = Array.isArray(salasRes.data) ? salasRes.data : [];
+      setSalas(Array.isArray(resSalas.data) ? resSalas.data : []);
 
-      setTurmas(turmasList);
-      setSalas(s);
-
-      if (!selectedTurmaId && turmasList.length) {
-        setSelectedTurmaId(String(turmasList[0]?.id ?? ""));
+      let tList = Array.isArray(resTurmasAll.data) ? resTurmasAll.data : [];
+      
+      // Se for apenas formador (coordenador), filtra as suas turmas
+      if (!isAdminLike && formadorId) {
+         // Se tiveres endpoint /Turmas/coordenador usa-o, senão filtra no front:
+         tList = tList.filter(t => Number(t.coordenadorId) === Number(formadorId));
       }
 
-      if (!isAdminLike) setUiMode("calendar");
-    } catch (err) {
-      setError(extractError(err, "Erro ao carregar dados base."));
+      setTurmas(tList);
+      if (tList.length > 0 && !selectedTurmaId) {
+        setSelectedTurmaId(tList[0].id);
+      }
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoadingBase(false);
     }
   }
 
-  useEffect(() => {
-    if (!token) {
-      navigate("/", { replace: true });
-      return;
-    }
-    loadBase();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  /* ------------------------ TurmaModulos ------------------------ */
-
-  async function loadTurmaModulos(turmaId) {
-    if (!turmaId) {
-      setTurmaModulos([]);
-      return;
-    }
-    setLoadingTM(true);
-    setError("");
+  async function loadTurmaModulos(tid) {
+    if (!tid) return;
     try {
-      const res = await api.get(`/Turmas/${turmaId}/modulos`);
+      const res = await api.get(`/Turmas/${tid}/modulos`);
       setTurmaModulos(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
+    } catch {
       setTurmaModulos([]);
-      setError(extractError(err, "Não foi possível carregar os módulos da turma."));
-    } finally {
-      setLoadingTM(false);
     }
   }
 
-  useEffect(() => {
+  async function loadSessions() {
     if (!selectedTurmaId) return;
-    loadTurmaModulos(Number(selectedTurmaId));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTurmaId]);
-
-  /* ------------------------ Sessions Load ------------------------ */
-
-  async function loadWeekSessions() {
-    setError("");
-    const tid = Number(selectedTurmaId);
-    if (!Number.isFinite(tid) || tid <= 0) {
-      setSessions([]);
-      return;
-    }
-
-    const startIso = isoUtcFromDate(toYmd(weekStart), false);
-    const endIso = isoUtcFromDate(toYmd(addDays(weekStart, 6)), true);
-
     setLoadingSessions(true);
+    const start = isoUtcFromDate(toYmd(weekStart));
+    const end = isoUtcFromDate(toYmd(addDays(weekStart, 6)), true);
     try {
-      const url = `/Sessoes/turma/${tid}?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}`;
-      const res = await api.get(url);
+      const res = await api.get(`/Sessoes/turma/${selectedTurmaId}?start=${start}&end=${end}`);
       setSessions(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
+    } catch {
       setSessions([]);
-      setError(extractError(err, "Erro ao carregar sessões da semana."));
     } finally {
       setLoadingSessions(false);
     }
   }
 
-  useEffect(() => {
-    if (loadingBase) return;
-    if (!selectedTurmaId) return;
-    loadWeekSessions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingBase, selectedTurmaId, weekStart]);
+  // Effects
+  useEffect(() => { loadBase(); }, []);
+  
+  useEffect(() => { 
+    if (selectedTurmaId) {
+        loadTurmaModulos(selectedTurmaId);
+        loadSessions();
+    }
+  }, [selectedTurmaId, weekStart]);
 
-  /* ------------------------ Create Flow ------------------------ */
+  /* ------------------------ Wizard Logic ------------------------ */
 
-  function openCreateWithSlot(dayDate, startTime, endTime) {
-    setError("");
-
-    const dateStr = toYmd(dayDate);
-
-    setForm({
-      turmaId: String(selectedTurmaId || ""),
-      turmaModuloId: "",
-      salaId: "",
-      inicioDate: dateStr,
-      inicioTime: startTime,
-      fimDate: dateStr,
-      fimTime: endTime,
+  function openWizard(date, startTime, endTime) {
+    const dStr = toYmd(date);
+    setFormData({
+        turmaId: selectedTurmaId,
+        inicioDate: dStr,
+        inicioTime: startTime,
+        fimDate: dStr,
+        fimTime: endTime,
+        selectedFormadorId: null,
+        turmaModuloId: "",
+        salaId: ""
     });
-
-    setShowForm(true);
+    setStep(1);
+    setShowModal(true);
+    setWizardError("");
+    setFormadoresStatus([]);
   }
 
-  function closeForm(force = false) {
-    if (!force && saving) return;
-    setShowForm(false);
+  // Filtrar Módulos pelo Formador selecionado
+  const availableModules = useMemo(() => {
+    if (!formData.selectedFormadorId) return [];
+    return turmaModulos.filter(tm => Number(tm.formadorId) === Number(formData.selectedFormadorId));
+  }, [turmaModulos, formData.selectedFormadorId]);
+
+  async function handleNext() {
+    // --- VALIDAÇÃO PASSO 1 (TEMPO) ---
+    if (step === 1) {
+        if (!formData.inicioTime || !formData.fimTime) return setWizardError("Define o horário.");
+        if (formData.inicioTime >= formData.fimTime) return setWizardError("A hora de fim deve ser superior ao início.");
+        
+        // Verificar Disponibilidade no Backend
+        setCheckingAvailability(true);
+        setWizardError("");
+        try {
+            const startIso = dateTimeToIsoUtc(formData.inicioDate, formData.inicioTime);
+            const endIso = dateTimeToIsoUtc(formData.fimDate, formData.fimTime);
+            
+            // Endpoint que criámos no backend
+            const res = await api.get(`/Sessoes/check-availability/turma/${selectedTurmaId}?start=${startIso}&end=${endIso}`);
+            
+            setFormadoresStatus(res.data);
+            setStep(p => p + 1); // Avança
+        } catch (err) {
+            setWizardError(extractError(err, "Erro ao verificar disponibilidades."));
+        } finally {
+            setCheckingAvailability(false);
+        }
+        return; 
+    }
+    
+    // --- VALIDAÇÃO PASSO 2 (FORMADOR) ---
+    if (step === 2) {
+        if (!formData.selectedFormadorId) return setWizardError("Seleciona um formador disponível.");
+    }
+
+    // --- VALIDAÇÃO PASSO 3 (MÓDULO) ---
+    if (step === 3) {
+        if (!formData.turmaModuloId) return setWizardError("Seleciona o módulo.");
+    }
+
+    setWizardError("");
+    setStep(p => p + 1);
   }
 
-  function onChange(e) {
-    const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
-  }
+  async function handleSubmit() {
+    setSaving(true);
+    setWizardError("");
 
-  const canSubmit = useMemo(() => {
-    const turmaId = Number(form.turmaId);
-    const turmaModuloId = Number(form.turmaModuloId);
-    const salaId = Number(form.salaId);
-
-    if (!Number.isFinite(turmaId) || turmaId <= 0) return false;
-    if (!Number.isFinite(turmaModuloId) || turmaModuloId <= 0) return false;
-    if (!Number.isFinite(salaId) || salaId <= 0) return false;
-
-    const i = dateTimeToIsoUtc(form.inicioDate, form.inicioTime);
-    const f = dateTimeToIsoUtc(form.fimDate, form.fimTime);
-    if (!i || !f) return false;
-    if (new Date(f) <= new Date(i)) return false;
-
-    const clashes = sessions.some((s) =>
-      overlaps(i, f, s?.horarioInicio, s?.horarioFim)
-    );
-    if (clashes) return false;
-
-    return true;
-  }, [form, sessions]);
-
-  async function createSession(e) {
-    e.preventDefault();
-    setError("");
-
-    const turmaModuloId = Number(form.turmaModuloId);
-    const salaId = Number(form.salaId);
-
-    const inicioIso = dateTimeToIsoUtc(form.inicioDate, form.inicioTime);
-    const fimIso = dateTimeToIsoUtc(form.fimDate, form.fimTime);
-
-    if (!inicioIso || !fimIso) return;
+    const start = dateTimeToIsoUtc(formData.inicioDate, formData.inicioTime);
+    const end = dateTimeToIsoUtc(formData.fimDate, formData.fimTime);
 
     const payload = {
-      TurmaModuloId: turmaModuloId,
-      SalaId: salaId,
-      HorarioInicio: inicioIso,
-      HorarioFim: fimIso,
+        TurmaModuloId: Number(formData.turmaModuloId),
+        SalaId: Number(formData.salaId),
+        HorarioInicio: start,
+        HorarioFim: end
     };
 
-    setSaving(true);
     try {
-      await api.post("/Sessoes", payload);
-      closeForm(true);
-      await loadWeekSessions();
+        await api.post("/Sessoes", payload);
+        setShowModal(false);
+        loadSessions(); // Recarregar calendário
     } catch (err) {
-      setError(extractError(err, "Erro ao criar sessão."));
+        setWizardError(extractError(err, "Erro ao criar sessão."));
     } finally {
-      setSaving(false);
+        setSaving(false);
     }
   }
 
   async function deleteSession(id) {
-    if (!window.confirm(`Eliminar a sessão #${id}?`)) return;
-
-    setError("");
+    if(!window.confirm("Tens a certeza que queres eliminar esta sessão?")) return;
     try {
-      await api.delete(`/Sessoes/${id}`);
-      setSessions((prev) => prev.filter((x) => Number(x?.id) !== Number(id)));
-    } catch (err) {
-      setError(extractError(err, "Erro ao eliminar sessão."));
+        await api.delete(`/Sessoes/${id}`);
+        setSessions(prev => prev.filter(s => s.id !== id));
+    } catch (e) {
+        alert("Erro ao apagar");
     }
   }
 
-  /* ------------------------ Filtering / Rendering ------------------------ */
+  /* ------------------------ Render Steps ------------------------ */
 
-  const sessionsFiltered = useMemo(() => {
-    const s = search.trim().toLowerCase();
-    const list = Array.isArray(sessions) ? sessions : [];
-    if (!s) return list;
+  function renderStepContent() {
+    switch (step) {
+        case 1: // TEMPO
+            return (
+                <div className="space-y-6 pt-4">
+                    <p className="text-gray-400 text-sm">Define o dia e o intervalo de horário da sessão.</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Dia Início</label>
+                            <input type="date" className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-emerald-500 outline-none"
+                                value={formData.inicioDate}
+                                onChange={e => setFormData({...formData, inicioDate: e.target.value, fimDate: e.target.value})} 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Dia Fim</label>
+                            <input type="date" className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-emerald-500 outline-none"
+                                value={formData.fimDate}
+                                onChange={e => setFormData({...formData, fimDate: e.target.value})} 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Hora Início</label>
+                            <input type="time" className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-emerald-500 outline-none"
+                                value={formData.inicioTime}
+                                onChange={e => setFormData({...formData, inicioTime: e.target.value})} 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Hora Fim</label>
+                            <input type="time" className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-emerald-500 outline-none"
+                                value={formData.fimTime}
+                                onChange={e => setFormData({...formData, fimTime: e.target.value})} 
+                            />
+                        </div>
+                    </div>
+                </div>
+            );
 
-    return list.filter((x) => {
-      const turma = String(x?.turmaNome ?? "").toLowerCase();
-      const mod = String(x?.moduloNome ?? "").toLowerCase();
-      const formador = String(x?.formadorNome ?? "").toLowerCase();
-      const sala = String(x?.salaNome ?? "").toLowerCase();
-      const id = String(x?.id ?? "");
-      return turma.includes(s) || mod.includes(s) || formador.includes(s) || sala.includes(s) || id.includes(s);
-    });
-  }, [sessions, search]);
+        case 2: // FORMADORES (COM DISPONIBILIDADE)
+            return (
+                <div className="pt-2">
+                    <p className="text-gray-400 text-sm mb-4">A verificar quem está disponível neste horário...</p>
+                    
+                    {checkingAvailability ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                             <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                             <span className="text-emerald-500 animate-pulse">A consultar base de dados...</span>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-3">
+                            {formadoresStatus.map(f => {
+                                const isAvailable = f.disponivel;
+                                const isSelected = Number(formData.selectedFormadorId) === f.formadorId;
+
+                                return (
+                                    <button
+                                        key={f.formadorId}
+                                        disabled={!isAvailable}
+                                        onClick={() => setFormData({...formData, selectedFormadorId: f.formadorId})}
+                                        className={`flex items-center justify-between p-4 rounded-xl border transition-all text-left group
+                                            ${!isAvailable 
+                                                ? "bg-red-900/10 border-red-900/30 opacity-70 cursor-not-allowed" 
+                                                : isSelected
+                                                    ? "bg-emerald-900/20 border-emerald-500 ring-1 ring-emerald-500"
+                                                    : "bg-gray-800/40 border-gray-700 hover:bg-gray-800 hover:border-gray-500 cursor-pointer"
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold transition-colors shrink-0
+                                                ${!isAvailable 
+                                                    ? "bg-red-900/30 text-red-400" 
+                                                    : "bg-gray-700 text-gray-300 group-hover:bg-emerald-600 group-hover:text-white"}`}>
+                                                {f.avatar ? <img src={f.avatar} className="w-full h-full rounded-full object-cover"/> : f.formadorNome.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <div className={`font-bold text-lg ${!isAvailable ? "text-gray-400" : "text-white"}`}>
+                                                    {f.formadorNome}
+                                                </div>
+                                                <div className="text-sm mt-0.5">
+                                                    {!isAvailable 
+                                                        ? <span className="text-red-400 flex items-center gap-1">⛔ {f.motivoIndisponibilidade}</span> 
+                                                        : <span className="text-emerald-400 flex items-center gap-1">✅ Disponível</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {isSelected && <div className="text-emerald-500 text-2xl">✓</div>}
+                                    </button>
+                                );
+                            })}
+                            
+                            {formadoresStatus.length === 0 && (
+                                 <div className="p-8 text-center text-gray-500 border border-dashed border-gray-700 rounded-xl">
+                                    Nenhum formador associado a esta turma.
+                                 </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+
+        case 3: // MÓDULOS
+            return (
+                <div className="pt-2">
+                    <p className="text-gray-400 text-sm mb-4">Seleciona o módulo a lecionar:</p>
+                    <div className="space-y-3">
+                        {availableModules.map(tm => {
+                            const isSelected = Number(formData.turmaModuloId) === tm.id;
+                            return (
+                                <button
+                                    key={tm.id}
+                                    onClick={() => setFormData({...formData, turmaModuloId: tm.id})}
+                                    className={`w-full text-left p-4 rounded-xl border transition-all
+                                        ${isSelected 
+                                            ? "bg-blue-900/20 border-blue-500 ring-1 ring-blue-500" 
+                                            : "bg-gray-800/40 border-gray-700 hover:bg-gray-800 hover:border-gray-500"}`}
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <div className={`font-bold text-lg ${isSelected ? "text-blue-400" : "text-gray-200"}`}>
+                                            {tm.moduloNome || tm.nomeModulo}
+                                        </div>
+                                        {isSelected && <div className="text-blue-500 text-xl">✓</div>}
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                        Carga Horária Total: {tm.cargaHorariaModulo || "--"}h
+                                    </div>
+                                </button>
+                            );
+                        })}
+                        {availableModules.length === 0 && (
+                            <div className="p-4 text-center text-gray-500">
+                                Este formador não tem módulos nesta turma.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+
+        case 4: // SALA
+            return (
+                <div className="pt-2">
+                    <p className="text-gray-400 text-sm mb-4">Seleciona a sala:</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                        {salas.map(s => {
+                            const isSelected = Number(formData.salaId) === s.id;
+                            return (
+                                <button
+                                    key={s.id}
+                                    onClick={() => setFormData({...formData, salaId: s.id})}
+                                    className={`p-4 rounded-xl border text-center transition-all flex flex-col items-center justify-center min-h-[100px]
+                                        ${isSelected 
+                                            ? "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-900/20" 
+                                            : "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500 hover:bg-gray-700"}`}
+                                >
+                                    <div className="font-bold text-lg">{s.nome}</div>
+                                    <div className={`text-xs mt-1 ${isSelected ? "text-emerald-100" : "text-gray-500"}`}>
+                                        {s.tipo || "Geral"} • {s.capacidade} lug.
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        default: return null;
+    }
+  }
+
+  /* ------------------------ Main Render ------------------------ */
 
   const slots = useMemo(() => {
-    const start = timeToMinutes(dayStart);
-    const end = timeToMinutes(dayEnd);
-    const step = Math.max(15, Number(slotMins) || 60);
-
-    const out = [];
-    for (let m = start; m < end; m += step) {
-      out.push({
-        start: minutesToTime(m),
-        end: minutesToTime(Math.min(m + step, end)),
-      });
+    const arr = [];
+    for(let h=8; h<23; h++) {
+        arr.push({ start: `${String(h).padStart(2,'0')}:00`, end: `${String(h+1).padStart(2,'0')}:00` });
     }
-    return out;
-  }, [dayStart, dayEnd, slotMins]);
+    return arr;
+  }, []);
 
-  function slotHasSession(dayDate, slotStart, slotEnd) {
-    const startIso = dateTimeToIsoUtc(toYmd(dayDate), slotStart);
-    const endIso = dateTimeToIsoUtc(toYmd(dayDate), slotEnd);
-    if (!startIso || !endIso) return null;
-
-    const found = sessionsFiltered.find((s) =>
-      overlaps(startIso, endIso, s?.horarioInicio, s?.horarioFim)
+  function getSessionInSlot(date, slotStart) {
+    const slotIso = dateTimeToIsoUtc(toYmd(date), slotStart);
+    // Margem de tolerância de 1 min para visualização
+    return sessions.find(s => 
+        new Date(s.horarioInicio) <= new Date(slotIso) && 
+        new Date(s.horarioFim) > new Date(new Date(slotIso).getTime() + 60000)
     );
-    return found || null;
   }
 
-  const selectedTurmaName = useMemo(() => {
-    const t = turmas.find((x) => String(x.id) === String(selectedTurmaId));
-    return t?.nome ?? (selectedTurmaId ? `Turma #${selectedTurmaId}` : "—");
-  }, [turmas, selectedTurmaId]);
-
-  const isToday = (date) => sameDay(date, new Date());
-
-  /* ------------------------ UI ------------------------ */
+  const selectedTurmaName = turmas.find(t => String(t.id) === String(selectedTurmaId))?.nome || "Turma";
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a]">
+    <div className="min-h-screen bg-[#0a0e1a] text-gray-100 font-sans selection:bg-emerald-500/30">
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
-        .animate-slideUp { animation: slideUp 0.3s ease-out; }
-        
-        .custom-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1a1f2e; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #2d3548; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3d4558; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
       `}</style>
 
       {/* Header */}
-      <div className="bg-[#0f1419] border-b border-gray-800 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight mb-1">
-                📅 Gestão de Sessões
-              </h1>
-              <p className="text-sm text-gray-400">
-                Coordenador: escolhe a turma → marca aulas numa grelha semanal
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="px-5 py-2.5 rounded-lg border border-gray-700 text-gray-300
-                           hover:bg-gray-800 transition-all duration-200 font-medium"
-              >
-                ← Voltar
-              </button>
-
-              {isAdminLike && (
-                <button
-                  type="button"
-                  onClick={() => setUiMode((p) => (p === "calendar" ? "list" : "calendar"))}
-                  className="px-5 py-2.5 rounded-lg border border-emerald-600
-                             bg-emerald-600/10 text-emerald-400
-                             hover:bg-emerald-600/20
-                             transition-all duration-200 font-medium"
-                >
-                  {uiMode === "calendar" ? "📋 Listagem" : "📅 Calendário"}
-                </button>
-              )}
-            </div>
-          </div>
+      <div className="sticky top-0 z-20 bg-[#0f1419]/90 backdrop-blur border-b border-gray-800 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+            <h1 className="text-xl font-bold flex items-center gap-2 text-white">
+                <span className="text-2xl">📅</span> Gestão de Horários
+                {loadingBase && <span className="text-xs text-emerald-500 animate-pulse ml-2">A carregar...</span>}
+            </h1>
+            <p className="text-xs text-gray-500 mt-1">
+                Coordenador: <span className="text-gray-300">{jwt?.unique_name || "Utilizador"}</span>
+            </p>
         </div>
-      </div>
-
-      {/* Content */}
-      <div className="container mx-auto px-6 py-6">
-        {error && (
-          <div className="bg-red-900/20 border-l-4 border-red-500 text-red-300 px-6 py-4 rounded-lg mb-6 text-sm flex items-start gap-3">
-            <span className="text-xl">⚠️</span>
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Controls */}
-        <div className="bg-[#0f1419] border border-gray-800 rounded-xl p-5 mb-4">
-          <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
-            <div className="flex-1">
-              <div className="text-xs font-bold text-emerald-400 mb-2 uppercase tracking-wider">
-                Turma
-              </div>
-
-              <select
-                value={selectedTurmaId}
-                onChange={(e) => setSelectedTurmaId(e.target.value)}
-                className="w-full border border-gray-700 rounded-lg px-4 py-3
-                           bg-[#1a1f2e] text-white
-                           focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                disabled={loadingBase}
-              >
-                <option value="">Seleciona uma turma...</option>
-                {turmas.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.nome ?? `Turma #${t.id}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-wrap gap-3 items-center">
-              <div className="flex items-center gap-2 bg-[#1a1f2e] px-3 py-2 rounded-lg">
-                <span className="text-xs font-bold text-gray-400">Início</span>
-                <input
-                  type="time"
-                  value={dayStart}
-                  onChange={(e) => setDayStart(e.target.value)}
-                  className="border border-gray-700 rounded-lg px-2 py-1.5 bg-[#0f1419] text-white text-sm"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 bg-[#1a1f2e] px-3 py-2 rounded-lg">
-                <span className="text-xs font-bold text-gray-400">Fim</span>
-                <input
-                  type="time"
-                  value={dayEnd}
-                  onChange={(e) => setDayEnd(e.target.value)}
-                  className="border border-gray-700 rounded-lg px-2 py-1.5 bg-[#0f1419] text-white text-sm"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 bg-[#1a1f2e] px-3 py-2 rounded-lg">
-                <span className="text-xs font-bold text-gray-400">Slot</span>
-                <select
-                  value={slotMins}
-                  onChange={(e) => setSlotMins(Number(e.target.value))}
-                  className="border border-gray-700 rounded-lg px-2 py-1.5 bg-[#0f1419] text-white text-sm"
+        
+        <div className="flex flex-wrap items-center gap-3">
+            {/* Seletor de Turma */}
+            <div className="relative">
+                <select 
+                    className="appearance-none bg-[#1a1f2e] border border-gray-700 rounded-lg px-4 py-2 pr-8 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-white min-w-[200px]"
+                    value={selectedTurmaId}
+                    onChange={e => setSelectedTurmaId(e.target.value)}
+                    disabled={loadingBase}
                 >
-                  <option value={30}>30min</option>
-                  <option value={60}>1h</option>
-                  <option value={90}>1h30</option>
+                    {turmas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                    {turmas.length === 0 && <option value="">Sem turmas atribuídas</option>}
                 </select>
-              </div>
-
-              <div className="h-8 w-px bg-gray-700"></div>
-
-              <button
-                type="button"
-                onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}
-                className="px-3 py-2 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition text-sm"
-              >
-                ← Semana
-              </button>
-              <button
-                type="button"
-                onClick={() => setWeekAnchor(new Date())}
-                className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition text-sm"
-              >
-                Hoje
-              </button>
-              <button
-                type="button"
-                onClick={() => setWeekAnchor(addDays(weekAnchor, 7))}
-                className="px-3 py-2 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition text-sm"
-              >
-                Semana →
-              </button>
-
-              <button
-                type="button"
-                onClick={loadWeekSessions}
-                className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm"
-                disabled={loadingSessions || !selectedTurmaId}
-              >
-                {loadingSessions ? "🔄" : "Recarregar"}
-              </button>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">▼</div>
             </div>
-          </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3 text-sm text-gray-400">
-              <span className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span className="text-white font-medium">{selectedTurmaName}</span>
-              </span>
-              <span className="text-gray-600">•</span>
-              <span>{toYmd(weekStart)} → {toYmd(addDays(weekStart, 6))}</span>
+            {/* Controles de Semana */}
+            <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
+                <button onClick={() => setWeekAnchor(addDays(weekAnchor, -7))} className="px-3 py-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition">←</button>
+                <button onClick={() => setWeekAnchor(new Date())} className="px-3 py-1 text-xs font-bold hover:bg-gray-700 rounded text-gray-300 hover:text-white transition border-l border-r border-gray-700 mx-1">Hoje</button>
+                <button onClick={() => setWeekAnchor(addDays(weekAnchor, 7))} className="px-3 py-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition">→</button>
             </div>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="🔍 Pesquisar..."
-              className="w-full sm:w-[300px] border border-gray-700 rounded-lg px-4 py-2
-                         bg-[#1a1f2e] text-white placeholder:text-gray-500
-                         focus:ring-2 focus:ring-blue-500 text-sm"
-            />
-          </div>
+
+            <button onClick={() => navigate("/dashboard")} className="px-4 py-2 border border-gray-700 rounded-lg hover:bg-gray-800 text-sm text-gray-300 transition">
+                Sair
+            </button>
         </div>
-
-        {/* CALENDAR MODE */}
-        {uiMode === "calendar" && (
-          <div className="bg-[#0f1419] border border-gray-800 rounded-xl overflow-hidden">
-            <div className="overflow-auto custom-scrollbar">
-              <table className="min-w-full border-collapse">
-                <thead className="bg-[#1a1f2e] border-b border-gray-800 sticky top-0 z-10">
-                  <tr>
-                    <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-400 py-4 px-4 w-[90px] border-r border-gray-800">
-                      Hora
-                    </th>
-                    {weekDays.map((d, idx) => {
-                      const today = isToday(d);
-                      return (
-                        <th
-                          key={idx}
-                          className={`text-center text-xs font-bold uppercase tracking-wider py-4 px-3 min-w-[140px] border-r border-gray-800 last:border-r-0
-                                     ${today ? 'bg-emerald-900/20 text-emerald-400' : 'text-gray-400'}`}
-                        >
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span>{WEEK_DAYS[idx]}</span>
-                            <span className="text-[10px] font-normal opacity-60">
-                              {String(d.getDate()).padStart(2, '0')}/{String(d.getMonth() + 1).padStart(2, '0')}
-                            </span>
-                          </div>
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {slots.map((slot) => (
-                    <tr 
-                      key={slot.start} 
-                      className="border-b border-gray-800/50 hover:bg-gray-900/20 transition-colors"
-                    >
-                      <td className="py-2 px-3 text-xs font-medium text-gray-400 bg-[#1a1f2e] border-r border-gray-800">
-                        {slot.start}
-                      </td>
-
-                      {weekDays.map((d, idx) => {
-                        const hit = slotHasSession(d, slot.start, slot.end);
-                        const today = isToday(d);
-
-                        return (
-                          <td 
-                            key={idx} 
-                            className={`p-1 align-top border-r border-gray-800/30 last:border-r-0 ${today ? 'bg-emerald-900/5' : ''}`}
-                          >
-                            {hit ? (
-                              <div className={`group relative rounded-lg ${getSessionColor(hit.id).bg} ${getSessionColor(hit.id).text} ${getSessionColor(hit.id).hover}
-                                            p-2.5 transition-all duration-200 cursor-pointer h-full min-h-[70px] flex flex-col justify-between`}>
-                                <div>
-                                  <div className="text-xs font-bold mb-1 leading-tight line-clamp-2">
-                                    {hit.moduloNome || "Sessão"}
-                                  </div>
-                                  
-                                  <div className="text-[10px] opacity-90 space-y-0.5">
-                                    <div className="truncate">{hit.formadorNome || "—"}</div>
-                                    <div className="truncate">{hit.salaNome || `Sala #${hit.salaId}`}</div>
-                                  </div>
-                                </div>
-
-                                <div className="text-[9px] opacity-75 mt-1 pt-1 border-t border-white/20">
-                                  {durationLabel(hit.horarioInicio, hit.horarioFim)}
-                                </div>
-
-                                {isAdminLike && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      deleteSession(hit.id);
-                                    }}
-                                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100
-                                             px-1.5 py-0.5 rounded text-[9px] font-bold
-                                             bg-red-600/80 hover:bg-red-600 text-white
-                                             transition-all duration-200"
-                                  >
-                                    ✕
-                                  </button>
-                                )}
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                disabled={!selectedTurmaId || loadingSessions}
-                                onClick={() => openCreateWithSlot(d, slot.start, slot.end)}
-                                className="w-full h-full min-h-[70px] rounded-lg border border-dashed border-gray-700/50
-                                         hover:border-emerald-600 hover:bg-emerald-900/10
-                                         text-gray-700 hover:text-emerald-500
-                                         text-xs transition-all duration-200
-                                         disabled:opacity-20 disabled:cursor-not-allowed
-                                         flex items-center justify-center"
-                              >
-                                <span className="text-base opacity-40 hover:opacity-100 transition-opacity">+</span>
-                              </button>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Legenda */}
-            <div className="border-t border-gray-800 px-5 py-3 bg-[#1a1f2e] flex items-center justify-between">
-              <div className="flex items-center gap-4 text-xs text-gray-400">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-emerald-600"></div>
-                  <span>Disponível</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-gray-700 border border-dashed border-gray-600"></div>
-                  <span>Não definido</span>
-                </div>
-              </div>
-              <div className="text-xs text-gray-500">
-                {sessionsFiltered.length} sessão{sessionsFiltered.length !== 1 ? 'ões' : ''}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* LIST MODE */}
-        {uiMode === "list" && (
-          <div className="bg-[#0f1419] border border-gray-800 rounded-xl overflow-hidden">
-            <table className="min-w-full">
-              <thead className="bg-[#1a1f2e] border-b border-gray-800">
-                <tr>
-                  <th className="text-left text-xs font-bold uppercase text-gray-400 py-4 px-6">Data/Hora</th>
-                  <th className="text-left text-xs font-bold uppercase text-gray-400 py-4 px-6">Módulo</th>
-                  <th className="text-left text-xs font-bold uppercase text-gray-400 py-4 px-6">Formador</th>
-                  <th className="text-left text-xs font-bold uppercase text-gray-400 py-4 px-6">Sala</th>
-                  <th className="text-left text-xs font-bold uppercase text-gray-400 py-4 px-6">Duração</th>
-                  <th className="text-right text-xs font-bold uppercase text-gray-400 py-4 px-6">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {loadingSessions ? (
-                  <tr>
-                    <td colSpan="6" className="py-16 text-center">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-                    </td>
-                  </tr>
-                ) : sessionsFiltered.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="py-16 text-center text-gray-400">Sem sessões</td>
-                  </tr>
-                ) : (
-                  sessionsFiltered.map((s) => (
-                    <tr key={s.id} className="hover:bg-gray-900/20 transition">
-                      <td className="py-4 px-6 text-sm text-white">
-                        <div className="font-bold">{toLocalDateTime(s.horarioInicio)}</div>
-                        <div className="text-xs text-gray-500">até {toLocalDateTime(s.horarioFim)}</div>
-                      </td>
-                      <td className="py-4 px-6 text-sm font-bold text-white">{s.moduloNome || "—"}</td>
-                      <td className="py-4 px-6 text-sm text-gray-300">{s.formadorNome || "—"}</td>
-                      <td className="py-4 px-6 text-sm text-gray-300">{s.salaNome || `#${s.salaId}`}</td>
-                      <td className="py-4 px-6 text-sm text-emerald-400">{durationLabel(s.horarioInicio, s.horarioFim)}</td>
-                      <td className="py-4 px-6 text-right">
-                        <button
-                          onClick={() => deleteSession(s.id)}
-                          className="px-3 py-1.5 rounded text-xs font-bold text-red-400 bg-red-900/20 hover:bg-red-900/30"
-                        >
-                          Eliminar
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
 
-      {/* Modal */}
-      {showForm && (
-        <Modal title="✨ Marcar Sessão" onClose={() => closeForm(false)} disableClose={saving}>
-          <form onSubmit={createSession} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <label className="text-sm font-bold text-gray-300 mb-2 block">Turma</label>
-              <input value={selectedTurmaName} disabled className="w-full border border-gray-700 rounded-lg px-4 py-3 bg-gray-800 text-gray-400" />
+      {/* Calendar Grid */}
+      <div className="p-6 overflow-x-auto">
+        <div className="min-w-[900px] border border-gray-800 rounded-2xl bg-[#0f1419] overflow-hidden shadow-2xl">
+            {/* Header Days */}
+            <div className="grid grid-cols-8 border-b border-gray-800 bg-[#161b26]">
+                <div className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-r border-gray-800 flex items-center justify-center">Hora</div>
+                {weekDays.map((d, i) => {
+                    const isToday = toYmd(d) === toYmd(new Date());
+                    return (
+                        <div key={i} className={`p-3 text-center border-r border-gray-800 last:border-none ${isToday ? 'bg-emerald-500/5' : ''}`}>
+                            <div className={`text-sm font-bold ${isToday ? 'text-emerald-400' : 'text-gray-300'}`}>{WEEK_DAYS[i]}</div>
+                            <div className={`text-xs mt-1 ${isToday ? 'text-emerald-500/70' : 'text-gray-500'}`}>{d.getDate()}/{d.getMonth()+1}</div>
+                        </div>
+                    );
+                })}
             </div>
 
-            <div className="md:col-span-2">
-              <label className="text-sm font-bold text-gray-300 mb-2 block">Módulo</label>
-              <select
-                name="turmaModuloId"
-                value={form.turmaModuloId}
-                onChange={onChange}
-                className="w-full border border-gray-700 rounded-lg px-4 py-3 bg-[#1a1f2e] text-white"
-                disabled={saving || loadingTM}
-              >
-                <option value="">{loadingTM ? "A carregar..." : "Seleciona..."}</option>
-                {turmaModulos.map((tm) => (
-                  <option key={tm.id} value={tm.id}>{tmLabel(tm)}</option>
-                ))}
-              </select>
-            </div>
+            {/* Slots */}
+            {loadingSessions ? (
+                <div className="p-20 flex flex-col items-center justify-center text-gray-500">
+                    <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p>A carregar calendário...</p>
+                </div>
+            ) : (
+                slots.map((slot) => (
+                    <div key={slot.start} className="grid grid-cols-8 border-b border-gray-800/50 hover:bg-gray-900/30 transition-colors min-h-[80px]">
+                        {/* Time Label */}
+                        <div className="p-2 text-xs text-gray-600 border-r border-gray-800 flex items-center justify-center font-mono bg-[#11161f]">
+                            {slot.start}
+                        </div>
+                        
+                        {/* Days Columns */}
+                        {weekDays.map((d, i) => {
+                            const sess = getSessionInSlot(d, slot.start);
+                            const isSlotToday = toYmd(d) === toYmd(new Date());
 
-            <div className="md:col-span-2">
-              <label className="text-sm font-bold text-gray-300 mb-2 block">Sala</label>
-              <select
-                name="salaId"
-                value={form.salaId}
-                onChange={onChange}
-                className="w-full border border-gray-700 rounded-lg px-4 py-3 bg-[#1a1f2e] text-white"
-                disabled={saving}
-              >
-                <option value="">Seleciona...</option>
-                {salas.map((s) => (
-                  <option key={s.id} value={s.id}>{s.nome || `Sala #${s.id}`}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-gray-300 mb-2 block">Data Início</label>
-              <input type="date" name="inicioDate" value={form.inicioDate} onChange={onChange}
-                className="w-full border border-gray-700 rounded-lg px-4 py-3 bg-[#1a1f2e] text-white" disabled={saving} />
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-gray-300 mb-2 block">Hora Início</label>
-              <input type="time" name="inicioTime" value={form.inicioTime} onChange={onChange}
-                className="w-full border border-gray-700 rounded-lg px-4 py-3 bg-[#1a1f2e] text-white" disabled={saving} />
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-gray-300 mb-2 block">Data Fim</label>
-              <input type="date" name="fimDate" value={form.fimDate} onChange={onChange}
-                className="w-full border border-gray-700 rounded-lg px-4 py-3 bg-[#1a1f2e] text-white" disabled={saving} />
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-gray-300 mb-2 block">Hora Fim</label>
-              <input type="time" name="fimTime" value={form.fimTime} onChange={onChange}
-                className="w-full border border-gray-700 rounded-lg px-4 py-3 bg-[#1a1f2e] text-white" disabled={saving} />
-            </div>
-
-            {error && (
-              <div className="md:col-span-2 bg-red-900/20 border-l-4 border-red-500 text-red-300 px-4 py-3 rounded text-sm">
-                {error}
-              </div>
+                            return (
+                                <div key={i} className={`border-r border-gray-800/50 last:border-none relative p-1 transition-colors ${isSlotToday ? 'bg-emerald-500/5' : ''}`}>
+                                    {sess ? (
+                                        <div className={`w-full h-full rounded-lg ${getSessionColor(sess.id).bg} p-2 text-xs shadow-lg relative group overflow-hidden border border-white/10`}>
+                                            <div className="font-bold truncate text-white text-[11px] leading-tight mb-0.5">{sess.moduloNome}</div>
+                                            <div className="text-[10px] text-white/80 truncate mb-2">{sess.formadorNome}</div>
+                                            
+                                            <div className="absolute bottom-1.5 left-2 right-2 flex justify-between items-end text-[9px] text-white/70 border-t border-white/20 pt-1">
+                                                <span>{sess.salaNome}</span>
+                                                <span>{sess.horarioInicio.split('T')[1].substring(0,5)}</span>
+                                            </div>
+                                            
+                                            {/* Delete Button */}
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); deleteSession(sess.id); }}
+                                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-black/40 hover:bg-red-600 rounded p-1 text-white transition-all transform scale-90 group-hover:scale-100"
+                                                title="Eliminar sessão"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button 
+                                            onClick={() => openWizard(d, slot.start, slot.end)}
+                                            className="w-full h-full opacity-0 hover:opacity-100 flex items-center justify-center group"
+                                        >
+                                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold text-xl group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-lg transform scale-0 group-hover:scale-100">
+                                                +
+                                            </div>
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                ))
             )}
+        </div>
+      </div>
 
-            <div className="md:col-span-2 flex justify-end gap-3 pt-4 border-t border-gray-800">
-              <button
-                type="button"
-                onClick={() => closeForm(false)}
-                className="px-6 py-2.5 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800"
-                disabled={saving}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-8 py-2.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold
-                           hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
-                disabled={saving || !canSubmit}
-              >
-                {saving ? "A criar..." : "Marcar"}
-              </button>
+      {/* WIZARD MODAL */}
+      {showModal && (
+        <Modal title={`Nova Sessão - ${selectedTurmaName}`} onClose={() => setShowModal(false)} disableClose={saving}>
+            <div className="px-6 pb-6 pt-2 h-full flex flex-col">
+                {/* Steps Indicator */}
+                <div className="flex items-center justify-between mb-8 px-4">
+                    {[1,2,3,4].map(s => (
+                        <div key={s} className="flex items-center relative z-10">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all
+                                ${step === s ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-110' : 
+                                  step > s ? 'bg-emerald-900/30 border-emerald-600 text-emerald-500' : 'bg-[#1a1f2e] border-gray-700 text-gray-500'}`}>
+                                {step > s ? '✓' : s}
+                            </div>
+                            {/* Linha de conexão */}
+                            {s < 4 && (
+                                <div className={`absolute left-10 w-[calc(100vw/8)] sm:w-24 h-0.5 -z-10 
+                                    ${step > s ? 'bg-emerald-800' : 'bg-gray-800'}`} 
+                                />
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Content Area */}
+                <div className="flex-1 min-h-[300px]">
+                    {renderStepContent()}
+                </div>
+
+                {/* Error Message */}
+                {wizardError && (
+                    <div className="mt-4 p-3 bg-red-500/10 text-red-300 text-sm rounded-lg border border-red-500/20 flex items-center gap-2 animate-pulse">
+                        ⚠️ {wizardError}
+                    </div>
+                )}
+
+                {/* Footer Buttons */}
+                <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-800">
+                    <button 
+                        onClick={() => step === 1 ? setShowModal(false) : setStep(s => s - 1)}
+                        disabled={saving}
+                        className="px-6 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition font-medium text-sm"
+                    >
+                        {step === 1 ? "Cancelar" : "← Voltar"}
+                    </button>
+                    
+                    {step < 4 ? (
+                        <button 
+                            onClick={handleNext}
+                            disabled={checkingAvailability}
+                            className="px-8 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition shadow-lg shadow-emerald-900/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {checkingAvailability ? "A verificar..." : "Continuar →"}
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={handleSubmit}
+                            disabled={!formData.salaId || saving}
+                            className="px-8 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold transition shadow-lg disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {saving ? (
+                                <>
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                    A criar...
+                                </>
+                            ) : "Confirmar Marcação ✅"}
+                        </button>
+                    )}
+                </div>
             </div>
-          </form>
         </Modal>
       )}
     </div>

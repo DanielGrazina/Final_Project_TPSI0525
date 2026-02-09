@@ -81,5 +81,16 @@ namespace SecManagement_API.Controllers
 
             return Ok(new { message = "Sessão apagada", horasRestantes = horasRestantes });
         }
+
+        [HttpGet("check-availability/turma/{turmaId}")]
+        public async Task<ActionResult<List<FormadorDisponibilidadeDto>>> CheckAvailability(int turmaId, DateTime start, DateTime end)
+        {
+            // Forçar UTC para garantir consistência
+            start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
+            end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
+
+            var result = await _service.CheckDisponibilidadeFormadoresAsync(turmaId, start, end);
+            return Ok(result);
+        }
     }
 }
