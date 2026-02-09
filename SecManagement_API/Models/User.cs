@@ -33,7 +33,9 @@ namespace SecManagement_API.Models
         public string Role { get; set; } = "User";
 
         public string? TwoFactorSecret { get; set; }
-        public bool IsTwoFactorEnabled { get; set; } 
+        public bool IsTwoFactorEnabled { get; set; }
+
+        public string? BackupCodes { get; set; }
 
         public Formador? FormadorProfile { get; set; }
         public Formando? FormandoProfile { get; set; }

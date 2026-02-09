@@ -160,24 +160,74 @@ namespace SecManagement_API.Services
             return "Password alterada com sucesso.";
         }
 
-        public async Task<string> EnableTwoFactorAsync(int userId)
+        public async Task<TwoFactorSetupDto> SetupTwoFactorAsync(int userId)
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null) throw new Exception("User não encontrado.");
 
+            // 1. Gerar nova chave
             var key = KeyGeneration.GenerateRandomKey(20);
             var secret = Base32Encoding.ToString(key);
 
+            // 2. Guardar o segredo, mas MANTER O 2FA DESATIVADO por enquanto
             user.TwoFactorSecret = secret;
-            user.IsTwoFactorEnabled = true;
+            user.IsTwoFactorEnabled = false; // <--- O segredo do sucesso!
 
             await _context.SaveChangesAsync();
 
-            // QR content
-            return $"otpauth://totp/ATEC:{user.Email}?secret={secret}&issuer=ATEC_FinalProject";
+            // 3. Formatar URL para QR Code
+            // Formato: otpauth://totp/Issuer:Email?secret=Secret&issuer=Issuer
+            string qrCodeUrl = $"otpauth://totp/ATEC:{user.Email}?secret={secret}&issuer=ATEC_FinalProject";
+
+            return new TwoFactorSetupDto
+            {
+                QrCodeUrl = qrCodeUrl,
+                ManualEntryKey = secret
+            };
         }
 
-        // ✅ ALTERADO: suporta 2FA também no login social
+        public async Task<TwoFactorRecoveryDto> ConfirmTwoFactorAsync(int userId, string code)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) throw new Exception("User não encontrado.");
+
+            if (string.IsNullOrEmpty(user.TwoFactorSecret))
+                throw new Exception("Configuração de 2FA não iniciada.");
+
+            // 1. Validar o código TOTP com o segredo que está "pendente"
+            var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
+
+            // O OtpNet precisa de verificar janelas de tempo (drift)
+            // VerificationWindow(2, 2) aceita códigos de +- 60 segundos atrás/frente
+            bool valid = totp.VerifyTotp(code.Trim(), out long timeStepMatched, new VerificationWindow(2, 2));
+
+            if (!valid)
+                throw new Exception("Código inválido. Tente novamente.");
+
+            // 2. Se válido: ATIVAR 2FA
+            user.IsTwoFactorEnabled = true;
+
+            // 3. Gerar Códigos de Recuperação (10 códigos de 8 caracteres)
+            var codes = new List<string>();
+            for (int i = 0; i < 10; i++)
+            {
+                // Gera string aleatória segura (podes usar Guid ou RandomNumberGenerator)
+                var recoveryCode = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(4));
+                codes.Add(recoveryCode);
+            }
+
+            // Guardar na BD como string separada por ';'
+            user.BackupCodes = string.Join(";", codes);
+
+            await _context.SaveChangesAsync();
+
+            return new TwoFactorRecoveryDto
+            {
+                BackupCodes = codes,
+                Message = "2FA ativado com sucesso! Guarde estes códigos de recuperação num local seguro."
+            };
+        }
+
         public async Task<AuthResponseDto> SocialLoginAsync(
             string email,
             string provider,
