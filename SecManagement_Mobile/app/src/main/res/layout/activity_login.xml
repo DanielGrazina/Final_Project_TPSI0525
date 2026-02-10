@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".LoginActivity">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_gradient_dark">
+
+        <!-- blobs decorativos -->
+        <View
+            android:layout_width="260dp"
+            android:layout_height="260dp"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="-60dp"
+            android:layout_marginEnd="-60dp"
+            android:background="@drawable/blob_blue" />
+
+        <View
+            android:layout_width="260dp"
+            android:layout_height="260dp"
+            android:layout_gravity="bottom|start"
+            android:layout_marginStart="-60dp"
+            android:layout_marginBottom="-60dp"
+            android:background="@drawable/blob_purple" />
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="6dp"
+                    app:cardCornerRadius="22dp"
+                    app:cardElevation="10dp"
+                    app:cardBackgroundColor="@color/cardDark"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#1FFFFFFF">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="22dp">
+
+                        <!-- Logo -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="64dp"
+                            android:layout_height="64dp"
+                            android:layout_gravity="center_horizontal"
+                            app:cardCornerRadius="18dp"
+                            app:cardElevation="8dp"
+                            app:cardBackgroundColor="@android:color/transparent"
+                            app:strokeWidth="0dp">
+
+
+                        <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@drawable/btn_gradient"
+                                android:gravity="center"
+                                android:text="AM"
+                                android:textColor="@android:color/white"
+                                android:textSize="22sp"
+                                android:textStyle="bold" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_horizontal"
+                            android:layout_marginTop="14dp"
+                            android:text="ATEC Gestão"
+                            android:textSize="24sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/textPrimary"
+                            />
+
+                        <TextView
+                            android:id="@+id/txtSubtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_horizontal"
+                            android:layout_marginTop="6dp"
+                            android:text="Bem-vindo de volta"
+                            android:textSize="13sp"
+                            android:textColor="@color/textSecondary"
+                            android:alpha="1"
+                            />
+
+                        <!-- Error box -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardError"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:visibility="gone"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="#FEF2F2"
+                            app:strokeColor="#FECACA"
+                            app:strokeWidth="1dp">
+
+                            <TextView
+                                android:id="@+id/txtError"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="14dp"
+                                android:text="Erro"
+                                android:textColor="#B91C1C"
+                                android:textSize="13sp" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Email -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilEmail"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            app:startIconDrawable="@android:drawable/ic_dialog_email"
+                            app:boxBackgroundMode="filled"
+                            app:boxBackgroundColor="#F9FAFB"
+                            app:boxStrokeColor="@color/brandBlue"
+                            app:hintTextColor="@color/strokeDark"
+                            app:startIconTint="@color/strokeDark">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etEmail"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="Email"
+                                android:inputType="textEmailAddress"
+                                android:textColor="@color/strokeDark"
+                                android:textColorHint="@color/strokeDark"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Password -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilPassword"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            app:startIconDrawable="@android:drawable/ic_lock_lock"
+                            app:endIconMode="password_toggle"
+
+                            app:boxBackgroundMode="filled"
+                            app:boxBackgroundColor="#F9FAFB"
+                            app:boxStrokeColor="@color/brandBlue"
+                            app:hintTextColor="#6B7280"
+                            app:startIconTint="#6B7280"
+                            app:endIconTint="#6B7280"
+                            app:boxStrokeWidth="1dp"
+                            app:boxStrokeWidthFocused="2dp">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etPassword"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="Password"
+                                android:inputType="textPassword"
+                                android:textColor="@color/strokeDark"
+                                android:textColorHint="@color/strokeDark"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+
+
+                        <!-- 2FA (invisível por defeito) -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/til2fa"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:visibility="gone"
+                            app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
+
+                            app:boxBackgroundMode="filled"
+                            app:boxBackgroundColor="#F9FAFB"
+                            app:boxStrokeColor="@color/brandBlue"
+                            app:hintTextColor="#6B7280"
+                            app:startIconTint="#6B7280"
+                            app:boxStrokeWidth="1dp"
+                            app:boxStrokeWidthFocused="2dp">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/et2fa"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="Código 2FA (6 dígitos)"
+                                android:inputType="number"
+                                android:maxLength="6"
+                                android:textColor="@color/strokeDark"
+                                android:textColorHint="@color/strokeDark"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+
+
+                        <!-- Botão -->
+                        <Button
+                            android:id="@+id/btnLogin"
+                            android:layout_width="match_parent"
+                            android:layout_height="52dp"
+                            android:layout_marginTop="16dp"
+                            android:background="@drawable/btn_gradient"
+                            android:text="Entrar"
+                            android:backgroundTint="@null"
+                            android:elevation="6dp"
+                            android:textColor="@android:color/white"
+                            android:textStyle="bold" />
+
+                        <!-- Loading -->
+                        <com.google.android.material.progressindicator.CircularProgressIndicator
+                            android:id="@+id/progress"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_horizontal"
+                            android:layout_marginTop="14dp"
+                            android:visibility="gone" />
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:alpha="0.65"
+                    android:text="ATEC Management • Mobile"
+                    android:textSize="12sp"
+                    android:textColor="@color/textPrimary"/>
+            </LinearLayout>
+        </ScrollView>
+    </FrameLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
