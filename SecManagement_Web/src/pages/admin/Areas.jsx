@@ -1,6 +1,106 @@
+// src/pages/admin/Areas.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import { getToken, getUserRoleFromToken } from "../../utils/auth";
+
+/* ---------------- helpers ---------------- */
+
+function safeStr(x) {
+  return (x ?? "").toString();
+}
+
+function extractError(err, fallback = "Ocorreu um erro.") {
+  const data = err?.response?.data;
+  if (!data) return fallback;
+  if (typeof data === "string") return data;
+  if (typeof data?.message === "string") return data.message;
+
+  if (data?.errors && typeof data.errors === "object") {
+    const k = Object.keys(data.errors)[0];
+    const arr = data.errors[k];
+    if (Array.isArray(arr) && arr.length) return arr[0];
+    return "Dados inválidos.";
+  }
+
+  try {
+    return JSON.stringify(data);
+  } catch {
+    return fallback;
+  }
+}
+
+/* ---------------- UI (uniform) ---------------- */
+
+function HeaderIcon({ icon = "areas" }) {
+  return (
+    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
+      {icon === "areas" ? (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M6 6h5v5H6V6Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+          <path d="M13 6h5v5h-5V6Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+          <path d="M6 13h5v5H6v-5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+          <path d="M13 13h5v5h-5v-5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+        </svg>
+      ) : (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
+function Btn({ children, tone = "neutral", className = "", ...props }) {
+  const map = {
+    neutral:
+      "border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800",
+    blue:
+      "border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-200 dark:hover:bg-blue-950/30",
+    green:
+      "border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900/50 dark:text-emerald-200 dark:hover:bg-emerald-950/30",
+    red:
+      "border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900/50 dark:text-red-200 dark:hover:bg-red-950/30",
+  };
+
+  return (
+    <button
+      type="button"
+      className={[
+        "px-4 py-2 rounded-lg border text-sm font-semibold transition",
+        "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+        map[tone] || map.neutral,
+        className,
+      ].join(" ")}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PrimaryBtn({ children, tone = "blue", className = "", ...props }) {
+  const map = {
+    blue: "from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-500/25",
+    green: "from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-emerald-500/25",
+    red: "from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-red-500/25",
+  };
+
+  return (
+    <button
+      type="button"
+      className={[
+        "px-4 py-2 rounded-lg font-semibold text-white transition",
+        "shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+        `bg-gradient-to-r ${map[tone] || map.blue}`,
+        className,
+      ].join(" ")}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
 
 function Modal({ title, children, onClose, disabled }) {
   return (
@@ -9,383 +109,455 @@ function Modal({ title, children, onClose, disabled }) {
       onClick={() => !disabled && onClose()}
     >
       <div
-        className="w-full max-w-xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border dark:border-gray-800 animate-in fade-in zoom-in duration-200"
+        className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-t-2xl">
-          <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{title}</h3>
-          <button
-            onClick={onClose}
-            disabled={disabled}
-            className="p-2 rounded-lg border hover:bg-gray-100 disabled:opacity-60 transition-colors
-                       dark:border-gray-700 dark:hover:bg-gray-800"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur">
+          <h3 className="font-black text-lg text-gray-900 dark:text-gray-100">{title}</h3>
+          <Btn onClick={onClose} disabled={disabled}>
+            Fechar
+          </Btn>
         </div>
+
         <div className="p-6">{children}</div>
       </div>
     </div>
   );
 }
 
-export default function AdminAreas() {
+/* ---------------- Pagination ---------------- */
+
+function PaginationBar({ total, page, pageSize, onPageChange, onPageSizeChange, disabled }) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+
+  const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const to = Math.min(total, safePage * pageSize);
+
+  const pagesToShow = (() => {
+    const win = 7;
+    const half = Math.floor(win / 2);
+    let start = Math.max(1, safePage - half);
+    let end = Math.min(totalPages, start + win - 1);
+    start = Math.max(1, end - win + 1);
+    const arr = [];
+    for (let p = start; p <= end; p++) arr.push(p);
+    return arr;
+  })();
+
+  return (
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          A mostrar{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{from}</span>–{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{to}</span> de{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{total}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Por página</span>
+          <select
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            disabled={disabled}
+            className="border border-gray-200 dark:border-gray-800 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-900
+                       text-gray-900 dark:text-gray-100 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-60"
+          >
+            {[10, 25, 50, 100].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <Btn onClick={() => onPageChange(1)} disabled={disabled || safePage === 1}>
+          «
+        </Btn>
+        <Btn onClick={() => onPageChange(safePage - 1)} disabled={disabled || safePage === 1}>
+          ‹
+        </Btn>
+
+        {pagesToShow[0] > 1 && (
+          <>
+            <Btn onClick={() => onPageChange(1)} disabled={disabled}>
+              1
+            </Btn>
+            <span className="text-gray-400 px-1">…</span>
+          </>
+        )}
+
+        {pagesToShow.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPageChange(p)}
+            disabled={disabled}
+            className={[
+              "px-3 py-1.5 rounded-lg border text-sm font-semibold transition",
+              "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+              p === safePage
+                ? "bg-blue-600 text-white border-blue-600"
+                : "border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-800",
+            ].join(" ")}
+          >
+            {p}
+          </button>
+        ))}
+
+        {pagesToShow[pagesToShow.length - 1] < totalPages && (
+          <>
+            <span className="text-gray-400 px-1">…</span>
+            <Btn onClick={() => onPageChange(totalPages)} disabled={disabled}>
+              {totalPages}
+            </Btn>
+          </>
+        )}
+
+        <Btn onClick={() => onPageChange(safePage + 1)} disabled={disabled || safePage === totalPages}>
+          ›
+        </Btn>
+        <Btn onClick={() => onPageChange(totalPages)} disabled={disabled || safePage === totalPages}>
+          »
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Page ---------------- */
+
+export default function Areas() {
   const navigate = useNavigate();
 
-  const [areas, setAreas] = useState([]);
+  const token = getToken();
+  const role = getUserRoleFromToken(token) || "User";
 
+  const canManage = role === "Admin" || role === "SuperAdmin";
+
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
 
   const [search, setSearch] = useState("");
 
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
+  // pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
-  const [form, setForm] = useState({ nome: "" });
+  // modal create/edit
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState("create"); // create | edit
+  const [saving, setSaving] = useState(false);
 
-  async function loadAreas() {
+  const [form, setForm] = useState({
+    id: null,
+    nome: "",
+    descricao: "",
+  });
+
+  async function load() {
     setLoading(true);
     setError("");
+    setInfo("");
     try {
       const res = await api.get("/Areas");
-      setAreas(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data || "Falha ao carregar áreas.";
-      setError(typeof msg === "string" ? msg : "Falha ao carregar áreas.");
+      const arr = Array.isArray(res.data) ? res.data : [];
+      setItems(arr);
+    } catch (e) {
+      setError(extractError(e, "Falha ao carregar áreas."));
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadAreas();
+    if (!token) {
+      navigate("/", { replace: true });
+      return;
+    }
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
-    if (!s) return areas;
+    if (!s) return items;
 
-    return areas.filter((a) => {
-      return (
-        String(a.id ?? "").includes(s) ||
-        (a.nome || "").toLowerCase().includes(s)
-      );
+    return items.filter((a) => {
+      const id = safeStr(a.id);
+      const nome = safeStr(a.nome ?? a.name ?? "");
+      const desc = safeStr(a.descricao ?? a.description ?? "");
+      return id.includes(s) || nome.toLowerCase().includes(s) || desc.toLowerCase().includes(s);
     });
-  }, [areas, search]);
+  }, [items, search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, pageSize]);
+
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filtered.length / pageSize)), [filtered.length, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const paged = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
 
   function openCreate() {
-    setEditing(null);
-    setForm({ nome: "" });
-    setShowForm(true);
+    setMode("create");
+    setForm({ id: null, nome: "", descricao: "" });
+    setError("");
+    setInfo("");
+    setOpen(true);
   }
 
   function openEdit(area) {
-    setEditing(area);
-    setForm({ nome: area.nome ?? "" });
-    setShowForm(true);
-  }
-
-  function closeForm() {
-    if (saving) return;
-    setShowForm(false);
-    setEditing(null);
-  }
-
-  function onChange(e) {
-    const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
-  }
-
-  async function saveArea(e) {
-    e.preventDefault();
+    setMode("edit");
+    setForm({
+      id: area.id,
+      nome: safeStr(area.nome ?? area.name ?? ""),
+      descricao: safeStr(area.descricao ?? area.description ?? ""),
+    });
     setError("");
+    setInfo("");
+    setOpen(true);
+  }
+
+  function closeModal() {
+    if (saving) return;
+    setOpen(false);
+  }
+
+  async function save(e) {
+    e.preventDefault();
+    if (!canManage) return;
 
     const nome = form.nome.trim();
-    if (!nome) return alert("O nome da área é obrigatório.");
+    if (!nome) {
+      setError("O nome é obrigatório.");
+      return;
+    }
 
     setSaving(true);
+    setError("");
+    setInfo("");
+
     try {
-      if (editing) {
-        await api.put(`/Areas/${editing.id}`, { nome });
+      const payload = {
+        nome,
+        descricao: form.descricao?.trim() || null,
+      };
+
+      if (mode === "create") {
+        await api.post("/Areas", payload);
+        setInfo("Área criada.");
       } else {
-        await api.post("/Areas", { nome });
+        await api.put(`/Areas/${form.id}`, payload);
+        setInfo("Área atualizada.");
       }
 
-      closeForm();
-      await loadAreas();
-    } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data || "Falha ao guardar área.";
-      setError(typeof msg === "string" ? msg : "Falha ao guardar área.");
+      setOpen(false);
+      await load();
+      setTimeout(() => setInfo(""), 1200);
+    } catch (e2) {
+      setError(extractError(e2, "Falha ao guardar área."));
     } finally {
       setSaving(false);
     }
   }
 
-  async function deleteArea(id) {
-    if (!window.confirm("Tens a certeza que queres apagar esta área?")) return;
+  async function remove(area) {
+    if (!canManage) return;
+    if (!window.confirm(`Apagar a área "${safeStr(area.nome ?? area.name)}"?`)) return;
 
     setError("");
+    setInfo("");
     try {
-      await api.delete(`/Areas/${id}`);
-      setAreas((prev) => prev.filter((a) => a.id !== id));
-    } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data || "Falha ao apagar área.";
-      setError(typeof msg === "string" ? msg : "Falha ao apagar área.");
+      await api.delete(`/Areas/${area.id}`);
+      setInfo("Área apagada.");
+      await load();
+      setTimeout(() => setInfo(""), 1200);
+    } catch (e) {
+      setError(extractError(e, "Falha ao apagar área."));
     }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 border-b dark:border-gray-800 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 dark:border-gray-800 shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <HeaderIcon icon="areas" />
             <div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Áreas</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Gestão de áreas de formação
-                  </p>
-                </div>
-              </div>
+              <h1 className="text-xl font-black text-gray-900 dark:text-gray-100">Áreas</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Gestão de áreas de formação.</p>
             </div>
+          </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="px-4 py-2 rounded-lg border hover:bg-gray-100 transition-colors
-                           dark:border-gray-700 dark:hover:bg-gray-800"
-              >
-                ← Voltar
-              </button>
-
-              <button
-                onClick={openCreate}
-                className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium
-                           hover:from-blue-700 hover:to-blue-800 transition-all
-                           shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40
-                           active:scale-95"
-              >
+          <div className="flex items-center gap-2 flex-wrap">
+            {canManage && (
+              <PrimaryBtn tone="blue" onClick={openCreate} disabled={loading}>
                 + Nova Área
-              </button>
-            </div>
+              </PrimaryBtn>
+            )}
+            <Btn onClick={() => navigate("/dashboard")}>← Voltar</Btn>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
-        {/* Stats Card */}
-        <div className="mb-6 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Total de Áreas</div>
-              <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{areas.length}</div>
-            </div>
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 flex items-center justify-center">
-              <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Toolbar */}
-        <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <div className="flex-1 relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Pesquisar por ID ou nome..."
-                className="w-full pl-10 pr-4 py-2.5 border rounded-lg
-                           bg-gray-50 dark:bg-gray-950 dark:border-gray-800
-                           text-gray-900 dark:text-gray-100 placeholder:text-gray-400
-                           focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-shadow"
-              />
-            </div>
-
-            <div className="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50">
-              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800 rounded-xl p-4 mb-6 flex items-start gap-3">
-            <svg className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="text-sm text-red-700 dark:text-red-300 flex-1">{error}</div>
+        {(error || info) && (
+          <div className="mb-6 space-y-3">
+            {error && (
+              <div className="bg-red-50 border border-red-200 dark:bg-red-950/25 dark:border-red-900/40 rounded-xl p-4 text-sm text-red-700 dark:text-red-200">
+                {error}
+              </div>
+            )}
+            {info && (
+              <div className="bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/40 rounded-xl p-4 text-sm text-emerald-800 dark:text-emerald-200">
+                {info}
+              </div>
+            )}
           </div>
         )}
 
+        {/* Toolbar */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
+          <div className="flex flex-col md:flex-row gap-3 md:items-center">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Pesquisar por id, nome, descrição..."
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-800
+                         bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
+                         focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            />
+
+            <div className="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50">
+              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            <Btn onClick={load} disabled={loading}>
+              Atualizar
+            </Btn>
+          </div>
+        </div>
+
         {/* Table */}
-        <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800/50 border-b dark:border-gray-700">
-                <tr>
-                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">
-                    ID
-                  </th>
-                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">
-                    Nome da Área
-                  </th>
-                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {loading ? (
-                  <tr>
-                    <td colSpan="3" className="py-16 px-6">
-                      <div className="flex flex-col items-center justify-center gap-3">
-                        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-gray-500 dark:text-gray-400">A carregar áreas...</span>
-                      </div>
-                    </td>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
+          {loading ? (
+            <div className="p-10 flex items-center justify-center">
+              <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <span className="ml-3 text-gray-600 dark:text-gray-300">A carregar...</span>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-10 text-center text-gray-600 dark:text-gray-400">Sem áreas.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-950/30">
+                  <tr className="text-left">
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200">ID</th>
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200">Nome</th>
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200">Descrição</th>
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200 text-right">Ações</th>
                   </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" className="py-16 px-6">
-                      <div className="flex flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
-                        <svg className="w-16 h-16 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                        </svg>
-                        <span>Sem áreas disponíveis</span>
-                        <button
-                          onClick={openCreate}
-                          className="mt-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm"
-                        >
-                          Criar primeira área
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((a) => (
-                    <tr
-                      key={a.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                    >
-                      <td className="py-4 px-6">
-                        <span className="text-sm font-mono text-gray-600 dark:text-gray-400">#{a.id}</span>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {paged.map((a) => (
+                    <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40">
+                      <td className="px-4 py-3 text-gray-900 dark:text-gray-100 font-semibold whitespace-nowrap">
+                        {a.id}
                       </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                            {(a.nome || "?")[0].toUpperCase()}
-                          </div>
-                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{a.nome}</span>
-                        </div>
+                      <td className="px-4 py-3 text-gray-900 dark:text-gray-100 font-bold">
+                        {safeStr(a.nome ?? a.name ?? "—")}
                       </td>
-                      <td className="py-4 px-6">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => openEdit(a)}
-                            className="px-3 py-1.5 rounded-lg text-sm font-medium
-                                       bg-amber-100 text-amber-700 hover:bg-amber-200
-                                       dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50
-                                       transition-colors"
-                          >
-                            ✏ Editar
-                          </button>
-
-                          <button
-                            onClick={() => deleteArea(a.id)}
-                            className="px-3 py-1.5 rounded-lg text-sm font-medium
-                                       bg-red-100 text-red-700 hover:bg-red-200
-                                       dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50
-                                       transition-colors"
-                          >
-                            🗑 Apagar
-                          </button>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        {safeStr(a.descricao ?? a.description ?? "—")}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2 flex-wrap">
+                          <Btn tone="blue" onClick={() => openEdit(a)} disabled={!canManage}>
+                            Editar
+                          </Btn>
+                          <Btn tone="red" onClick={() => remove(a)} disabled={!canManage}>
+                            Apagar
+                          </Btn>
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <PaginationBar
+            total={filtered.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setPage(1);
+            }}
+            disabled={loading}
+          />
         </div>
       </div>
 
-      {showForm && (
-        <Modal
-          title={editing ? "Editar Área" : "Nova Área"}
-          onClose={closeForm}
-          disabled={saving}
-        >
-          <form onSubmit={saveArea} className="space-y-6">
+      {/* Modal */}
+      {open && (
+        <Modal title={mode === "create" ? "Nova Área" : "Editar Área"} onClose={closeModal} disabled={saving}>
+          <form onSubmit={save} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Nome da Área
-              </label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Nome</label>
               <input
-                name="nome"
                 value={form.nome}
-                onChange={onChange}
+                onChange={(e) => setForm((p) => ({ ...p, nome: e.target.value }))}
                 disabled={saving}
-                className="w-full border rounded-lg px-4 py-3
-                           bg-white dark:bg-gray-950 dark:border-gray-800
-                           text-gray-900 dark:text-gray-100 disabled:opacity-60
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                           bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
                            focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-                placeholder="Ex: Software, Redes, Multimédia..."
-                autoFocus
+                placeholder="Ex: Desenvolvimento"
               />
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                Escolhe um nome descritivo para a área de formação
-              </p>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-800">
-              <button
-                type="button"
-                onClick={closeForm}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Descrição</label>
+              <textarea
+                value={form.descricao}
+                onChange={(e) => setForm((p) => ({ ...p, descricao: e.target.value }))}
                 disabled={saving}
-                className="px-5 py-2.5 rounded-lg border hover:bg-gray-100 transition-colors
-                           dark:border-gray-700 dark:hover:bg-gray-800
-                           disabled:opacity-60"
-              >
-                Cancelar
-              </button>
+                rows={4}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                           bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
+                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                placeholder="Opcional"
+              />
+            </div>
 
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium
-                           hover:from-blue-700 hover:to-blue-800 transition-all
-                           shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40
-                           disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
-              >
-                {saving ? (
-                  <span className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    A guardar...
-                  </span>
-                ) : (
-                  "Guardar"
-                )}
-              </button>
+            <div className="flex items-center justify-end gap-2">
+              <Btn onClick={closeModal} disabled={saving}>
+                Cancelar
+              </Btn>
+              <PrimaryBtn tone="blue" type="submit" disabled={saving}>
+                {saving ? "A guardar..." : "Guardar"}
+              </PrimaryBtn>
             </div>
           </form>
         </Modal>

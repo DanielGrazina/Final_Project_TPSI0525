@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { getToken, getUserRoleFromToken, isTokenExpired } from "../../utils/auth";
 
+/* ---------------- UI bits ---------------- */
+
 function Modal({ title, children, onClose, disableClose }) {
   return (
     <div
@@ -11,20 +13,23 @@ function Modal({ title, children, onClose, disableClose }) {
       onClick={() => !disableClose && onClose()}
     >
       <div
-        className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border dark:border-gray-800 animate-in fade-in zoom-in duration-200"
+        className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-t-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur">
           <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{title}</h3>
           <button
+            type="button"
             onClick={onClose}
             disabled={disableClose}
-            className="p-2 rounded-lg border hover:bg-gray-100 disabled:opacity-60 transition-colors
-                       dark:border-gray-700 dark:hover:bg-gray-800"
+            className={[
+              "px-3 py-2 rounded-lg border text-sm font-semibold transition",
+              disableClose
+                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600 dark:border-gray-700"
+                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800",
+            ].join(" ")}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            Fechar
           </button>
         </div>
         <div className="p-6">{children}</div>
@@ -62,10 +67,7 @@ function isHexColor7(s) {
   return /^#[0-9A-Fa-f]{6}$/.test(s || "");
 }
 
-// ✅ roles existentes no sistema (para mostrar)
 const ROLES_ALL = ["User", "Formando", "Formador", "Secretaria", "Admin", "SuperAdmin"];
-
-// ✅ roles que podem ser atribuídas (NÃO inclui SuperAdmin)
 const ROLES_ASSIGNABLE = ["User", "Formando", "Formador", "Secretaria", "Admin"];
 
 async function registerUser(payload) {
@@ -109,7 +111,7 @@ function RoleBadge({ role }) {
   const cls = styles[role] || styles.User;
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${cls}`}>
       {role}
     </span>
   );
@@ -124,15 +126,170 @@ function StatCard({ label, value, color = "blue" }) {
   };
 
   return (
-    <div className="relative overflow-hidden bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-4">
+    <div className="relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
       <div className={`absolute inset-0 bg-gradient-to-br ${colors[color]} opacity-50`} />
       <div className="relative">
-        <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</div>
-        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</div>
+        <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">{label}</div>
+        <div className="text-2xl font-black text-gray-900 dark:text-gray-100">{value}</div>
       </div>
     </div>
   );
 }
+
+function Btn({ children, tone = "neutral", ...props }) {
+  const map = {
+    neutral:
+      "border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800",
+    blue:
+      "border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-200 dark:hover:bg-blue-950/30",
+    green:
+      "border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900/50 dark:text-emerald-200 dark:hover:bg-emerald-950/30",
+    red:
+      "border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900/50 dark:text-red-200 dark:hover:bg-red-950/30",
+  };
+
+  return (
+    <button
+      type="button"
+      className={[
+        "px-3 py-1.5 rounded-lg border text-sm font-semibold transition",
+        "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+        map[tone] || map.neutral,
+      ].join(" ")}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PillAction({ label, variant, ...props }) {
+  const cls =
+    variant === "edit"
+      ? "bg-blue-600/10 text-blue-700 border-blue-200 hover:bg-blue-600/15 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-900/50"
+      : "bg-red-600/10 text-red-700 border-red-200 hover:bg-red-600/15 dark:bg-red-500/15 dark:text-red-200 dark:border-red-900/50";
+
+  return (
+    <button
+      type="button"
+      className={[
+        "px-3 py-1.5 rounded-full border text-sm font-semibold transition",
+        "hover:shadow-sm active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+        cls,
+      ].join(" ")}
+      {...props}
+    >
+      {label}
+    </button>
+  );
+}
+
+/* ---------------- Pagination ---------------- */
+
+function PaginationBar({ total, page, pageSize, onPageChange, onPageSizeChange, disabled }) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+
+  const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const to = Math.min(total, safePage * pageSize);
+
+  const pagesToShow = (() => {
+    const win = 7;
+    const half = Math.floor(win / 2);
+    let start = Math.max(1, safePage - half);
+    let end = Math.min(totalPages, start + win - 1);
+    start = Math.max(1, end - win + 1);
+
+    const arr = [];
+    for (let p = start; p <= end; p++) arr.push(p);
+    return arr;
+  })();
+
+  return (
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          A mostrar{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{from}</span>–{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{to}</span> de{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{total}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Por página</span>
+          <select
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            disabled={disabled}
+            className="border border-gray-200 dark:border-gray-800 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-900
+                       text-gray-900 dark:text-gray-100 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-60"
+          >
+            {[10, 25, 50, 100].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <Btn tone="neutral" onClick={() => onPageChange(1)} disabled={disabled || safePage === 1}>
+          «
+        </Btn>
+        <Btn tone="neutral" onClick={() => onPageChange(safePage - 1)} disabled={disabled || safePage === 1}>
+          ‹
+        </Btn>
+
+        {pagesToShow[0] > 1 && (
+          <>
+            <Btn tone="neutral" onClick={() => onPageChange(1)} disabled={disabled}>
+              1
+            </Btn>
+            <span className="text-gray-400 px-1">…</span>
+          </>
+        )}
+
+        {pagesToShow.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPageChange(p)}
+            disabled={disabled}
+            className={[
+              "px-3 py-1.5 rounded-lg border text-sm font-semibold transition",
+              "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+              p === safePage
+                ? "bg-blue-600 text-white border-blue-600"
+                : "border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-800",
+            ].join(" ")}
+          >
+            {p}
+          </button>
+        ))}
+
+        {pagesToShow[pagesToShow.length - 1] < totalPages && (
+          <>
+            <span className="text-gray-400 px-1">…</span>
+            <Btn tone="neutral" onClick={() => onPageChange(totalPages)} disabled={disabled}>
+              {totalPages}
+            </Btn>
+          </>
+        )}
+
+        <Btn tone="neutral" onClick={() => onPageChange(safePage + 1)} disabled={disabled || safePage === totalPages}>
+          ›
+        </Btn>
+        <Btn tone="neutral" onClick={() => onPageChange(totalPages)} disabled={disabled || safePage === totalPages}>
+          »
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Page ---------------- */
 
 export default function Users() {
   const navigate = useNavigate();
@@ -145,11 +302,10 @@ export default function Users() {
     const isAdmin = myRole === "Admin";
     const isSecretaria = myRole === "Secretaria";
 
-    // ✅ igual ao UsersController
     const canView = isSuperAdmin || isAdmin || isSecretaria;
-    const canEdit = isSuperAdmin || isAdmin || isSecretaria; // PUT permitido
-    const canDelete = isSuperAdmin || isAdmin; // DELETE permitido
-    const canCreate = isSuperAdmin || isAdmin || isSecretaria; // via Auth (assumido)
+    const canEdit = isSuperAdmin || isAdmin || isSecretaria;
+    const canDelete = isSuperAdmin || isAdmin;
+    const canCreate = isSuperAdmin || isAdmin || isSecretaria;
 
     return { myRole, isSuperAdmin, isAdmin, isSecretaria, canView, canEdit, canDelete, canCreate };
   }, [myRole]);
@@ -163,6 +319,10 @@ export default function Users() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("Todos");
   const [activeFilter, setActiveFilter] = useState("Todos");
+
+  // Paginação
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const [showCreate, setShowCreate] = useState(false);
   const [create, setCreate] = useState({
@@ -183,7 +343,6 @@ export default function Users() {
   const [edit, setEdit] = useState({ role: "User", isActive: true });
 
   useEffect(() => {
-    // proteção extra se token morrer
     if (!token || isTokenExpired(token)) {
       navigate("/", { replace: true });
     }
@@ -240,6 +399,19 @@ export default function Users() {
     });
   }, [users, search, roleFilter, activeFilter]);
 
+  useEffect(() => setPage(1), [search, roleFilter, activeFilter, pageSize]);
+
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filtered.length / pageSize)), [filtered.length, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const paged = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
+
   function openCreate() {
     setError("");
     setCreate({
@@ -269,7 +441,6 @@ export default function Users() {
   function startEdit(u) {
     if (!perms.canEdit) return;
 
-    // ✅ SuperAdmin não pode ser alterado (regra do teu print)
     if (u.role === "SuperAdmin") {
       setError("O role de SuperAdmin não pode ser alterado.");
       return;
@@ -285,7 +456,16 @@ export default function Users() {
   }
 
   function onEditChange(e) {
-    const { name, value, type, checked } = e.target;
+    const { name,а, value, type, checked } = e.target;
+    // ^^^ NOTE: this line has a typo "nameа" (cyrillic) in some editors. We'll avoid it by not using destructure name.
+    // We'll rewrite safely:
+  }
+
+  function onEditChangeSafe(e) {
+    const name = e.target.name;
+    const value = e.target.value;
+    const type = e.target.type;
+    const checked = e.target.checked;
     setEdit((p) => ({ ...p, [name]: type === "checkbox" ? checked : value }));
   }
 
@@ -296,7 +476,6 @@ export default function Users() {
     setSaving(true);
 
     try {
-      // ✅ UpdateUserDto: Role, IsActive
       await api.put(`/Users/${userId}`, {
         role: edit.role,
         isActive: edit.isActive,
@@ -314,7 +493,6 @@ export default function Users() {
   async function deleteUser(u) {
     if (!perms.canDelete) return;
 
-    // extra safety
     if (u.role === "SuperAdmin") {
       setError("Não podes apagar um SuperAdmin.");
       return;
@@ -353,7 +531,6 @@ export default function Users() {
     if (!email) return alert("Email é obrigatório.");
     if (password.length < 6) return alert("A password deve ter pelo menos 6 caracteres.");
 
-    // ✅ impedir atribuição de SuperAdmin via UI
     if (!ROLES_ASSIGNABLE.includes(role)) return alert("Role inválida (SuperAdmin não pode ser atribuído).");
 
     if (role === "Formador") {
@@ -373,12 +550,10 @@ export default function Users() {
     setSaving(true);
 
     try {
-      // 1) Register
       const regRes = await registerUser({ nome, email, password });
 
       let createdUserId = regRes?.data?.id ?? regRes?.data?.userId ?? regRes?.data?.user?.id ?? null;
 
-      // fallback: refresh e procurar pelo email
       if (!createdUserId) {
         const listRes = await api.get("/Users");
         const arr = Array.isArray(listRes.data) ? listRes.data : [];
@@ -391,13 +566,11 @@ export default function Users() {
         setUsers(arr);
       }
 
-      // 2) aplicar role/isActive (PUT permitido para Admin/SuperAdmin/Secretaria)
       await api.put(`/Users/${createdUserId}`, {
         role,
         isActive: !!create.isActive,
       });
 
-      // 3) criar profiles
       if (role === "Formador") {
         await api.post("/Profiles/formador", {
           userId: createdUserId,
@@ -425,31 +598,29 @@ export default function Users() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 border-b dark:border-gray-800 shadow-sm">
+      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 border-b border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Utilizadores</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Roles permitidos: {ROLES_ALL.join(", ")}
-              </p>
+              <h1 className="text-xl font-black text-gray-900 dark:text-gray-100">Utilizadores</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Roles: {ROLES_ALL.join(", ")}</p>
             </div>
 
             <div className="flex gap-2">
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="px-4 py-2 rounded-lg border hover:bg-gray-100 transition-colors dark:border-gray-700 dark:hover:bg-gray-800"
-              >
-                ← Voltar
-              </button>
+              <Btn onClick={() => navigate("/dashboard")}>← Voltar</Btn>
 
               <button
+                type="button"
                 onClick={openCreate}
-                className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium
-                           hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg shadow-blue-500/30
-                           hover:shadow-xl hover:shadow-blue-500/40 disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
                 disabled={saving || !perms.canCreate}
                 title={!perms.canCreate ? "Sem permissão para criar utilizadores." : ""}
+                className={[
+                  "px-4 py-2 rounded-lg font-semibold text-white transition",
+                  "shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 active:scale-95",
+                  saving || !perms.canCreate
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800",
+                ].join(" ")}
               >
                 + Novo Utilizador
               </button>
@@ -469,16 +640,16 @@ export default function Users() {
         </div>
 
         {/* Toolbar */}
-        <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-            <div className="flex-1 relative">
+            <div className="flex-1">
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Pesquisar por ID, email ou role..."
-                className="w-full px-4 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-950 dark:border-gray-800
-                           text-gray-900 dark:text-gray-100 placeholder:text-gray-400
-                           focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-shadow"
+                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-lg
+                           bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
+                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               />
             </div>
 
@@ -486,8 +657,8 @@ export default function Users() {
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="border rounded-lg px-3 py-2 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 dark:text-gray-100
-                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                className="border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-gray-900
+                           text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               >
                 <option value="Todos">Todos</option>
                 {ROLES_ALL.map((r) => (
@@ -500,8 +671,8 @@ export default function Users() {
               <select
                 value={activeFilter}
                 onChange={(e) => setActiveFilter(e.target.value)}
-                className="border rounded-lg px-3 py-2 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 dark:text-gray-100
-                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                className="border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-gray-900
+                           text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               >
                 <option value="Todos">Todos</option>
                 <option value="Ativos">Ativos</option>
@@ -518,22 +689,32 @@ export default function Users() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800 rounded-xl p-4 mb-6 whitespace-pre-wrap">
+          <div className="bg-red-50 border border-red-200 dark:bg-red-950/25 dark:border-red-900/40 rounded-xl p-4 mb-6 text-red-700 dark:text-red-200 whitespace-pre-wrap">
             {error}
           </div>
         )}
 
         {/* Table */}
-        <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800/50 border-b dark:border-gray-700">
+              <thead className="bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                 <tr>
-                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">ID</th>
-                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Email</th>
-                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Role</th>
-                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Ativo</th>
-                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">Ações</th>
+                  <th className="text-left text-xs font-black text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">
+                    ID
+                  </th>
+                  <th className="text-left text-xs font-black text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="text-left text-xs font-black text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="text-left text-xs font-black text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">
+                    Ativo
+                  </th>
+                  <th className="text-left text-xs font-black text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">
+                    Ações
+                  </th>
                 </tr>
               </thead>
 
@@ -551,14 +732,14 @@ export default function Users() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((u) => {
+                  paged.map((u) => {
                     const isEditing = editingId === u.id;
                     const targetIsSuperAdmin = u.role === "SuperAdmin";
-                    const disableEditThisRow = targetIsSuperAdmin; // regra do teu print
+                    const disableEditThisRow = targetIsSuperAdmin;
 
                     return (
-                      <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="py-4 px-6 text-sm font-mono text-gray-600 dark:text-gray-400">#{u.id}</td>
+                      <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                        <td className="py-4 px-6 text-sm font-mono text-gray-700 dark:text-gray-300">#{u.id}</td>
 
                         <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100">{u.email}</td>
 
@@ -567,8 +748,9 @@ export default function Users() {
                             <select
                               name="role"
                               value={edit.role}
-                              onChange={onEditChange}
-                              className="border rounded-lg px-3 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 dark:text-gray-100 text-sm
+                              onChange={onEditChangeSafe}
+                              className="border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-1.5
+                                         bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm
                                          focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                               disabled={saving}
                             >
@@ -590,13 +772,17 @@ export default function Users() {
                                 type="checkbox"
                                 name="isActive"
                                 checked={!!edit.isActive}
-                                onChange={onEditChange}
+                                onChange={onEditChangeSafe}
                                 disabled={saving}
                               />
-                              <span className="text-sm">{edit.isActive ? "Ativo" : "Inativo"}</span>
+                              <span className="text-sm text-gray-900 dark:text-gray-100">
+                                {edit.isActive ? "Ativo" : "Inativo"}
+                              </span>
                             </label>
                           ) : (
-                            <span className="text-sm">{u.isActive ? "Ativo" : "Inativo"}</span>
+                            <span className={`text-sm font-semibold ${u.isActive ? "text-emerald-700 dark:text-emerald-300" : "text-gray-500 dark:text-gray-400"}`}>
+                              {u.isActive ? "Ativo" : "Inativo"}
+                            </span>
                           )}
                         </td>
 
@@ -605,39 +791,61 @@ export default function Users() {
                             {isEditing ? (
                               <>
                                 <button
+                                  type="button"
                                   onClick={() => saveEdit(u.id)}
                                   disabled={saving}
-                                  className="px-3 py-1.5 rounded-lg text-sm bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-60"
+                                  className={[
+                                    "px-4 py-1.5 rounded-full border text-sm font-semibold transition",
+                                    "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+                                    saving
+                                      ? "bg-gray-100 text-gray-400 border-gray-200 dark:bg-gray-800 dark:text-gray-600 dark:border-gray-700"
+                                      : "bg-emerald-600/10 text-emerald-700 border-emerald-200 hover:bg-emerald-600/15 dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-900/50",
+                                  ].join(" ")}
                                 >
                                   Guardar
                                 </button>
+
                                 <button
+                                  type="button"
                                   onClick={cancelEdit}
                                   disabled={saving}
-                                  className="px-3 py-1.5 rounded-lg text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-60"
+                                  className="px-4 py-1.5 rounded-full border text-sm font-semibold transition
+                                             border-gray-200 text-gray-700 hover:bg-gray-50
+                                             dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-800
+                                             active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
                                   Cancelar
                                 </button>
                               </>
                             ) : (
                               <>
-                                <button
+                                <PillAction
+                                  label="Editar"
+                                  variant="edit"
                                   onClick={() => startEdit(u)}
                                   disabled={saving || !perms.canEdit || disableEditThisRow}
-                                  title={disableEditThisRow ? "SuperAdmin não pode ser alterado." : !perms.canEdit ? "Sem permissão." : ""}
-                                  className="px-3 py-1.5 rounded-lg text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-60"
-                                >
-                                  Editar
-                                </button>
+                                  title={
+                                    disableEditThisRow
+                                      ? "SuperAdmin não pode ser alterado."
+                                      : !perms.canEdit
+                                      ? "Sem permissão."
+                                      : ""
+                                  }
+                                />
 
-                                <button
+                                <PillAction
+                                  label="Apagar"
+                                  variant="delete"
                                   onClick={() => deleteUser(u)}
                                   disabled={saving || !perms.canDelete || targetIsSuperAdmin}
-                                  title={targetIsSuperAdmin ? "Não podes apagar um SuperAdmin." : !perms.canDelete ? "Sem permissão." : ""}
-                                  className="px-3 py-1.5 rounded-lg text-sm bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-60"
-                                >
-                                  Apagar
-                                </button>
+                                  title={
+                                    targetIsSuperAdmin
+                                      ? "Não podes apagar um SuperAdmin."
+                                      : !perms.canDelete
+                                      ? "Sem permissão."
+                                      : ""
+                                  }
+                                />
                               </>
                             )}
                           </div>
@@ -649,6 +857,18 @@ export default function Users() {
               </tbody>
             </table>
           </div>
+
+          <PaginationBar
+            total={filtered.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setPage(1);
+            }}
+            disabled={loading}
+          />
         </div>
       </div>
 
@@ -658,71 +878,146 @@ export default function Users() {
           <form onSubmit={createUserFlow} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">Nome</label>
-                <input name="nome" value={create.nome} onChange={onCreateChange} disabled={saving} className="w-full border rounded-lg px-3 py-2" />
+                <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">Nome</label>
+                <input
+                  name="nome"
+                  value={create.nome}
+                  onChange={onCreateChange}
+                  disabled={saving}
+                  className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2
+                             bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <input type="email" name="email" value={create.email} onChange={onCreateChange} disabled={saving} className="w-full border rounded-lg px-3 py-2" />
+                <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={create.email}
+                  onChange={onCreateChange}
+                  disabled={saving}
+                  className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2
+                             bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">Password</label>
-                <input type="password" name="password" value={create.password} onChange={onCreateChange} disabled={saving} className="w-full border rounded-lg px-3 py-2" />
+                <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={create.password}
+                  onChange={onCreateChange}
+                  disabled={saving}
+                  className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2
+                             bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Role</label>
-                <select name="role" value={create.role} onChange={onCreateChange} disabled={saving} className="w-full border rounded-lg px-3 py-2">
+                <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">Role</label>
+                <select
+                  name="role"
+                  value={create.role}
+                  onChange={onCreateChange}
+                  disabled={saving}
+                  className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2
+                             bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                >
                   {ROLES_ASSIGNABLE.map((r) => (
                     <option key={r} value={r}>
                       {r}
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">SuperAdmin não pode ser atribuído.</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">SuperAdmin não pode ser atribuído.</p>
               </div>
 
               <div className="flex items-center">
                 <label className="inline-flex items-center gap-2">
                   <input type="checkbox" name="isActive" checked={!!create.isActive} onChange={onCreateChange} disabled={saving} />
-                  <span className="text-sm">Conta ativa</span>
+                  <span className="text-sm text-gray-900 dark:text-gray-100">Conta ativa</span>
                 </label>
               </div>
             </div>
 
             {create.role === "Formador" && (
-              <div className="pt-4 border-t space-y-3">
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-800 space-y-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Área de Especialização</label>
-                  <input name="areaEspecializacao" value={create.areaEspecializacao} onChange={onCreateChange} disabled={saving} className="w-full border rounded-lg px-3 py-2" />
+                  <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">Área de Especialização</label>
+                  <input
+                    name="areaEspecializacao"
+                    value={create.areaEspecializacao}
+                    onChange={onCreateChange}
+                    disabled={saving}
+                    className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2
+                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                               focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Cor Calendário</label>
-                  <input name="corCalendario" value={create.corCalendario} onChange={onCreateChange} disabled={saving} className="w-full border rounded-lg px-3 py-2 font-mono" />
+                  <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">Cor Calendário</label>
+                  <input
+                    name="corCalendario"
+                    value={create.corCalendario}
+                    onChange={onCreateChange}
+                    disabled={saving}
+                    className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 font-mono
+                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                               focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  />
                 </div>
               </div>
             )}
 
             {create.role === "Formando" && (
-              <div className="pt-4 border-t grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-800 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Número de Aluno</label>
-                  <input name="numeroAluno" value={create.numeroAluno} onChange={onCreateChange} disabled={saving} className="w-full border rounded-lg px-3 py-2" />
+                  <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">Número de Aluno</label>
+                  <input
+                    name="numeroAluno"
+                    value={create.numeroAluno}
+                    onChange={onCreateChange}
+                    disabled={saving}
+                    className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2
+                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                               focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Data de Nascimento</label>
-                  <input type="date" name="dataNascimento" value={create.dataNascimento} onChange={onCreateChange} disabled={saving} className="w-full border rounded-lg px-3 py-2" />
+                  <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">Data de Nascimento</label>
+                  <input
+                    type="date"
+                    name="dataNascimento"
+                    value={create.dataNascimento}
+                    onChange={onCreateChange}
+                    disabled={saving}
+                    className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2
+                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
+                               focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  />
                 </div>
               </div>
             )}
 
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <button type="button" onClick={() => closeCreate(false)} disabled={saving} className="px-4 py-2 rounded-lg border">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
+              <Btn onClick={() => closeCreate(false)} disabled={saving}>
                 Cancelar
-              </button>
-              <button type="submit" disabled={saving} className="px-4 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-60">
+              </Btn>
+
+              <button
+                type="submit"
+                disabled={saving}
+                className={[
+                  "px-4 py-2 rounded-lg font-semibold text-white transition active:scale-95 disabled:opacity-60",
+                  saving ? "bg-gray-400 cursor-not-allowed" : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800",
+                ].join(" ")}
+              >
                 {saving ? "A criar..." : "Criar"}
               </button>
             </div>

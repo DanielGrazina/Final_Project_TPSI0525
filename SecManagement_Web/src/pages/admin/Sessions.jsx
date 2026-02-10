@@ -9,28 +9,32 @@ import { getToken } from "../../utils/auth";
 function Modal({ title, children, onClose, disableClose }) {
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={() => !disableClose && onClose()}
     >
       <div
-        className="w-full max-w-2xl bg-[#0f1419] rounded-2xl shadow-2xl border border-gray-800 overflow-hidden animate-slideUp flex flex-col max-h-[90vh]"
+        className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-[#1a1f2e]">
-          <h3 className="text-lg font-bold text-white tracking-tight">
-            {title}
-          </h3>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight">{title}</h3>
+
           <button
+            type="button"
             onClick={onClose}
             disabled={disableClose}
-            className="text-gray-400 hover:text-white transition-colors text-xl font-bold px-2"
+            className={[
+              "px-3 py-2 rounded-lg border text-sm font-semibold transition",
+              disableClose
+                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600 dark:border-gray-700"
+                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800",
+            ].join(" ")}
           >
-            ✕
+            Fechar
           </button>
         </div>
-        <div className="p-0 overflow-y-auto flex-1 custom-scrollbar relative">
-          {children}
-        </div>
+
+        <div className="p-0 max-h-[80vh] overflow-y-auto">{children}</div>
       </div>
     </div>
   );
@@ -65,23 +69,29 @@ function toYmd(d) {
 }
 
 function durationLabel(iniIso, fimIso) {
-    const a = new Date(iniIso);
-    const b = new Date(fimIso);
-    if(isNaN(a) || isNaN(b)) return "--";
-    const mins = Math.max(0, Math.round((b - a) / 60000));
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return h > 0 ? `${h}h ${m > 0 ? `${m}m` : ""}` : `${m} min`;
+  const a = new Date(iniIso);
+  const b = new Date(fimIso);
+  if (isNaN(a) || isNaN(b)) return "--";
+  const mins = Math.max(0, Math.round((b - a) / 60000));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m > 0 ? `${m}m` : ""}` : `${m} min`;
 }
 
 /* ---- JWT helpers ---- */
 function parseJwt(token) {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split("")
+        .map(function (c) {
+          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join("")
+    );
     return JSON.parse(jsonPayload);
   } catch {
     return null;
@@ -89,6 +99,7 @@ function parseJwt(token) {
 }
 
 /* ---------------- Calendar utilities ---------------- */
+
 const WEEK_DAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
 function startOfWeek(date) {
@@ -108,15 +119,22 @@ function addDays(date, n) {
 
 // Cores para sessões
 const SESSION_COLORS = [
-  { bg: 'bg-indigo-600', border: 'border-indigo-400' },
-  { bg: 'bg-blue-600', border: 'border-blue-400' },
-  { bg: 'bg-emerald-600', border: 'border-emerald-400' },
-  { bg: 'bg-purple-600', border: 'border-purple-400' },
-  { bg: 'bg-rose-600', border: 'border-rose-400' },
+  { chip: "bg-indigo-500/15 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-200 dark:border-indigo-900/50", bar: "bg-indigo-600" },
+  { chip: "bg-blue-500/15 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-200 dark:border-blue-900/50", bar: "bg-blue-600" },
+  { chip: "bg-emerald-500/15 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-200 dark:border-emerald-900/50", bar: "bg-emerald-600" },
+  { chip: "bg-purple-500/15 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-200 dark:border-purple-900/50", bar: "bg-purple-600" },
+  { chip: "bg-rose-500/15 text-rose-700 border-rose-200 dark:bg-rose-500/20 dark:text-rose-200 dark:border-rose-900/50", bar: "bg-rose-600" },
 ];
 
 function getSessionColor(sessionId) {
   return SESSION_COLORS[sessionId % SESSION_COLORS.length];
+}
+
+function fmtWeekRange(weekStart) {
+  const end = addDays(weekStart, 6);
+  const a = `${weekStart.getDate()}/${weekStart.getMonth() + 1}`;
+  const b = `${end.getDate()}/${end.getMonth() + 1}`;
+  return `${a} — ${b}`;
 }
 
 /* ------------------------ Component ------------------------ */
@@ -125,7 +143,7 @@ export default function AdminSessions() {
   const navigate = useNavigate();
   const token = getToken();
   const jwt = useMemo(() => (token ? parseJwt(token) : null), [token]);
-  
+
   // Roles e IDs
   const role = jwt?.role || jwt?.Role || "User";
   const formadorId = jwt?.FormadorId || jwt?.formadorId;
@@ -134,30 +152,28 @@ export default function AdminSessions() {
   // Estados de Dados Base
   const [turmas, setTurmas] = useState([]);
   const [salas, setSalas] = useState([]);
-  const [turmaModulos, setTurmaModulos] = useState([]); // Lista crua para referência
+  const [turmaModulos, setTurmaModulos] = useState([]);
   const [sessions, setSessions] = useState([]);
 
   // Estados de UI
   const [selectedTurmaId, setSelectedTurmaId] = useState("");
   const [loadingBase, setLoadingBase] = useState(true);
   const [loadingSessions, setLoadingSessions] = useState(false);
-  
+
   // Calendário
   const [weekAnchor, setWeekAnchor] = useState(new Date());
   const weekStart = useMemo(() => startOfWeek(weekAnchor), [weekAnchor]);
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
-  // --- WIZARD STATES ---
+  // Wizard
   const [showModal, setShowModal] = useState(false);
   const [step, setStep] = useState(1); // 1: Time, 2: Formador, 3: Modulo, 4: Sala
   const [saving, setSaving] = useState(false);
   const [wizardError, setWizardError] = useState("");
-  
-  // Estado para Disponibilidade (NOVO)
-  const [checkingAvailability, setCheckingAvailability] = useState(false);
-  const [formadoresStatus, setFormadoresStatus] = useState([]); // Vem do endpoint novo
 
-  // Dados do formulário
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [formadoresStatus, setFormadoresStatus] = useState([]);
+
   const [formData, setFormData] = useState({
     turmaId: "",
     inicioDate: "",
@@ -166,30 +182,31 @@ export default function AdminSessions() {
     fimTime: "",
     selectedFormadorId: null,
     turmaModuloId: "",
-    salaId: ""
+    salaId: "",
   });
+
+  useEffect(() => {
+    if (!token) navigate("/", { replace: true });
+  }, [navigate, token]);
 
   /* ------------------------ Loads ------------------------ */
 
   async function loadBase() {
     setLoadingBase(true);
     try {
-      const [resSalas, resTurmasAll] = await Promise.all([
-        api.get("/Salas"),
-        api.get("/Turmas")
-      ]);
+      const [resSalas, resTurmasAll] = await Promise.all([api.get("/Salas"), api.get("/Turmas")]);
 
       setSalas(Array.isArray(resSalas.data) ? resSalas.data : []);
 
       let tList = Array.isArray(resTurmasAll.data) ? resTurmasAll.data : [];
-      
+
       // Se for apenas formador (coordenador), filtra as suas turmas
       if (!isAdminLike && formadorId) {
-         // Se tiveres endpoint /Turmas/coordenador usa-o, senão filtra no front:
-         tList = tList.filter(t => Number(t.coordenadorId) === Number(formadorId));
+        tList = tList.filter((t) => Number(t.coordenadorId) === Number(formadorId));
       }
 
       setTurmas(tList);
+
       if (tList.length > 0 && !selectedTurmaId) {
         setSelectedTurmaId(tList[0].id);
       }
@@ -213,8 +230,10 @@ export default function AdminSessions() {
   async function loadSessions() {
     if (!selectedTurmaId) return;
     setLoadingSessions(true);
+
     const start = isoUtcFromDate(toYmd(weekStart));
     const end = isoUtcFromDate(toYmd(addDays(weekStart, 6)), true);
+
     try {
       const res = await api.get(`/Sessoes/turma/${selectedTurmaId}?start=${start}&end=${end}`);
       setSessions(Array.isArray(res.data) ? res.data : []);
@@ -225,14 +244,17 @@ export default function AdminSessions() {
     }
   }
 
-  // Effects
-  useEffect(() => { loadBase(); }, []);
-  
-  useEffect(() => { 
+  useEffect(() => {
+    loadBase();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     if (selectedTurmaId) {
-        loadTurmaModulos(selectedTurmaId);
-        loadSessions();
+      loadTurmaModulos(selectedTurmaId);
+      loadSessions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTurmaId, weekStart]);
 
   /* ------------------------ Wizard Logic ------------------------ */
@@ -240,14 +262,14 @@ export default function AdminSessions() {
   function openWizard(date, startTime, endTime) {
     const dStr = toYmd(date);
     setFormData({
-        turmaId: selectedTurmaId,
-        inicioDate: dStr,
-        inicioTime: startTime,
-        fimDate: dStr,
-        fimTime: endTime,
-        selectedFormadorId: null,
-        turmaModuloId: "",
-        salaId: ""
+      turmaId: selectedTurmaId,
+      inicioDate: dStr,
+      inicioTime: startTime,
+      fimDate: dStr,
+      fimTime: endTime,
+      selectedFormadorId: null,
+      turmaModuloId: "",
+      salaId: "",
     });
     setStep(1);
     setShowModal(true);
@@ -255,50 +277,47 @@ export default function AdminSessions() {
     setFormadoresStatus([]);
   }
 
-  // Filtrar Módulos pelo Formador selecionado
   const availableModules = useMemo(() => {
     if (!formData.selectedFormadorId) return [];
-    return turmaModulos.filter(tm => Number(tm.formadorId) === Number(formData.selectedFormadorId));
+    return turmaModulos.filter((tm) => Number(tm.formadorId) === Number(formData.selectedFormadorId));
   }, [turmaModulos, formData.selectedFormadorId]);
 
   async function handleNext() {
-    // --- VALIDAÇÃO PASSO 1 (TEMPO) ---
+    // PASSO 1: tempo + check disponibilidade
     if (step === 1) {
-        if (!formData.inicioTime || !formData.fimTime) return setWizardError("Define o horário.");
-        if (formData.inicioTime >= formData.fimTime) return setWizardError("A hora de fim deve ser superior ao início.");
-        
-        // Verificar Disponibilidade no Backend
-        setCheckingAvailability(true);
-        setWizardError("");
-        try {
-            const startIso = dateTimeToIsoUtc(formData.inicioDate, formData.inicioTime);
-            const endIso = dateTimeToIsoUtc(formData.fimDate, formData.fimTime);
-            
-            // Endpoint que criámos no backend
-            const res = await api.get(`/Sessoes/check-availability/turma/${selectedTurmaId}?start=${startIso}&end=${endIso}`);
-            
-            setFormadoresStatus(res.data);
-            setStep(p => p + 1); // Avança
-        } catch (err) {
-            setWizardError(extractError(err, "Erro ao verificar disponibilidades."));
-        } finally {
-            setCheckingAvailability(false);
-        }
-        return; 
-    }
-    
-    // --- VALIDAÇÃO PASSO 2 (FORMADOR) ---
-    if (step === 2) {
-        if (!formData.selectedFormadorId) return setWizardError("Seleciona um formador disponível.");
+      if (!formData.inicioTime || !formData.fimTime) return setWizardError("Define o horário.");
+      if (formData.inicioTime >= formData.fimTime) return setWizardError("A hora de fim deve ser superior ao início.");
+
+      setCheckingAvailability(true);
+      setWizardError("");
+
+      try {
+        const startIso = dateTimeToIsoUtc(formData.inicioDate, formData.inicioTime);
+        const endIso = dateTimeToIsoUtc(formData.fimDate, formData.fimTime);
+
+        const res = await api.get(`/Sessoes/check-availability/turma/${selectedTurmaId}?start=${startIso}&end=${endIso}`);
+        setFormadoresStatus(Array.isArray(res.data) ? res.data : []);
+        setStep((p) => p + 1);
+      } catch (err) {
+        setWizardError(extractError(err, "Erro ao verificar disponibilidades."));
+      } finally {
+        setCheckingAvailability(false);
+      }
+      return;
     }
 
-    // --- VALIDAÇÃO PASSO 3 (MÓDULO) ---
+    // PASSO 2: formador
+    if (step === 2) {
+      if (!formData.selectedFormadorId) return setWizardError("Seleciona um formador disponível.");
+    }
+
+    // PASSO 3: módulo
     if (step === 3) {
-        if (!formData.turmaModuloId) return setWizardError("Seleciona o módulo.");
+      if (!formData.turmaModuloId) return setWizardError("Seleciona o módulo.");
     }
 
     setWizardError("");
-    setStep(p => p + 1);
+    setStep((p) => p + 1);
   }
 
   async function handleSubmit() {
@@ -309,418 +328,687 @@ export default function AdminSessions() {
     const end = dateTimeToIsoUtc(formData.fimDate, formData.fimTime);
 
     const payload = {
-        TurmaModuloId: Number(formData.turmaModuloId),
-        SalaId: Number(formData.salaId),
-        HorarioInicio: start,
-        HorarioFim: end
+      TurmaModuloId: Number(formData.turmaModuloId),
+      SalaId: Number(formData.salaId),
+      HorarioInicio: start,
+      HorarioFim: end,
     };
 
     try {
-        await api.post("/Sessoes", payload);
-        setShowModal(false);
-        loadSessions(); // Recarregar calendário
+      await api.post("/Sessoes", payload);
+      setShowModal(false);
+      loadSessions();
     } catch (err) {
-        setWizardError(extractError(err, "Erro ao criar sessão."));
+      setWizardError(extractError(err, "Erro ao criar sessão."));
     } finally {
-        setSaving(false);
+      setSaving(false);
     }
   }
 
   async function deleteSession(id) {
-    if(!window.confirm("Tens a certeza que queres eliminar esta sessão?")) return;
+    if (!window.confirm("Tens a certeza que queres eliminar esta sessão?")) return;
     try {
-        await api.delete(`/Sessoes/${id}`);
-        setSessions(prev => prev.filter(s => s.id !== id));
-    } catch (e) {
-        alert("Erro ao apagar");
+      await api.delete(`/Sessoes/${id}`);
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+    } catch {
+      alert("Erro ao apagar");
     }
   }
 
-  /* ------------------------ Render Steps ------------------------ */
-
-  function renderStepContent() {
-    switch (step) {
-        case 1: // TEMPO
-            return (
-                <div className="space-y-6 pt-4">
-                    <p className="text-gray-400 text-sm">Define o dia e o intervalo de horário da sessão.</p>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Dia Início</label>
-                            <input type="date" className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-emerald-500 outline-none"
-                                value={formData.inicioDate}
-                                onChange={e => setFormData({...formData, inicioDate: e.target.value, fimDate: e.target.value})} 
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Dia Fim</label>
-                            <input type="date" className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-emerald-500 outline-none"
-                                value={formData.fimDate}
-                                onChange={e => setFormData({...formData, fimDate: e.target.value})} 
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Hora Início</label>
-                            <input type="time" className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-emerald-500 outline-none"
-                                value={formData.inicioTime}
-                                onChange={e => setFormData({...formData, inicioTime: e.target.value})} 
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Hora Fim</label>
-                            <input type="time" className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-emerald-500 outline-none"
-                                value={formData.fimTime}
-                                onChange={e => setFormData({...formData, fimTime: e.target.value})} 
-                            />
-                        </div>
-                    </div>
-                </div>
-            );
-
-        case 2: // FORMADORES (COM DISPONIBILIDADE)
-            return (
-                <div className="pt-2">
-                    <p className="text-gray-400 text-sm mb-4">A verificar quem está disponível neste horário...</p>
-                    
-                    {checkingAvailability ? (
-                        <div className="flex flex-col items-center justify-center py-12">
-                             <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-                             <span className="text-emerald-500 animate-pulse">A consultar base de dados...</span>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 gap-3">
-                            {formadoresStatus.map(f => {
-                                const isAvailable = f.disponivel;
-                                const isSelected = Number(formData.selectedFormadorId) === f.formadorId;
-
-                                return (
-                                    <button
-                                        key={f.formadorId}
-                                        disabled={!isAvailable}
-                                        onClick={() => setFormData({...formData, selectedFormadorId: f.formadorId})}
-                                        className={`flex items-center justify-between p-4 rounded-xl border transition-all text-left group
-                                            ${!isAvailable 
-                                                ? "bg-red-900/10 border-red-900/30 opacity-70 cursor-not-allowed" 
-                                                : isSelected
-                                                    ? "bg-emerald-900/20 border-emerald-500 ring-1 ring-emerald-500"
-                                                    : "bg-gray-800/40 border-gray-700 hover:bg-gray-800 hover:border-gray-500 cursor-pointer"
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold transition-colors shrink-0
-                                                ${!isAvailable 
-                                                    ? "bg-red-900/30 text-red-400" 
-                                                    : "bg-gray-700 text-gray-300 group-hover:bg-emerald-600 group-hover:text-white"}`}>
-                                                {f.avatar ? <img src={f.avatar} className="w-full h-full rounded-full object-cover"/> : f.formadorNome.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <div className={`font-bold text-lg ${!isAvailable ? "text-gray-400" : "text-white"}`}>
-                                                    {f.formadorNome}
-                                                </div>
-                                                <div className="text-sm mt-0.5">
-                                                    {!isAvailable 
-                                                        ? <span className="text-red-400 flex items-center gap-1">⛔ {f.motivoIndisponibilidade}</span> 
-                                                        : <span className="text-emerald-400 flex items-center gap-1">✅ Disponível</span>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {isSelected && <div className="text-emerald-500 text-2xl">✓</div>}
-                                    </button>
-                                );
-                            })}
-                            
-                            {formadoresStatus.length === 0 && (
-                                 <div className="p-8 text-center text-gray-500 border border-dashed border-gray-700 rounded-xl">
-                                    Nenhum formador associado a esta turma.
-                                 </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            );
-
-        case 3: // MÓDULOS
-            return (
-                <div className="pt-2">
-                    <p className="text-gray-400 text-sm mb-4">Seleciona o módulo a lecionar:</p>
-                    <div className="space-y-3">
-                        {availableModules.map(tm => {
-                            const isSelected = Number(formData.turmaModuloId) === tm.id;
-                            return (
-                                <button
-                                    key={tm.id}
-                                    onClick={() => setFormData({...formData, turmaModuloId: tm.id})}
-                                    className={`w-full text-left p-4 rounded-xl border transition-all
-                                        ${isSelected 
-                                            ? "bg-blue-900/20 border-blue-500 ring-1 ring-blue-500" 
-                                            : "bg-gray-800/40 border-gray-700 hover:bg-gray-800 hover:border-gray-500"}`}
-                                >
-                                    <div className="flex justify-between items-center">
-                                        <div className={`font-bold text-lg ${isSelected ? "text-blue-400" : "text-gray-200"}`}>
-                                            {tm.moduloNome || tm.nomeModulo}
-                                        </div>
-                                        {isSelected && <div className="text-blue-500 text-xl">✓</div>}
-                                    </div>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                        Carga Horária Total: {tm.cargaHorariaModulo || "--"}h
-                                    </div>
-                                </button>
-                            );
-                        })}
-                        {availableModules.length === 0 && (
-                            <div className="p-4 text-center text-gray-500">
-                                Este formador não tem módulos nesta turma.
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-
-        case 4: // SALA
-            return (
-                <div className="pt-2">
-                    <p className="text-gray-400 text-sm mb-4">Seleciona a sala:</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-                        {salas.map(s => {
-                            const isSelected = Number(formData.salaId) === s.id;
-                            return (
-                                <button
-                                    key={s.id}
-                                    onClick={() => setFormData({...formData, salaId: s.id})}
-                                    className={`p-4 rounded-xl border text-center transition-all flex flex-col items-center justify-center min-h-[100px]
-                                        ${isSelected 
-                                            ? "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-900/20" 
-                                            : "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500 hover:bg-gray-700"}`}
-                                >
-                                    <div className="font-bold text-lg">{s.nome}</div>
-                                    <div className={`text-xs mt-1 ${isSelected ? "text-emerald-100" : "text-gray-500"}`}>
-                                        {s.tipo || "Geral"} • {s.capacidade} lug.
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            );
-        default: return null;
-    }
-  }
-
-  /* ------------------------ Main Render ------------------------ */
+  /* ------------------------ Calendar ------------------------ */
 
   const slots = useMemo(() => {
     const arr = [];
-    for(let h=8; h<23; h++) {
-        arr.push({ start: `${String(h).padStart(2,'0')}:00`, end: `${String(h+1).padStart(2,'0')}:00` });
+    for (let h = 8; h < 23; h++) {
+      arr.push({
+        start: `${String(h).padStart(2, "0")}:00`,
+        end: `${String(h + 1).padStart(2, "0")}:00`,
+      });
     }
     return arr;
   }, []);
 
   function getSessionInSlot(date, slotStart) {
     const slotIso = dateTimeToIsoUtc(toYmd(date), slotStart);
-    // Margem de tolerância de 1 min para visualização
-    return sessions.find(s => 
-        new Date(s.horarioInicio) <= new Date(slotIso) && 
-        new Date(s.horarioFim) > new Date(new Date(slotIso).getTime() + 60000)
+    return sessions.find(
+      (s) => new Date(s.horarioInicio) <= new Date(slotIso) && new Date(s.horarioFim) > new Date(new Date(slotIso).getTime() + 60000)
     );
   }
 
-  const selectedTurmaName = turmas.find(t => String(t.id) === String(selectedTurmaId))?.nome || "Turma";
+  const selectedTurmaName = turmas.find((t) => String(t.id) === String(selectedTurmaId))?.nome || "Turma";
+  const weekLabel = useMemo(() => fmtWeekRange(weekStart), [weekStart]);
+
+  const sessionsList = useMemo(() => {
+    const list = Array.isArray(sessions) ? [...sessions] : [];
+    list.sort((a, b) => new Date(a.horarioInicio) - new Date(b.horarioInicio));
+    return list;
+  }, [sessions]);
+
+  /* ------------------------ Wizard Steps UI ------------------------ */
+
+  const StepPill = ({ n, label, active, done }) => (
+    <div
+      className={[
+        "flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold",
+        done
+          ? "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-900/50"
+          : active
+          ? "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-900/50"
+          : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
+      ].join(" ")}
+    >
+      <span
+        className={[
+          "w-5 h-5 rounded-full grid place-items-center text-[11px] font-black",
+          done
+            ? "bg-emerald-600 text-white"
+            : active
+            ? "bg-blue-600 text-white"
+            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
+        ].join(" ")}
+      >
+        {n}
+      </span>
+      {label}
+    </div>
+  );
+
+  function renderStepContent() {
+    switch (step) {
+      case 1:
+        return (
+          <div className="p-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
+              Define o dia e o intervalo de horário da sessão.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">Dia Início</label>
+                <input
+                  type="date"
+                  className="w-full rounded-lg border px-3 py-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  value={formData.inicioDate}
+                  onChange={(e) => setFormData({ ...formData, inicioDate: e.target.value, fimDate: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">Dia Fim</label>
+                <input
+                  type="date"
+                  className="w-full rounded-lg border px-3 py-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  value={formData.fimDate}
+                  onChange={(e) => setFormData({ ...formData, fimDate: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">Hora Início</label>
+                <input
+                  type="time"
+                  className="w-full rounded-lg border px-3 py-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  value={formData.inicioTime}
+                  onChange={(e) => setFormData({ ...formData, inicioTime: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">Hora Fim</label>
+                <input
+                  type="time"
+                  className="w-full rounded-lg border px-3 py-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  value={formData.fimTime}
+                  onChange={(e) => setFormData({ ...formData, fimTime: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 p-4">
+              <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">Dica</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">
+                No próximo passo vamos verificar automaticamente quem está disponível neste horário.
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="p-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
+              Seleciona um formador disponível para este intervalo.
+            </p>
+
+            {checkingAvailability ? (
+              <div className="py-10 flex flex-col items-center justify-center">
+                <div className="w-10 h-10 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
+                <div className="text-sm font-semibold text-blue-700 dark:text-blue-300">A consultar disponibilidades...</div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {formadoresStatus.map((f) => {
+                  const isAvailable = !!f.disponivel;
+                  const isSelected = Number(formData.selectedFormadorId) === f.formadorId;
+
+                  return (
+                    <button
+                      key={f.formadorId}
+                      type="button"
+                      disabled={!isAvailable}
+                      onClick={() => setFormData({ ...formData, selectedFormadorId: f.formadorId })}
+                      className={[
+                        "w-full text-left rounded-xl border p-4 transition flex items-center justify-between gap-4",
+                        !isAvailable
+                          ? "opacity-70 cursor-not-allowed border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20"
+                          : isSelected
+                          ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20"
+                          : "border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800",
+                      ].join(" ")}
+                    >
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div
+                          className={[
+                            "w-12 h-12 rounded-full grid place-items-center font-black shrink-0 border",
+                            !isAvailable
+                              ? "bg-red-500/10 text-red-600 border-red-200 dark:text-red-300 dark:border-red-900/40"
+                              : isSelected
+                              ? "bg-emerald-600 text-white border-emerald-600"
+                              : "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-900/50",
+                          ].join(" ")}
+                        >
+                          {f.avatar ? (
+                            <img src={f.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            String(f.formadorNome || "?").charAt(0)
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="font-bold text-gray-900 dark:text-gray-100 truncate">{f.formadorNome}</div>
+                          <div className="text-sm mt-0.5">
+                            {!isAvailable ? (
+                              <span className="text-red-600 dark:text-red-300">
+                                Indisponível — {f.motivoIndisponibilidade || "Sem detalhe"}
+                              </span>
+                            ) : (
+                              <span className="text-emerald-700 dark:text-emerald-300">Disponível</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {isSelected ? (
+                        <div className="text-emerald-600 dark:text-emerald-300 font-black">✓</div>
+                      ) : (
+                        <div className="text-gray-300 dark:text-gray-600 font-black">→</div>
+                      )}
+                    </button>
+                  );
+                })}
+
+                {formadoresStatus.length === 0 && (
+                  <div className="p-6 text-center rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400">
+                    Nenhum formador associado a esta turma (ou endpoint devolveu lista vazia).
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="p-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">Seleciona o módulo a lecionar:</p>
+
+            <div className="space-y-3">
+              {availableModules.map((tm) => {
+                const isSelected = Number(formData.turmaModuloId) === tm.id;
+                return (
+                  <button
+                    key={tm.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, turmaModuloId: tm.id })}
+                    className={[
+                      "w-full text-left rounded-xl border p-4 transition",
+                      isSelected
+                        ? "border-blue-200 bg-blue-50 dark:border-blue-900/50 dark:bg-blue-950/20"
+                        : "border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-bold text-gray-900 dark:text-gray-100 truncate">{tm.moduloNome}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          Carga Horária: <span className="font-semibold">{tm.horas || "--"}h</span>
+                        </div>
+                      </div>
+                      {isSelected && <div className="text-blue-600 dark:text-blue-300 font-black">✓</div>}
+                    </div>
+                  </button>
+                );
+              })}
+
+              {availableModules.length === 0 && (
+                <div className="p-6 text-center rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400">
+                  Este formador não tem módulos nesta turma.
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="p-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">Seleciona a sala:</p>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {salas.map((s) => {
+                const isSelected = Number(formData.salaId) === s.id;
+
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, salaId: s.id })}
+                    className={[
+                      "rounded-xl border p-4 text-left transition min-h-[96px]",
+                      isSelected
+                        ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20"
+                        : "border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800",
+                    ].join(" ")}
+                  >
+                    <div className="font-bold text-gray-900 dark:text-gray-100">{s.nome}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      {s.tipo || "Geral"} • {s.capacidade} lug.
+                    </div>
+                    {isSelected && <div className="mt-3 text-xs font-semibold text-emerald-700 dark:text-emerald-300">Selecionada</div>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  }
+
+  /* ------------------------ Render ------------------------ */
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] text-gray-100 font-sans selection:bg-emerald-500/30">
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
-      `}</style>
-
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-[#0f1419]/90 backdrop-blur border-b border-gray-800 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div>
-            <h1 className="text-xl font-bold flex items-center gap-2 text-white">
-                <span className="text-2xl">📅</span> Gestão de Horários
-                {loadingBase && <span className="text-xs text-emerald-500 animate-pulse ml-2">A carregar...</span>}
-            </h1>
-            <p className="text-xs text-gray-500 mt-1">
-                Coordenador: <span className="text-gray-300">{jwt?.unique_name || "Utilizador"}</span>
-            </p>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3">
-            {/* Seletor de Turma */}
-            <div className="relative">
-                <select 
-                    className="appearance-none bg-[#1a1f2e] border border-gray-700 rounded-lg px-4 py-2 pr-8 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-white min-w-[200px]"
-                    value={selectedTurmaId}
-                    onChange={e => setSelectedTurmaId(e.target.value)}
-                    disabled={loadingBase}
+      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
+                Sessões & Horários
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Turma: <span className="font-semibold text-gray-900 dark:text-gray-100">{selectedTurmaName}</span>{" "}
+                <span className="mx-2 text-gray-300 dark:text-gray-700">•</span>
+                Semana: <span className="font-semibold text-gray-900 dark:text-gray-100">{weekLabel}</span>
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Turma */}
+              <div className="relative">
+                <select
+                  className="appearance-none bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 pr-9 text-sm
+                             text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 min-w-[240px]"
+                  value={selectedTurmaId}
+                  onChange={(e) => setSelectedTurmaId(e.target.value)}
+                  disabled={loadingBase}
                 >
-                    {turmas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
-                    {turmas.length === 0 && <option value="">Sem turmas atribuídas</option>}
+                  {turmas.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.nome}
+                    </option>
+                  ))}
+                  {turmas.length === 0 && <option value="">Sem turmas atribuídas</option>}
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">▼</div>
-            </div>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 dark:text-gray-400 text-xs">
+                  ▼
+                </div>
+              </div>
 
-            {/* Controles de Semana */}
-            <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
-                <button onClick={() => setWeekAnchor(addDays(weekAnchor, -7))} className="px-3 py-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition">←</button>
-                <button onClick={() => setWeekAnchor(new Date())} className="px-3 py-1 text-xs font-bold hover:bg-gray-700 rounded text-gray-300 hover:text-white transition border-l border-r border-gray-700 mx-1">Hoje</button>
-                <button onClick={() => setWeekAnchor(addDays(weekAnchor, 7))} className="px-3 py-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition">→</button>
-            </div>
+              {/* Semana */}
+              <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-900">
+                <button
+                  type="button"
+                  onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}
+                  className="px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                  title="Semana anterior"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWeekAnchor(new Date())}
+                  className="px-3 py-2 text-xs font-black text-blue-700 dark:text-blue-300 border-l border-r border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                  title="Ir para esta semana"
+                >
+                  Hoje
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWeekAnchor(addDays(weekAnchor, 7))}
+                  className="px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                  title="Semana seguinte"
+                >
+                  →
+                </button>
+              </div>
 
-            <button onClick={() => navigate("/dashboard")} className="px-4 py-2 border border-gray-700 rounded-lg hover:bg-gray-800 text-sm text-gray-300 transition">
-                Sair
-            </button>
+              <button
+                type="button"
+                onClick={loadSessions}
+                className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900
+                           text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+              >
+                Recarregar
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate("/dashboard")}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-semibold
+                           hover:from-blue-700 hover:to-blue-800 transition shadow-sm"
+              >
+                Voltar
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="p-6 overflow-x-auto">
-        <div className="min-w-[900px] border border-gray-800 rounded-2xl bg-[#0f1419] overflow-hidden shadow-2xl">
-            {/* Header Days */}
-            <div className="grid grid-cols-8 border-b border-gray-800 bg-[#161b26]">
-                <div className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-r border-gray-800 flex items-center justify-center">Hora</div>
-                {weekDays.map((d, i) => {
-                    const isToday = toYmd(d) === toYmd(new Date());
-                    return (
-                        <div key={i} className={`p-3 text-center border-r border-gray-800 last:border-none ${isToday ? 'bg-emerald-500/5' : ''}`}>
-                            <div className={`text-sm font-bold ${isToday ? 'text-emerald-400' : 'text-gray-300'}`}>{WEEK_DAYS[i]}</div>
-                            <div className={`text-xs mt-1 ${isToday ? 'text-emerald-500/70' : 'text-gray-500'}`}>{d.getDate()}/{d.getMonth()+1}</div>
-                        </div>
-                    );
-                })}
+      {/* Content */}
+      <div className="container mx-auto px-6 py-8 space-y-8">
+        {/* Calendar Card */}
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/60 backdrop-blur shadow-sm overflow-hidden">
+          {/* Calendar header row */}
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-bold text-gray-900 dark:text-gray-100">Calendário semanal</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                Clica num “+” para criar sessão (verifica disponibilidade automaticamente).
+              </div>
             </div>
 
-            {/* Slots */}
-            {loadingSessions ? (
-                <div className="p-20 flex flex-col items-center justify-center text-gray-500">
-                    <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p>A carregar calendário...</p>
-                </div>
-            ) : (
-                slots.map((slot) => (
-                    <div key={slot.start} className="grid grid-cols-8 border-b border-gray-800/50 hover:bg-gray-900/30 transition-colors min-h-[80px]">
-                        {/* Time Label */}
-                        <div className="p-2 text-xs text-gray-600 border-r border-gray-800 flex items-center justify-center font-mono bg-[#11161f]">
-                            {slot.start}
-                        </div>
-                        
-                        {/* Days Columns */}
-                        {weekDays.map((d, i) => {
-                            const sess = getSessionInSlot(d, slot.start);
-                            const isSlotToday = toYmd(d) === toYmd(new Date());
+            <div className="flex items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                sessão
+              </span>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                disponível
+              </span>
+            </div>
+          </div>
 
-                            return (
-                                <div key={i} className={`border-r border-gray-800/50 last:border-none relative p-1 transition-colors ${isSlotToday ? 'bg-emerald-500/5' : ''}`}>
-                                    {sess ? (
-                                        <div className={`w-full h-full rounded-lg ${getSessionColor(sess.id).bg} p-2 text-xs shadow-lg relative group overflow-hidden border border-white/10`}>
-                                            <div className="font-bold truncate text-white text-[11px] leading-tight mb-0.5">{sess.moduloNome}</div>
-                                            <div className="text-[10px] text-white/80 truncate mb-2">{sess.formadorNome}</div>
-                                            
-                                            <div className="absolute bottom-1.5 left-2 right-2 flex justify-between items-end text-[9px] text-white/70 border-t border-white/20 pt-1">
-                                                <span>{sess.salaNome}</span>
-                                                <span>{sess.horarioInicio.split('T')[1].substring(0,5)}</span>
-                                            </div>
-                                            
-                                            {/* Delete Button */}
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); deleteSession(sess.id); }}
-                                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-black/40 hover:bg-red-600 rounded p-1 text-white transition-all transform scale-90 group-hover:scale-100"
-                                                title="Eliminar sessão"
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button 
-                                            onClick={() => openWizard(d, slot.start, slot.end)}
-                                            className="w-full h-full opacity-0 hover:opacity-100 flex items-center justify-center group"
-                                        >
-                                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold text-xl group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-lg transform scale-0 group-hover:scale-100">
-                                                +
-                                            </div>
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })}
+          {/* Grid */}
+          <div className="overflow-x-auto">
+            <div className="min-w-[980px]">
+              {/* Days Header */}
+              <div className="grid grid-cols-8 border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
+                <div className="p-4 text-xs font-black text-gray-600 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-800 flex items-center justify-center">
+                  Hora
+                </div>
+
+                {weekDays.map((d, i) => {
+                  const isToday = toYmd(d) === toYmd(new Date());
+                  return (
+                    <div
+                      key={i}
+                      className={[
+                        "p-3 text-center border-r border-gray-200 dark:border-gray-800 last:border-none",
+                        isToday ? "bg-blue-500/10 dark:bg-blue-500/10" : "",
+                      ].join(" ")}
+                    >
+                      <div className={["text-sm font-black", isToday ? "text-blue-700 dark:text-blue-300" : "text-gray-800 dark:text-gray-100"].join(" ")}>
+                        {WEEK_DAYS[i]}
+                      </div>
+                      <div className={["text-xs mt-1", isToday ? "text-blue-700/70 dark:text-blue-300/70" : "text-gray-600 dark:text-gray-400"].join(" ")}>
+                        {d.getDate()}/{d.getMonth() + 1}
+                      </div>
                     </div>
+                  );
+                })}
+              </div>
+
+              {/* Slots */}
+              {loadingSessions ? (
+                <div className="p-16 flex flex-col items-center justify-center text-gray-600 dark:text-gray-400">
+                  <div className="w-10 h-10 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
+                  <p className="font-semibold">A carregar sessões...</p>
+                </div>
+              ) : (
+                slots.map((slot) => (
+                  <div key={slot.start} className="grid grid-cols-8 border-b border-gray-200 dark:border-gray-800/60">
+                    {/* Time */}
+                    <div className="p-2 text-xs text-gray-600 dark:text-gray-400 border-r border-gray-200 dark:border-gray-800 flex items-center justify-center font-mono bg-gray-50/50 dark:bg-gray-800/30">
+                      {slot.start}
+                    </div>
+
+                    {/* Days */}
+                    {weekDays.map((d, i) => {
+                      const sess = getSessionInSlot(d, slot.start);
+                      const isSlotToday = toYmd(d) === toYmd(new Date());
+                      const c = sess ? getSessionColor(sess.id) : null;
+
+                      return (
+                        <div
+                          key={i}
+                          className={[
+                            "border-r border-gray-200 dark:border-gray-800/60 last:border-none relative p-1 min-h-[70px] transition-colors",
+                            isSlotToday ? "bg-blue-500/5 dark:bg-blue-500/5" : "bg-white/40 dark:bg-gray-900/40",
+                          ].join(" ")}
+                        >
+                          {sess ? (
+                            <div className={`w-full h-full rounded-xl border ${c.chip} p-2 text-xs shadow-sm relative group overflow-hidden`}>
+                              <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${c.bar}`} />
+                              <div className="pl-2">
+                                <div className="font-black truncate text-[11px] leading-tight mb-0.5">
+                                  {sess.moduloNome}
+                                </div>
+                                <div className="text-[10px] opacity-80 truncate mb-2">{sess.formadorNome}</div>
+
+                                <div className="flex items-center justify-between text-[10px] opacity-80 border-t border-black/5 dark:border-white/10 pt-1">
+                                  <span className="truncate">{sess.salaNome}</span>
+                                  <span className="font-mono">
+                                    {String(sess.horarioInicio || "").includes("T")
+                                      ? sess.horarioInicio.split("T")[1].substring(0, 5)
+                                      : ""}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Delete */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteSession(sess.id);
+                                }}
+                                className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition
+                                           px-2 py-1 rounded-lg text-[11px] font-black
+                                           bg-black/20 hover:bg-red-600 text-white"
+                                title="Eliminar sessão"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => openWizard(d, slot.start, slot.end)}
+                              className="w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition"
+                              title="Criar sessão"
+                            >
+                              <div className="w-9 h-9 rounded-full border border-blue-200 dark:border-blue-900/50 bg-blue-500/10 dark:bg-blue-500/15 text-blue-700 dark:text-blue-200 grid place-items-center font-black text-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition">
+                                +
+                              </div>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 ))
-            )}
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* List / Table */}
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/60 backdrop-blur shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3">
+            <div>
+              Seções desta semana
+              <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Lista ordenada por data/hora (mais fácil para validar rapidamente).
+              </div>
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400">
+              Total: <span className="font-black text-gray-900 dark:text-gray-100">{sessionsList.length}</span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-[900px] w-full">
+              <thead className="bg-gray-50/80 dark:bg-gray-800/50">
+                <tr className="text-left text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                  <th className="px-6 py-3 font-black">Data</th>
+                  <th className="px-6 py-3 font-black">Hora</th>
+                  <th className="px-6 py-3 font-black">Módulo</th>
+                  <th className="px-6 py-3 font-black">Formador</th>
+                  <th className="px-6 py-3 font-black">Sala</th>
+                  <th className="px-6 py-3 font-black">Duração</th>
+                  <th className="px-6 py-3 font-black text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sessionsList.map((s) => {
+                  const c = getSessionColor(s.id);
+                  const d = new Date(s.horarioInicio);
+                  const ymd = isNaN(d) ? "--" : `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+                  const startT = String(s.horarioInicio || "").includes("T") ? s.horarioInicio.split("T")[1].substring(0, 5) : "--";
+                  const endT = String(s.horarioFim || "").includes("T") ? s.horarioFim.split("T")[1].substring(0, 5) : "--";
+
+                  return (
+                    <tr key={s.id} className="border-t border-gray-200 dark:border-gray-800/60">
+                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100 font-semibold">{ymd}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 font-mono">
+                        {startT}–{endT}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-black ${c.chip}`}>
+                          <span className={`w-2.5 h-2.5 rounded-full ${c.bar}`} />
+                          {s.moduloNome}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{s.formadorNome}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{s.salaNome}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{durationLabel(s.horarioInicio, s.horarioFim)}</td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => deleteSession(s.id)}
+                          className="px-3 py-2 rounded-lg text-xs font-black text-white bg-red-600 hover:bg-red-700 transition"
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {sessionsList.length === 0 && !loadingSessions && (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-10 text-center text-gray-600 dark:text-gray-400">
+                      Sem sessões nesta semana.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       {/* WIZARD MODAL */}
       {showModal && (
-        <Modal title={`Nova Sessão - ${selectedTurmaName}`} onClose={() => setShowModal(false)} disableClose={saving}>
-            <div className="px-6 pb-6 pt-2 h-full flex flex-col">
-                {/* Steps Indicator */}
-                <div className="flex items-center justify-between mb-8 px-4">
-                    {[1,2,3,4].map(s => (
-                        <div key={s} className="flex items-center relative z-10">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all
-                                ${step === s ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-110' : 
-                                  step > s ? 'bg-emerald-900/30 border-emerald-600 text-emerald-500' : 'bg-[#1a1f2e] border-gray-700 text-gray-500'}`}>
-                                {step > s ? '✓' : s}
-                            </div>
-                            {/* Linha de conexão */}
-                            {s < 4 && (
-                                <div className={`absolute left-10 w-[calc(100vw/8)] sm:w-24 h-0.5 -z-10 
-                                    ${step > s ? 'bg-emerald-800' : 'bg-gray-800'}`} 
-                                />
-                            )}
-                        </div>
-                    ))}
-                </div>
-
-                {/* Content Area */}
-                <div className="flex-1 min-h-[300px]">
-                    {renderStepContent()}
-                </div>
-
-                {/* Error Message */}
-                {wizardError && (
-                    <div className="mt-4 p-3 bg-red-500/10 text-red-300 text-sm rounded-lg border border-red-500/20 flex items-center gap-2 animate-pulse">
-                        ⚠️ {wizardError}
-                    </div>
-                )}
-
-                {/* Footer Buttons */}
-                <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-800">
-                    <button 
-                        onClick={() => step === 1 ? setShowModal(false) : setStep(s => s - 1)}
-                        disabled={saving}
-                        className="px-6 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition font-medium text-sm"
-                    >
-                        {step === 1 ? "Cancelar" : "← Voltar"}
-                    </button>
-                    
-                    {step < 4 ? (
-                        <button 
-                            onClick={handleNext}
-                            disabled={checkingAvailability}
-                            className="px-8 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition shadow-lg shadow-emerald-900/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {checkingAvailability ? "A verificar..." : "Continuar →"}
-                        </button>
-                    ) : (
-                        <button 
-                            onClick={handleSubmit}
-                            disabled={!formData.salaId || saving}
-                            className="px-8 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold transition shadow-lg disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {saving ? (
-                                <>
-                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                    A criar...
-                                </>
-                            ) : "Confirmar Marcação ✅"}
-                        </button>
-                    )}
-                </div>
+        <Modal title={`Nova Sessão — ${selectedTurmaName}`} onClose={() => setShowModal(false)} disableClose={saving}>
+          <div className="px-6 py-6">
+            {/* Steps */}
+            <div className="flex flex-wrap items-center gap-2 mb-5">
+              <StepPill n={1} label="Tempo" active={step === 1} done={step > 1} />
+              <StepPill n={2} label="Formador" active={step === 2} done={step > 2} />
+              <StepPill n={3} label="Módulo" active={step === 3} done={step > 3} />
+              <StepPill n={4} label="Sala" active={step === 4} done={false} />
             </div>
+
+            {/* Error */}
+            {wizardError && (
+              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm font-semibold dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+                {wizardError}
+              </div>
+            )}
+
+            {/* Step Content */}
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+              {renderStepContent()}
+
+              <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep((p) => Math.max(1, p - 1))}
+                  disabled={step === 1 || saving || checkingAvailability}
+                  className={[
+                    "px-4 py-2 rounded-lg border text-sm font-semibold transition",
+                    step === 1 || saving || checkingAvailability
+                      ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600 dark:border-gray-700"
+                      : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800",
+                  ].join(" ")}
+                >
+                  Voltar
+                </button>
+
+                {step < 4 ? (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={saving || checkingAvailability}
+                    className={[
+                      "px-5 py-2 rounded-lg text-sm font-black text-white transition shadow-sm",
+                      saving || checkingAvailability ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700",
+                    ].join(" ")}
+                  >
+                    {checkingAvailability ? "A verificar..." : "Seguinte"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={saving || !formData.salaId}
+                    className={[
+                      "px-5 py-2 rounded-lg text-sm font-black text-white transition shadow-sm",
+                      saving || !formData.salaId ? "bg-gray-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700",
+                    ].join(" ")}
+                  >
+                    {saving ? "A criar..." : "Criar sessão"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </Modal>
       )}
     </div>

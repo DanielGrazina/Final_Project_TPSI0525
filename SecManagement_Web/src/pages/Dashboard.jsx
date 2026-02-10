@@ -150,6 +150,17 @@ function Icon({ name }) {
           <path d="M7 12h5M7 16h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
+    case "stats":
+      return (
+        <svg className={common} viewBox="0 0 24 24" fill="none">
+          <path
+            d="M11 3a1 1 0 011 1v16a1 1 0 11-2 0V4a1 1 0 011-1zm8 6a1 1 0 011 1v10a1 1 0 11-2 0V10a1 1 0 011-1zM5 13a1 1 0 011 1v6a1 1 0 11-2 0v-6a1 1 0 011-1z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
     default:
       return null;
   }
@@ -187,11 +198,15 @@ function NavCard({ title, desc, onClick, badge, disabled, icon, accent = "blue" 
         disabled ? "opacity-50 cursor-not-allowed" : "hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
       ].join(" ")}
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+      <div
+        className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+      />
 
       <div className="relative">
         <div className="flex items-start justify-between gap-3 mb-4">
-          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colors.icon} transition-transform duration-300 group-hover:scale-110`}>
+          <div
+            className={`w-12 h-12 rounded-lg flex items-center justify-center ${colors.icon} transition-transform duration-300 group-hover:scale-110`}
+          >
             <Icon name={icon} />
           </div>
 
@@ -202,8 +217,17 @@ function NavCard({ title, desc, onClick, badge, disabled, icon, accent = "blue" 
         <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{desc}</p>
 
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{disabled ? "Indisponível" : "Clique para abrir"}</span>
-          <span className={["text-sm font-semibold", disabled ? "text-gray-400 dark:text-gray-600" : "text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform"].join(" ")}>
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+            {disabled ? "Indisponível" : "Clique para abrir"}
+          </span>
+          <span
+            className={[
+              "text-sm font-semibold",
+              disabled
+                ? "text-gray-400 dark:text-gray-600"
+                : "text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform",
+            ].join(" ")}
+          >
             {disabled ? "—" : "→"}
           </span>
         </div>
@@ -214,10 +238,26 @@ function NavCard({ title, desc, onClick, badge, disabled, icon, accent = "blue" 
 
 function QuickAccessCard({ title, enabled, onClick, color = "blue" }) {
   const colors = {
-    blue: { bg: "from-blue-500 to-blue-600", text: "text-blue-600 dark:text-blue-400", border: "border-blue-200 dark:border-blue-800" },
-    green: { bg: "from-green-500 to-green-600", text: "text-green-600 dark:text-green-400", border: "border-green-200 dark:border-green-800" },
-    amber: { bg: "from-amber-500 to-amber-600", text: "text-amber-600 dark:text-amber-400", border: "border-amber-200 dark:border-amber-800" },
-    purple: { bg: "from-purple-500 to-purple-600", text: "text-purple-600 dark:text-purple-400", border: "border-purple-200 dark:border-purple-800" },
+    blue: {
+      bg: "from-blue-500 to-blue-600",
+      text: "text-blue-600 dark:text-blue-400",
+      border: "border-blue-200 dark:border-blue-800",
+    },
+    green: {
+      bg: "from-green-500 to-green-600",
+      text: "text-green-600 dark:text-green-400",
+      border: "border-green-200 dark:border-green-800",
+    },
+    amber: {
+      bg: "from-amber-500 to-amber-600",
+      text: "text-amber-600 dark:text-amber-400",
+      border: "border-amber-200 dark:border-amber-800",
+    },
+    purple: {
+      bg: "from-purple-500 to-purple-600",
+      text: "text-purple-600 dark:text-purple-400",
+      border: "border-purple-200 dark:border-purple-800",
+    },
   };
   const c = colors[color] || colors.blue;
 
@@ -229,11 +269,15 @@ function QuickAccessCard({ title, enabled, onClick, color = "blue" }) {
                   bg-white dark:bg-gray-900 ${c.border}
                   hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95`}
     >
-      <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${c.bg} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`} />
+      <div
+        className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${c.bg} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`}
+      />
       <div className="relative">
         <div className={`text-xs font-medium ${c.text} mb-1`}>Acesso rápido</div>
         <div className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{title}</div>
-        <div className={`mt-3 text-xs font-semibold ${c.text} group-hover:translate-x-1 transition-transform inline-block`}>Ver mais →</div>
+        <div className={`mt-3 text-xs font-semibold ${c.text} group-hover:translate-x-1 transition-transform inline-block`}>
+          Ver mais →
+        </div>
       </div>
     </button>
   ) : (
@@ -269,7 +313,7 @@ export default function Dashboard() {
 
   const role = useMemo(() => getUserRoleFromToken(token), [token]);
 
-  // Rotas (iguais ao teu dashboard anterior)
+  // Rotas
   const R = {
     users: "/admin/users",
     areas: "/admin/areas",
@@ -279,13 +323,14 @@ export default function Dashboard() {
     turmas: "/admin/turmas",
     evaluations: "/admin/evaluations",
     sessoes: "/admin/sessions",
+    stats: "/admin/stats",
     recruit: "/recruit",
     profiles: "/profiles",
     availability: "/availability",
     horarios: "/horarios",
   };
 
-  // Permissões (iguais ao teu dashboard anterior)
+  // Permissões
   const perms = useMemo(() => {
     const isSuperAdmin = role === "SuperAdmin";
     const isAdmin = role === "Admin";
@@ -311,6 +356,8 @@ export default function Dashboard() {
       canModules: adminish,
       canTurmas: adminish,
       canRooms: adminish,
+
+      canStats: adminish,
 
       canSessoes: adminish || isFormador,
       canEvaluations: adminish || isFormador || isFormando,
@@ -445,7 +492,7 @@ export default function Dashboard() {
     }
   };
 
-  // Cancelar setup -> limpa secret + desativa (como no teu controller anterior)
+  // Cancelar setup -> limpa secret + desativa
   const cancel2FA = async () => {
     try {
       setTwoFaError("");
@@ -483,7 +530,11 @@ export default function Dashboard() {
         {/* Header */}
         <div className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 dark:border-gray-800 shadow-sm">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
-            <button type="button" className="flex items-center gap-3 group" onClick={() => navigate("/dashboard")}>
+            <button
+              type="button"
+              className="flex items-center gap-3 group"
+              onClick={() => navigate("/dashboard")}
+            >
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center text-base font-bold shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-shadow">
                 AM
               </div>
@@ -739,13 +790,17 @@ export default function Dashboard() {
           </div>
 
           {/* Quick Access */}
-          <div className="mt-8 grid grid-cols-2 lg:grid-cols-7 gap-4">
+          <div className="mt-8 grid grid-cols-2 lg:grid-cols-8 gap-4">
             <QuickAccessCard title="Horários" enabled={perms.canHorarios} onClick={() => navigate(R.horarios)} color="blue" />
             <QuickAccessCard title="Disponibilidades" enabled={perms.canAvailability} onClick={() => navigate(R.availability)} color="green" />
             <QuickAccessCard title="Sessões" enabled={perms.canSessoes} onClick={() => navigate(R.sessoes)} color="green" />
             <QuickAccessCard title="Avaliações" enabled={perms.canEvaluations} onClick={() => navigate(R.evaluations)} color="purple" />
             <QuickAccessCard title="Inscrições" enabled={perms.canInscricoes} onClick={() => navigate(R.recruit)} color="blue" />
             <QuickAccessCard title="Salas" enabled={perms.canRooms} onClick={() => navigate(R.rooms)} color="amber" />
+
+            {/* ✅ NOVO: Stats (Admin/SuperAdmin) */}
+            <QuickAccessCard title="Estatísticas" enabled={perms.canStats} onClick={() => navigate(R.stats)} color="purple" />
+
             <QuickAccessCard title="Profiles" enabled={perms.canProfiles} onClick={() => navigate(R.profiles)} color="blue" />
           </div>
 
@@ -762,6 +817,18 @@ export default function Dashboard() {
                   icon="users"
                   accent="green"
                   badge={{ text: perms.isSecretaria ? "Secretaria" : "Admin", tone: perms.isSecretaria ? "blue" : "green" }}
+                />
+              )}
+
+              {/* ✅ NOVO: Stats (Admin/SuperAdmin) */}
+              {perms.canStats && (
+                <NavCard
+                  title="Estatísticas"
+                  desc="Ver indicadores do sistema, cursos por área e top formadores."
+                  onClick={() => navigate(R.stats)}
+                  icon="stats"
+                  accent="purple"
+                  badge={{ text: "Admin", tone: "green" }}
                 />
               )}
 
@@ -894,8 +961,22 @@ export default function Dashboard() {
                   icon="inscr"
                   accent="blue"
                   badge={{
-                    text: perms.isAdmin || perms.isSuperAdmin ? "Admin" : perms.isSecretaria ? "Secretaria" : perms.isFormando ? "Formando" : "User",
-                    tone: perms.isAdmin || perms.isSuperAdmin ? "green" : perms.isSecretaria ? "blue" : perms.isFormando ? "amber" : "neutral",
+                    text:
+                      perms.isAdmin || perms.isSuperAdmin
+                        ? "Admin"
+                        : perms.isSecretaria
+                        ? "Secretaria"
+                        : perms.isFormando
+                        ? "Formando"
+                        : "User",
+                    tone:
+                      perms.isAdmin || perms.isSuperAdmin
+                        ? "green"
+                        : perms.isSecretaria
+                        ? "blue"
+                        : perms.isFormando
+                        ? "amber"
+                        : "neutral",
                   }}
                 />
               )}

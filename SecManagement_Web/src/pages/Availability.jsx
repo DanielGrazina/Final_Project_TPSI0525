@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { getToken, getUserRoleFromToken } from "../utils/auth";
 
-/* ---------------- JWT helpers (igual ao Profiles) ---------------- */
+/* ---------------- helpers ---------------- */
 
 function safeStr(x) {
   return (x ?? "").toString();
@@ -30,6 +30,7 @@ function extractError(err, fallback = "Ocorreu um erro.") {
   }
 }
 
+// JWT decode sem libs
 function decodeJwt(token) {
   try {
     const part = token.split(".")[1];
@@ -46,6 +47,7 @@ function decodeJwt(token) {
   }
 }
 
+// tenta buscar UserId do token (suporta nameid / sub / etc.)
 function getUserIdFromToken(token) {
   const p = decodeJwt(token);
   if (!p) return null;
@@ -77,7 +79,7 @@ function getUserIdFromToken(token) {
   return null;
 }
 
-/* ---------------- Date helpers ---------------- */
+/* ---------------- date helpers ---------------- */
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -108,8 +110,150 @@ function formatPtShort(d) {
 }
 
 function formatDayLabel(d) {
-  const wd = d.toLocaleDateString("pt-PT", { weekday: "short" }); // "seg.", "ter.", etc
+  const wd = d.toLocaleDateString("pt-PT", { weekday: "short" }); // "seg.", "ter.", ...
   return wd.charAt(0).toUpperCase() + wd.slice(1);
+}
+
+/* ---------------- UI ---------------- */
+
+function HeaderIcon({ icon = "availability" }) {
+  return (
+    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
+      {icon === "availability" ? (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M8 3v2M16 3v2M4 8h16M6 5h12a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M12 12v4l3 2"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
+function Btn({ children, tone = "neutral", className = "", ...props }) {
+  const map = {
+    neutral:
+      "border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800",
+    blue:
+      "border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-200 dark:hover:bg-blue-950/30",
+    green:
+      "border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900/50 dark:text-emerald-200 dark:hover:bg-emerald-950/30",
+  };
+
+  return (
+    <button
+      type="button"
+      className={[
+        "px-4 py-2 rounded-lg border text-sm font-semibold transition",
+        "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+        map[tone] || map.neutral,
+        className,
+      ].join(" ")}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PrimaryBtn({ children, tone = "blue", className = "", ...props }) {
+  const map = {
+    blue: "from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-500/25",
+    green: "from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-emerald-500/25",
+  };
+
+  return (
+    <button
+      type="button"
+      className={[
+        "px-4 py-2 rounded-lg font-semibold text-white transition",
+        "shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+        `bg-gradient-to-r ${map[tone] || map.blue}`,
+        className,
+      ].join(" ")}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* -------- Hours pagination (porque aqui não é uma tabela normal) -------- */
+
+function HoursPager({ page, perPage, total, onPageChange, onPerPageChange, disabled }) {
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+
+  const from = total === 0 ? 0 : (safePage - 1) * perPage + 1;
+  const to = Math.min(total, safePage * perPage);
+
+  return (
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          Horas{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">
+            {from}–{to}
+          </span>{" "}
+          de <span className="font-semibold text-gray-900 dark:text-gray-100">{total}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Por página</span>
+          <select
+            value={perPage}
+            onChange={(e) => onPerPageChange(Number(e.target.value))}
+            disabled={disabled}
+            className="border border-gray-200 dark:border-gray-800 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-900
+                       text-gray-900 dark:text-gray-100 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-60"
+          >
+            {[6, 8, 10, 15].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <Btn onClick={() => onPageChange(1)} disabled={disabled || safePage === 1}>
+          «
+        </Btn>
+        <Btn onClick={() => onPageChange(safePage - 1)} disabled={disabled || safePage === 1}>
+          ‹
+        </Btn>
+
+        <div className="text-sm text-gray-600 dark:text-gray-400 px-2">
+          Página <span className="font-semibold text-gray-900 dark:text-gray-100">{safePage}</span> /{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{totalPages}</span>
+        </div>
+
+        <Btn onClick={() => onPageChange(safePage + 1)} disabled={disabled || safePage === totalPages}>
+          ›
+        </Btn>
+        <Btn onClick={() => onPageChange(totalPages)} disabled={disabled || safePage === totalPages}>
+          »
+        </Btn>
+      </div>
+    </div>
+  );
 }
 
 /* ---------------- Main Page ---------------- */
@@ -119,7 +263,6 @@ export default function Availability() {
 
   const token = getToken();
   const role = getUserRoleFromToken(token) || "User";
-
   const myUserId = useMemo(() => (token ? getUserIdFromToken(token) : null), [token]);
 
   // Só formador (o backend só deixa POST para Formador)
@@ -134,6 +277,10 @@ export default function Availability() {
     for (let h = 8; h <= 22; h++) arr.push(h); // 08:00 -> 22:00
     return arr;
   }, []);
+
+  // Paginação das horas
+  const [hourPage, setHourPage] = useState(1);
+  const [hoursPerPage, setHoursPerPage] = useState(8);
 
   // Dias (Mon..Sun)
   const days = useMemo(() => {
@@ -150,6 +297,7 @@ export default function Availability() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
 
   // Drag select state
   const dragRef = useRef({
@@ -159,7 +307,6 @@ export default function Availability() {
   });
 
   const weekKeySet = useMemo(() => {
-    // para limpar rapidamente slots fora da semana visível (opcional)
     const set = new Set();
     for (const d of days) {
       const iso = toISODate(d);
@@ -168,9 +315,24 @@ export default function Availability() {
     return set;
   }, [days, hours]);
 
+  const hourTotal = hours.length;
+  const hourTotalPages = Math.max(1, Math.ceil(hourTotal / hoursPerPage));
+
+  useEffect(() => {
+    // reset da paginação quando muda o tamanho/página da semana
+    setHourPage(1);
+  }, [weekStart, hoursPerPage]);
+
+  useEffect(() => {
+    if (hourPage > hourTotalPages) setHourPage(hourTotalPages);
+  }, [hourPage, hourTotalPages]);
+
+  const pagedHours = useMemo(() => {
+    const start = (hourPage - 1) * hoursPerPage;
+    return hours.slice(start, start + hoursPerPage);
+  }, [hours, hourPage, hoursPerPage]);
+
   async function resolveFormadorId() {
-    // precisamos do ID do Formador (não do userId)
-    // usamos Profiles/formador/{userId} e apanhamos "id"
     if (!token) throw new Error("Sem token.");
     if (!myUserId) throw new Error("Não consegui ler o teu UserId do token.");
 
@@ -178,9 +340,7 @@ export default function Availability() {
     const fid = r?.data?.id;
     const uid = r?.data?.userId;
 
-    // fid costuma ser o ID do formador na BD
     if (!Number.isFinite(Number(fid))) {
-      // fallback: se por acaso o controller Disponibilidades estiver a usar userId em vez de formadorId
       if (Number.isFinite(Number(uid))) return Number(uid);
       throw new Error("Não encontrei o FormadorId no /Profiles/formador/{userId} (campo 'id').");
     }
@@ -190,6 +350,7 @@ export default function Availability() {
 
   async function loadWeek() {
     setError("");
+    setInfo("");
     setLoading(true);
 
     try {
@@ -206,33 +367,29 @@ export default function Availability() {
 
       for (const item of arr) {
         const id = item?.id;
-        
-        // --- CORREÇÃO AQUI ---
-        // O Backend envia "dataInicio" (DateTime ISO). Temos de extrair o dia e a hora.
+
+        // Backend envia "dataInicio" (DateTime ISO)
         let dataISO = null;
         let hour = null;
 
         if (item.dataInicio) {
-            const d = new Date(item.dataInicio);
-            dataISO = toISODate(d); // "2026-02-09"
-            hour = d.getHours();    // Extrai a hora (ex: 9)
+          const d = new Date(item.dataInicio);
+          dataISO = toISODate(d);
+          hour = d.getHours();
         } else {
-            // Fallback para o código antigo (caso haja dados legacy)
-            const rawDate = item?.data || item?.dia || item?.date;
-            const rawTime = item?.horaInicio || item?.inicio || item?.startTime;
-            if (rawDate && rawTime) {
-                const d = new Date(rawDate);
-                dataISO = toISODate(d);
-                hour = Number(safeStr(rawTime).slice(0, 2));
-            }
+          // fallback legacy
+          const rawDate = item?.data || item?.dia || item?.date;
+          const rawTime = item?.horaInicio || item?.inicio || item?.startTime;
+          if (rawDate && rawTime) {
+            const d = new Date(rawDate);
+            dataISO = toISODate(d);
+            hour = Number(safeStr(rawTime).slice(0, 2));
+          }
         }
 
-        // Se não conseguimos determinar data ou hora, ignora
-        if (!dataISO || hour === null || isNaN(hour)) continue;
+        if (!dataISO || hour === null || Number.isNaN(Number(hour))) continue;
 
-        const key = `${dataISO}|${hour}`;
-
-        // Só mostramos a semana visível
+        const key = `${dataISO}|${Number(hour)}`;
         if (!weekKeySet.has(key)) continue;
 
         map.set(key, { ...item, id });
@@ -247,6 +404,10 @@ export default function Availability() {
   }
 
   useEffect(() => {
+    if (!token) {
+      navigate("/", { replace: true });
+      return;
+    }
     loadWeek();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
@@ -273,24 +434,20 @@ export default function Availability() {
     const fid = formadorId ?? (await resolveFormadorId());
     if (!formadorId) setFormadorId(fid);
 
-    if (!fid) {
-      console.error("Erro: ID de Formador não encontrado.");
-      return;
-    }
+    if (!fid) throw new Error("ID de Formador não encontrado.");
 
-    const isoDate = toISODate(dateObj); 
-    const dataInicio = `${isoDate}T${pad2(hour)}:00:00`; 
+    const isoDate = toISODate(dateObj);
+    const dataInicio = `${isoDate}T${pad2(hour)}:00:00`;
     const dataFim = `${isoDate}T${pad2(hour + 1)}:00:00`;
 
-    // Agora enviamos o entidadeId (que é igual ao formadorId neste caso)
     const dto = {
-      entidadeId: fid,       // <--- CAMPO NOVO
+      entidadeId: fid,
       tipoEntidade: "Formador",
       formadorId: fid,
       salaId: null,
-      dataInicio: dataInicio,
-      dataFim: dataFim,
-      disponivel: true
+      dataInicio,
+      dataFim,
+      disponivel: true,
     };
 
     const res = await api.post("/Disponibilidades", dto);
@@ -299,43 +456,6 @@ export default function Availability() {
 
   async function deleteSlot(id) {
     await api.delete(`/Disponibilidades/${id}`);
-  }
-
-  async function toggleOne(dateObj, hour) {
-    if (!isFormador) return;
-
-    const key = cellKey(dateObj, hour);
-    const existing = slots.get(key);
-
-    setError("");
-    setSaving(true);
-
-    try {
-      if (existing?.id) {
-        await deleteSlot(existing.id);
-        setSlots((prev) => {
-          const next = new Map(prev);
-          next.delete(key);
-          return next;
-        });
-      } else {
-        const created = await createSlot(dateObj, hour);
-        // se o backend não devolver o objeto, fazemos refresh
-        if (!created || !created.id) {
-          await loadWeek();
-        } else {
-          setSlots((prev) => {
-            const next = new Map(prev);
-            next.set(key, created);
-            return next;
-          });
-        }
-      }
-    } catch (e) {
-      setError(extractError(e, "Falha ao guardar disponibilidade."));
-    } finally {
-      setSaving(false);
-    }
   }
 
   function beginDrag(dateObj, hour) {
@@ -348,7 +468,6 @@ export default function Availability() {
     dragRef.current.mode = currently ? "remove" : "add";
     dragRef.current.visited = new Set([key]);
 
-    // aplica no primeiro clique já
     applyDragAction(dateObj, hour);
   }
 
@@ -366,12 +485,11 @@ export default function Availability() {
     const key = cellKey(dateObj, hour);
     const existing = slots.get(key);
 
-    // modo add: só cria se não existir
-    // modo remove: só apaga se existir
     if (dragRef.current.mode === "add") {
       if (existing) return;
 
       setError("");
+      setInfo("");
       setSaving(true);
       try {
         const created = await createSlot(dateObj, hour);
@@ -393,6 +511,7 @@ export default function Availability() {
       if (!existing?.id) return;
 
       setError("");
+      setInfo("");
       setSaving(true);
       try {
         await deleteSlot(existing.id);
@@ -418,104 +537,137 @@ export default function Availability() {
     setWeekStart(startOfWeekMonday(new Date()));
   }
 
+  const weekLabel = useMemo(() => {
+    const start = days[0];
+    const end = days[6];
+    if (!start || !end) return "";
+    return `${formatPtShort(start)} → ${formatPtShort(end)}`;
+  }, [days]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-950 to-gray-900 text-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-white/10 bg-gray-950/80 backdrop-blur-xl">
+      <div className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 dark:border-gray-800 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold">Disponibilidades</h1>
-            <p className="text-sm text-gray-300">
-              Marca os blocos horários em que estás disponível. (Clica e arrasta para marcar vários)
-            </p>
+          <div className="flex items-center gap-3">
+            <HeaderIcon icon="availability" />
+            <div>
+              <h1 className="text-xl font-black text-gray-900 dark:text-gray-100">Disponibilidades</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Marca blocos horários disponíveis (podes clicar e arrastar).
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setWeekStart((w) => addDays(w, -7))}
-              className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
-              disabled={loading || saving}
-            >
-              ← Prev
-            </button>
-            <button
-              type="button"
-              onClick={goToday}
-              className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
-              disabled={loading || saving}
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              onClick={() => setWeekStart((w) => addDays(w, 7))}
-              className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
-              disabled={loading || saving}
-            >
-              Next →
-            </button>
+            <Btn onClick={() => setWeekStart((w) => addDays(w, -7))} disabled={loading || saving}>
+              ← Semana
+            </Btn>
 
-            <button
-              type="button"
-              onClick={() => navigate("/dashboard")}
-              className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
-            >
+            <PrimaryBtn tone="blue" onClick={goToday} disabled={loading || saving}>
+              Hoje
+            </PrimaryBtn>
+
+            <Btn onClick={() => setWeekStart((w) => addDays(w, 7))} disabled={loading || saving}>
+              Semana →
+            </Btn>
+
+            <Btn onClick={() => navigate("/dashboard")} className="ml-0 md:ml-2">
               ← Voltar
-            </button>
+            </Btn>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
+        {/* Alerts */}
         {!isFormador && (
-          <div className="mb-5 bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-sm text-red-200">
+          <div className="mb-5 bg-red-50 border border-red-200 dark:bg-red-950/25 dark:border-red-900/40 rounded-xl p-4 text-sm text-red-700 dark:text-red-200">
             Esta página é apenas para o role <b>Formador</b>. O teu role atual é: <b>{role}</b>
           </div>
         )}
 
-        {error && (
-          <div className="mb-5 bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-sm text-red-200">
-            {error}
+        {(error || info) && (
+          <div className="mb-5 space-y-3">
+            {error && (
+              <div className="bg-red-50 border border-red-200 dark:bg-red-950/25 dark:border-red-900/40 rounded-xl p-4 text-sm text-red-700 dark:text-red-200">
+                {error}
+              </div>
+            )}
+            {info && (
+              <div className="bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/40 rounded-xl p-4 text-sm text-emerald-800 dark:text-emerald-200">
+                {info}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Legend */}
-        <div className="mb-4 flex items-center gap-4 text-sm text-gray-300">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded bg-green-500" />
-            Disponível
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded bg-white/10 border border-white/10" />
-            Não definido
+        {/* Legend + Week info */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                <span className="inline-block w-3 h-3 rounded bg-emerald-500" />
+                Disponível
+              </div>
+
+              <div className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                <span className="inline-block w-3 h-3 rounded bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700" />
+                Não definido
+              </div>
+
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Semana:{" "}
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{weekLabel}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {(loading || saving) && (
+                <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                  <span className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  {loading ? "A carregar..." : "A guardar..."}
+                </div>
+              )}
+            </div>
           </div>
 
-          {(loading || saving) && (
-            <div className="ml-auto flex items-center gap-2 text-xs text-gray-300">
-              <span className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-              {loading ? "A carregar..." : "A guardar..."}
-            </div>
-          )}
+          <div className="mt-4">
+            <HoursPager
+              page={hourPage}
+              perPage={hoursPerPage}
+              total={hours.length}
+              onPageChange={setHourPage}
+              onPerPageChange={(n) => {
+                setHoursPerPage(n);
+                setHourPage(1);
+              }}
+              disabled={loading || saving}
+            />
+          </div>
+
+          <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+            Dica: se começares o arrasto num bloco já marcado, o arrasto apaga. Se começares num bloco vazio, marca.
+          </div>
         </div>
 
-        {/* Table/Grid */}
-        <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-          {/* Top header row */}
+        {/* Grid */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
+          {/* Header row */}
           <div className="grid" style={{ gridTemplateColumns: `90px repeat(7, minmax(130px, 1fr))` }}>
-            <div className="p-3 text-xs font-semibold text-gray-300 border-b border-white/10 bg-gray-950/40">
+            <div className="p-3 text-xs font-semibold text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/30">
               Hora
             </div>
 
             {days.map((d) => (
               <div
                 key={toISODate(d)}
-                className="p-3 text-xs font-semibold text-gray-200 border-b border-white/10 bg-gray-950/40"
+                className="p-3 text-xs font-semibold text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/30"
               >
                 <div className="flex items-center justify-between">
                   <span>{formatDayLabel(d)}</span>
-                  <span className="text-gray-400">{formatPtShort(d)}</span>
+                  <span className="text-gray-500 dark:text-gray-400">{formatPtShort(d)}</span>
                 </div>
               </div>
             ))}
@@ -525,23 +677,18 @@ export default function Availability() {
           {loading ? (
             <div className="p-10 flex items-center justify-center">
               <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              <span className="ml-3 text-gray-300">A carregar...</span>
+              <span className="ml-3 text-gray-600 dark:text-gray-300">A carregar...</span>
             </div>
           ) : (
-            <div
-              className="select-none"
-              onMouseLeave={() => {
-                // não terminamos drag aqui (só no mouseup), mas evita “saltos”
-              }}
-            >
-              {hours.map((h) => (
+            <div className="select-none">
+              {pagedHours.map((h) => (
                 <div
                   key={h}
-                  className="grid border-t border-white/10"
+                  className="grid border-t border-gray-200 dark:border-gray-800"
                   style={{ gridTemplateColumns: `90px repeat(7, minmax(130px, 1fr))` }}
                 >
                   {/* Hour label */}
-                  <div className="p-3 text-sm text-gray-300 bg-gray-950/20 border-r border-white/10 flex items-center justify-center">
+                  <div className="p-3 text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-950/20 border-r border-gray-200 dark:border-gray-800 flex items-center justify-center">
                     {pad2(h)}:00
                   </div>
 
@@ -554,10 +701,12 @@ export default function Availability() {
                       <div
                         key={key}
                         className={[
-                          "relative border-r border-white/10 h-12 cursor-pointer",
+                          "relative border-r border-gray-200 dark:border-gray-800 h-12",
                           "transition-colors",
-                          available ? "bg-green-500/20" : "bg-white/0 hover:bg-white/5",
-                          !isFormador || saving ? "opacity-60 cursor-not-allowed" : "",
+                          available
+                            ? "bg-emerald-500/15 hover:bg-emerald-500/20"
+                            : "bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/40",
+                          !isFormador || saving ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
                         ].join(" ")}
                         onMouseDown={() => beginDrag(d, h)}
                         onMouseEnter={() => enterDrag(d, h)}
@@ -566,8 +715,8 @@ export default function Availability() {
                       >
                         {available && (
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="px-2 py-1 rounded-full bg-green-500 text-white text-[11px] font-bold">
-                              Available
+                            <span className="px-2 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-bold shadow-sm">
+                              Disponível
                             </span>
                           </div>
                         )}
@@ -578,10 +727,6 @@ export default function Availability() {
               ))}
             </div>
           )}
-        </div>
-
-        <div className="mt-4 text-xs text-gray-400">
-          Dica: clica e arrasta para marcar vários blocos. Se começares num bloco já marcado, o arrasto apaga.
         </div>
       </div>
     </div>
