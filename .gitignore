@@ -55,3 +55,72 @@ TestResult.xml
 # Postgres data
 postgres-data/
 pgdata/
+
+
+# =========
+# Gradle
+# =========
+.gradle/
+**/build/
+!**/src/**/build/
+gradle-app.setting
+
+# =========
+# Android / IntelliJ / Android Studio
+# =========
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# =========
+# Logs
+# =========
+*.log
+
+# =========
+# OS files
+# =========
+.DS_Store
+Thumbs.db
+
+# =========
+# Kotlin / Java
+# =========
+*.class
+
+# =========
+# Keystore / Signing (NUNCA enviar)
+# =========
+*.jks
+*.keystore
+*.p12
+*.pem
+*.der
+
+# =========
+# Google Services / Firebase (depende do caso)
+# Se usares Firebase e este ficheiro não tiver segredos, podes commitar.
+# Se não usares, mantém ignorado.
+# =========
+app/google-services.json
+
+# =========
+# Secrets / Environment
+# =========
+*.env
+.env.*
+secrets.properties
+apikeys.properties
+
+# =========
+# NDK / CMake (se aplicável)
+# =========
+obj/
+*.so
+
