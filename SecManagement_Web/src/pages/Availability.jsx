@@ -30,7 +30,6 @@ function extractError(err, fallback = "Ocorreu um erro.") {
   }
 }
 
-// JWT decode sem libs
 function decodeJwt(token) {
   try {
     const part = token.split(".")[1];
@@ -47,7 +46,6 @@ function decodeJwt(token) {
   }
 }
 
-// tenta buscar UserId do token (suporta nameid / sub / etc.)
 function getUserIdFromToken(token) {
   const p = decodeJwt(token);
   if (!p) return null;
@@ -68,14 +66,6 @@ function getUserIdFromToken(token) {
       if (Number.isFinite(n)) return n;
     }
   }
-
-  const extra = ["unique_name", "sid"];
-  for (const k of extra) {
-    const v = p[k];
-    const n = Number(v);
-    if (Number.isFinite(n)) return n;
-  }
-
   return null;
 }
 
@@ -86,14 +76,13 @@ function pad2(n) {
 }
 
 function toISODate(d) {
-  // yyyy-mm-dd (local)
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 function startOfWeekMonday(date) {
   const d = new Date(date);
-  const day = d.getDay(); // 0=Sun ... 6=Sat
-  const diff = (day === 0 ? -6 : 1) - day; // move to Monday
+  const day = d.getDay(); // 0=Sun .. 6=Sat
+  const diff = (day === 0 ? -6 : 1) - day;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -110,58 +99,48 @@ function formatPtShort(d) {
 }
 
 function formatDayLabel(d) {
-  const wd = d.toLocaleDateString("pt-PT", { weekday: "short" }); // "seg.", "ter.", ...
+  const wd = d.toLocaleDateString("pt-PT", { weekday: "short" });
   return wd.charAt(0).toUpperCase() + wd.slice(1);
+}
+
+function clamp(n, a, b) {
+  return Math.max(a, Math.min(b, n));
 }
 
 /* ---------------- UI ---------------- */
 
-function HeaderIcon({ icon = "availability" }) {
+function HeaderIcon() {
   return (
     <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
-      {icon === "availability" ? (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M8 3v2M16 3v2M4 8h16M6 5h12a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M12 12v4l3 2"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      ) : (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      )}
+      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M8 3v2M16 3v2M4 8h16M6 5h12a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M12 12v4l3 2"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
     </div>
   );
 }
 
-function Btn({ children, tone = "neutral", className = "", ...props }) {
-  const map = {
-    neutral:
-      "border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800",
-    blue:
-      "border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-200 dark:hover:bg-blue-950/30",
-    green:
-      "border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900/50 dark:text-emerald-200 dark:hover:bg-emerald-950/30",
-  };
-
+function Btn({ children, className = "", ...props }) {
   return (
     <button
       type="button"
       className={[
         "px-4 py-2 rounded-lg border text-sm font-semibold transition",
+        "border-gray-200 text-gray-700 hover:bg-gray-50",
+        "dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800",
         "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
-        map[tone] || map.neutral,
         className,
       ].join(" ")}
       {...props}
@@ -171,19 +150,15 @@ function Btn({ children, tone = "neutral", className = "", ...props }) {
   );
 }
 
-function PrimaryBtn({ children, tone = "blue", className = "", ...props }) {
-  const map = {
-    blue: "from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-500/25",
-    green: "from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-emerald-500/25",
-  };
-
+function DangerBtn({ children, className = "", ...props }) {
   return (
     <button
       type="button"
       className={[
         "px-4 py-2 rounded-lg font-semibold text-white transition",
-        "shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
-        `bg-gradient-to-r ${map[tone] || map.blue}`,
+        "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700",
+        "shadow-lg shadow-red-500/20 hover:shadow-xl active:scale-95",
+        "disabled:opacity-60 disabled:cursor-not-allowed",
         className,
       ].join(" ")}
       {...props}
@@ -193,7 +168,23 @@ function PrimaryBtn({ children, tone = "blue", className = "", ...props }) {
   );
 }
 
-/* -------- Hours pagination (porque aqui não é uma tabela normal) -------- */
+function PrimaryBtn({ children, className = "", ...props }) {
+  return (
+    <button
+      type="button"
+      className={[
+        "px-4 py-2 rounded-lg font-semibold text-white transition",
+        "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800",
+        "shadow-lg shadow-blue-500/25 hover:shadow-xl active:scale-95",
+        "disabled:opacity-60 disabled:cursor-not-allowed",
+        className,
+      ].join(" ")}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
 
 function HoursPager({ page, perPage, total, onPageChange, onPerPageChange, disabled }) {
   const totalPages = Math.max(1, Math.ceil(total / perPage));
@@ -265,72 +256,80 @@ export default function Availability() {
   const role = getUserRoleFromToken(token) || "User";
   const myUserId = useMemo(() => (token ? getUserIdFromToken(token) : null), [token]);
 
-  // Só formador (o backend só deixa POST para Formador)
   const isFormador = role === "Formador";
 
-  // Semana atual (segunda)
+  // Semana
   const [weekStart, setWeekStart] = useState(() => startOfWeekMonday(new Date()));
 
-  // Horas (ajusta se quiseres)
-  const hours = useMemo(() => {
+  // Horas base
+  const allHours = useMemo(() => {
     const arr = [];
-    for (let h = 8; h <= 22; h++) arr.push(h); // 08:00 -> 22:00
+    for (let h = 8; h <= 22; h++) arr.push(h);
     return arr;
   }, []);
 
-  // Paginação das horas
+  // Paginação
   const [hourPage, setHourPage] = useState(1);
-  const [hoursPerPage, setHoursPerPage] = useState(8);
+  const [hoursPerPage, setHoursPerPage] = useState(15);
 
-  // Dias (Mon..Sun)
+  // Dias
   const days = useMemo(() => {
     const arr = [];
     for (let i = 0; i < 7; i++) arr.push(addDays(weekStart, i));
     return arr;
   }, [weekStart]);
 
-  // Backend ids
+  // Estado backend
   const [formadorId, setFormadorId] = useState(null);
-
-  // Disponibilidades (map por chave: `${yyyy-mm-dd}|${hour}`)
-  const [slots, setSlots] = useState(() => new Map()); // key -> { id, ...dto }
+  const [items, setItems] = useState([]); // intervalos
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
-  // Drag select state
+  // Drag state (ref + state para preview)
   const dragRef = useRef({
     active: false,
-    mode: "add", // "add" | "remove"
-    visited: new Set(),
+    mode: "add", // add | remove
+    dateISO: null,
+    startHour: null,
+    currentHour: null,
+    removeId: null,
   });
 
-  const weekKeySet = useMemo(() => {
-    const set = new Set();
-    for (const d of days) {
-      const iso = toISODate(d);
-      for (const h of hours) set.add(`${iso}|${h}`);
-    }
-    return set;
-  }, [days, hours]);
+  const [dragUI, setDragUI] = useState(null); // {active, mode, dateISO, startH, endH, removeId}
 
-  const hourTotal = hours.length;
-  const hourTotalPages = Math.max(1, Math.ceil(hourTotal / hoursPerPage));
+  // layout
+  const rowH = 56;
+  const hourStart = useMemo(() => allHours[0], [allHours]);
+  const hourEnd = useMemo(() => allHours[allHours.length - 1] + 1, [allHours]); // exclusivo
 
+  // paginação
+  const hourTotal = allHours.length;
+  const totalPages = Math.max(1, Math.ceil(hourTotal / hoursPerPage));
+
+  useEffect(() => setHourPage(1), [weekStart, hoursPerPage]);
   useEffect(() => {
-    // reset da paginação quando muda o tamanho/página da semana
-    setHourPage(1);
-  }, [weekStart, hoursPerPage]);
+    if (hourPage > totalPages) setHourPage(totalPages);
+  }, [hourPage, totalPages]);
 
-  useEffect(() => {
-    if (hourPage > hourTotalPages) setHourPage(hourTotalPages);
-  }, [hourPage, hourTotalPages]);
-
-  const pagedHours = useMemo(() => {
+  const visibleHours = useMemo(() => {
     const start = (hourPage - 1) * hoursPerPage;
-    return hours.slice(start, start + hoursPerPage);
-  }, [hours, hourPage, hoursPerPage]);
+    return allHours.slice(start, start + hoursPerPage);
+  }, [allHours, hourPage, hoursPerPage]);
+
+  const visibleStartHour = useMemo(() => visibleHours[0] ?? hourStart, [visibleHours, hourStart]);
+  const visibleEndHour = useMemo(
+    () => (visibleHours[visibleHours.length - 1] ?? hourStart) + 1,
+    [visibleHours, hourStart]
+  );
+
+  const weekRange = useMemo(() => {
+    const start = days[0];
+    const end = days[6];
+    if (!start || !end) return "";
+    return `${formatPtShort(start)} → ${formatPtShort(end)}`;
+  }, [days]);
 
   async function resolveFormadorId() {
     if (!token) throw new Error("Sem token.");
@@ -338,14 +337,12 @@ export default function Availability() {
 
     const r = await api.get(`/Profiles/formador/${myUserId}`);
     const fid = r?.data?.id;
-    const uid = r?.data?.userId;
-
-    if (!Number.isFinite(Number(fid))) {
-      if (Number.isFinite(Number(uid))) return Number(uid);
-      throw new Error("Não encontrei o FormadorId no /Profiles/formador/{userId} (campo 'id').");
-    }
-
+    if (!Number.isFinite(Number(fid))) throw new Error("Não encontrei o FormadorId no Profile.");
     return Number(fid);
+  }
+
+  function makeDateTimeISO(dateISO, hour) {
+    return `${dateISO}T${pad2(hour)}:00:00`;
   }
 
   async function loadWeek() {
@@ -363,39 +360,21 @@ export default function Availability() {
       const res = await api.get(`/Disponibilidades/formador/${fid}`);
       const arr = Array.isArray(res.data) ? res.data : [];
 
-      const map = new Map();
+      const startISO = toISODate(days[0]);
+      const endISO = toISODate(addDays(days[6], 1)); // exclusivo
 
-      for (const item of arr) {
-        const id = item?.id;
+      const filtered = arr.filter((it) => {
+        const a = it?.dataInicio ? new Date(it.dataInicio) : null;
+        const b = it?.dataFim ? new Date(it.dataFim) : null;
+        if (!a || !b || Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return false;
 
-        // Backend envia "dataInicio" (DateTime ISO)
-        let dataISO = null;
-        let hour = null;
+        const aISO = toISODate(a);
+        const bISO = toISODate(b);
 
-        if (item.dataInicio) {
-          const d = new Date(item.dataInicio);
-          dataISO = toISODate(d);
-          hour = d.getHours();
-        } else {
-          // fallback legacy
-          const rawDate = item?.data || item?.dia || item?.date;
-          const rawTime = item?.horaInicio || item?.inicio || item?.startTime;
-          if (rawDate && rawTime) {
-            const d = new Date(rawDate);
-            dataISO = toISODate(d);
-            hour = Number(safeStr(rawTime).slice(0, 2));
-          }
-        }
+        return aISO >= startISO && aISO < endISO && bISO >= startISO;
+      });
 
-        if (!dataISO || hour === null || Number.isNaN(Number(hour))) continue;
-
-        const key = `${dataISO}|${Number(hour)}`;
-        if (!weekKeySet.has(key)) continue;
-
-        map.set(key, { ...item, id });
-      }
-
-      setSlots(map);
+      setItems(filtered);
     } catch (e) {
       setError(extractError(e, "Falha ao carregar disponibilidades."));
     } finally {
@@ -412,137 +391,314 @@ export default function Availability() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart]);
 
-  // Fecha drag ao largar fora
+  // Cancelar marcação
+  function cancelDrag(message = "Marcação cancelada.") {
+    dragRef.current.active = false;
+    dragRef.current.mode = "add";
+    dragRef.current.dateISO = null;
+    dragRef.current.startHour = null;
+    dragRef.current.currentHour = null;
+    dragRef.current.removeId = null;
+    setDragUI(null);
+
+    setInfo(message);
+    setTimeout(() => setInfo(""), 900);
+  }
+
+  // ESC para cancelar
   useEffect(() => {
-    const onUp = () => endDrag();
-    window.addEventListener("mouseup", onUp);
-    return () => window.removeEventListener("mouseup", onUp);
+    const onKey = (e) => {
+      if (e.key === "Escape" && dragRef.current.active) {
+        e.preventDefault();
+        cancelDrag("Marcação cancelada (ESC).");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function cellKey(dateObj, hour) {
-    return `${toISODate(dateObj)}|${hour}`;
+  // fechar drag se largar fora
+  useEffect(() => {
+    const up = () => endDrag();
+    window.addEventListener("mouseup", up);
+    return () => window.removeEventListener("mouseup", up);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Converte items em blocos por dia
+  const blocksByDay = useMemo(() => {
+    const map = new Map();
+    for (const d of days) map.set(toISODate(d), []);
+
+    for (const it of items) {
+      if (!it?.dataInicio || !it?.dataFim) continue;
+      const s = new Date(it.dataInicio);
+      const e = new Date(it.dataFim);
+      if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) continue;
+
+      const dateISO = toISODate(s);
+      const startH = s.getHours();
+      const endH = Math.max(e.getHours(), startH + 1);
+
+      const arr = map.get(dateISO);
+      if (!arr) continue;
+
+      arr.push({ id: it.id, dateISO, startH, endH });
+    }
+
+    for (const [k, arr] of map.entries()) {
+      arr.sort((a, b) => a.startH - b.startH);
+      map.set(k, arr);
+    }
+
+    return map;
+  }, [items, days]);
+
+  function findBlockAt(dateISO, hour) {
+    const arr = blocksByDay.get(dateISO) || [];
+    return arr.find((b) => hour >= b.startH && hour < b.endH) || null;
   }
 
-  function isAvailable(key) {
-    return slots.has(key);
-  }
-
-  async function createSlot(dateObj, hour) {
-    if (!isFormador) return;
-
+  async function createInterval(dateISO, startH, endH) {
     const fid = formadorId ?? (await resolveFormadorId());
     if (!formadorId) setFormadorId(fid);
-
-    if (!fid) throw new Error("ID de Formador não encontrado.");
-
-    const isoDate = toISODate(dateObj);
-    const dataInicio = `${isoDate}T${pad2(hour)}:00:00`;
-    const dataFim = `${isoDate}T${pad2(hour + 1)}:00:00`;
 
     const dto = {
       entidadeId: fid,
       tipoEntidade: "Formador",
       formadorId: fid,
       salaId: null,
-      dataInicio,
-      dataFim,
+      dataInicio: makeDateTimeISO(dateISO, startH),
+      dataFim: makeDateTimeISO(dateISO, endH),
       disponivel: true,
     };
 
-    const res = await api.post("/Disponibilidades", dto);
-    return res?.data;
+    await api.post("/Disponibilidades", dto);
   }
 
-  async function deleteSlot(id) {
+  async function deleteInterval(id) {
     await api.delete(`/Disponibilidades/${id}`);
   }
 
-  function beginDrag(dateObj, hour) {
-    if (!isFormador || saving) return;
+  function updateDragPreview() {
+    const r = dragRef.current;
+    if (!r.active || !r.dateISO || r.startHour == null || r.currentHour == null) {
+      setDragUI(null);
+      return;
+    }
 
-    const key = cellKey(dateObj, hour);
-    const currently = isAvailable(key);
+    if (r.mode === "remove") {
+      setDragUI({
+        active: true,
+        mode: "remove",
+        dateISO: r.dateISO,
+        startH: r.startHour,
+        endH: r.startHour + 1,
+        removeId: r.removeId,
+      });
+      return;
+    }
+
+    const a = Math.min(r.startHour, r.currentHour);
+    const b = Math.max(r.startHour, r.currentHour) + 1;
+
+    const startH = clamp(a, hourStart, hourEnd - 1);
+    const endH = clamp(b, hourStart + 1, hourEnd);
+
+    setDragUI({
+      active: true,
+      mode: "add",
+      dateISO: r.dateISO,
+      startH,
+      endH,
+      removeId: null,
+    });
+  }
+
+  function beginDrag(dateISO, hour) {
+    if (!isFormador || saving || loading) return;
+
+    const existing = findBlockAt(dateISO, hour);
 
     dragRef.current.active = true;
-    dragRef.current.mode = currently ? "remove" : "add";
-    dragRef.current.visited = new Set([key]);
+    dragRef.current.dateISO = dateISO;
+    dragRef.current.startHour = hour;
+    dragRef.current.currentHour = hour;
 
-    applyDragAction(dateObj, hour);
-  }
-
-  function enterDrag(dateObj, hour) {
-    if (!dragRef.current.active || !isFormador || saving) return;
-
-    const key = cellKey(dateObj, hour);
-    if (dragRef.current.visited.has(key)) return;
-
-    dragRef.current.visited.add(key);
-    applyDragAction(dateObj, hour);
-  }
-
-  async function applyDragAction(dateObj, hour) {
-    const key = cellKey(dateObj, hour);
-    const existing = slots.get(key);
-
-    if (dragRef.current.mode === "add") {
-      if (existing) return;
-
-      setError("");
-      setInfo("");
-      setSaving(true);
-      try {
-        const created = await createSlot(dateObj, hour);
-        if (created?.id) {
-          setSlots((prev) => {
-            const next = new Map(prev);
-            next.set(key, created);
-            return next;
-          });
-        } else {
-          await loadWeek();
-        }
-      } catch (e) {
-        setError(extractError(e, "Falha ao criar disponibilidades."));
-      } finally {
-        setSaving(false);
-      }
+    if (existing) {
+      dragRef.current.mode = "remove";
+      dragRef.current.removeId = existing.id;
     } else {
-      if (!existing?.id) return;
-
-      setError("");
-      setInfo("");
-      setSaving(true);
-      try {
-        await deleteSlot(existing.id);
-        setSlots((prev) => {
-          const next = new Map(prev);
-          next.delete(key);
-          return next;
-        });
-      } catch (e) {
-        setError(extractError(e, "Falha ao apagar disponibilidades."));
-      } finally {
-        setSaving(false);
-      }
+      dragRef.current.mode = "add";
+      dragRef.current.removeId = null;
     }
+
+    updateDragPreview();
   }
 
-  function endDrag() {
+  function enterDrag(dateISO, hour) {
+    if (!dragRef.current.active) return;
+    if (dateISO !== dragRef.current.dateISO) return;
+    dragRef.current.currentHour = hour;
+    updateDragPreview();
+  }
+
+  async function endDrag() {
+    if (!dragRef.current.active) return;
+
+    const { mode, dateISO, startHour, currentHour, removeId } = dragRef.current;
+
     dragRef.current.active = false;
-    dragRef.current.visited = new Set();
+
+    if (!isFormador || saving || loading) {
+      setDragUI(null);
+      return;
+    }
+    if (!dateISO || startHour == null || currentHour == null) {
+      setDragUI(null);
+      return;
+    }
+
+    setError("");
+    setInfo("");
+
+    try {
+      setSaving(true);
+
+      if (mode === "remove" && removeId) {
+        await deleteInterval(removeId);
+        setDragUI(null);
+        setInfo("Bloco removido.");
+        await loadWeek();
+        setTimeout(() => setInfo(""), 900);
+        return;
+      }
+
+      const a = Math.min(startHour, currentHour);
+      const b = Math.max(startHour, currentHour) + 1;
+
+      const startH = clamp(a, hourStart, hourEnd - 1);
+      const endH = clamp(b, hourStart + 1, hourEnd);
+
+      if (endH <= startH) {
+        setDragUI(null);
+        return;
+      }
+
+      const existingBlocks = blocksByDay.get(dateISO) || [];
+      const overlaps = existingBlocks.some((x) => !(endH <= x.startH || startH >= x.endH));
+      if (overlaps) {
+        setDragUI(null);
+        setError("Esse intervalo sobrepõe um bloco existente. Remove o bloco primeiro ou marca noutro espaço.");
+        return;
+      }
+
+      await createInterval(dateISO, startH, endH);
+      setDragUI(null);
+      setInfo(`Bloco criado: ${pad2(startH)}:00 → ${pad2(endH)}:00`);
+      await loadWeek();
+      setTimeout(() => setInfo(""), 1200);
+    } catch (e) {
+      setDragUI(null);
+      setError(extractError(e, "Falha ao guardar disponibilidade."));
+    } finally {
+      setSaving(false);
+    }
   }
 
   function goToday() {
     setWeekStart(startOfWeekMonday(new Date()));
   }
 
-  const weekLabel = useMemo(() => {
-    const start = days[0];
-    const end = days[6];
-    if (!start || !end) return "";
-    return `${formatPtShort(start)} → ${formatPtShort(end)}`;
-  }, [days]);
+  // Render de blocos existentes + preview
+  function renderBlocksForDay(dateISO) {
+    const blocks = blocksByDay.get(dateISO) || [];
+
+    const clipped = blocks
+      .map((b) => {
+        const topH = Math.max(b.startH, visibleStartHour);
+        const botH = Math.min(b.endH, visibleEndHour);
+        if (botH <= topH) return null;
+        return { ...b, clipStart: topH, clipEnd: botH };
+      })
+      .filter(Boolean);
+
+    const els = clipped.map((b) => {
+      const top = (b.clipStart - visibleStartHour) * rowH + 6;
+      const height = (b.clipEnd - b.clipStart) * rowH - 12;
+
+      return (
+        <div
+          key={b.id}
+          className="absolute left-2 right-2 rounded-xl border border-emerald-400/40 bg-emerald-500/15 dark:bg-emerald-500/20
+                     shadow-[0_10px_30px_-20px_rgba(16,185,129,0.6)] backdrop-blur-sm"
+          style={{ top, height }}
+          title={`Disponível: ${pad2(b.startH)}:00 → ${pad2(b.endH)}:00`}
+        >
+          <div className="p-2">
+            <div className="text-[12px] font-black text-emerald-900 dark:text-emerald-100 leading-tight">
+              {pad2(b.startH)}:00 • Disponível
+            </div>
+            <div className="text-[11px] text-emerald-900/70 dark:text-emerald-200/80 mt-0.5">
+              Até {pad2(b.endH)}:00
+            </div>
+          </div>
+        </div>
+      );
+    });
+
+    // preview (enquanto arrasta)
+    if (dragUI?.active && dragUI.dateISO === dateISO) {
+      if (dragUI.mode === "add") {
+        const topH = Math.max(dragUI.startH, visibleStartHour);
+        const botH = Math.min(dragUI.endH, visibleEndHour);
+        if (botH > topH) {
+          const top = (topH - visibleStartHour) * rowH + 6;
+          const height = (botH - topH) * rowH - 12;
+
+          els.push(
+            <div
+              key="__preview_add"
+              className="absolute left-2 right-2 rounded-xl border border-blue-400/50 bg-blue-500/10 dark:bg-blue-500/15
+                         ring-2 ring-blue-500/20 pointer-events-none"
+              style={{ top, height }}
+            >
+              <div className="p-2">
+                <div className="text-[12px] font-black text-blue-900 dark:text-blue-100 leading-tight">
+                  Preview: {pad2(dragUI.startH)}:00 → {pad2(dragUI.endH)}:00
+                </div>
+                <div className="text-[11px] text-blue-900/70 dark:text-blue-200/80 mt-0.5">
+                  Larga para gravar • ESC para cancelar
+                </div>
+              </div>
+            </div>
+          );
+        }
+      } else if (dragUI.mode === "remove") {
+        // preview de remoção (só feedback visual)
+        els.push(
+          <div
+            key="__preview_remove"
+            className="absolute left-2 right-2 top-2 rounded-xl border border-red-400/50 bg-red-500/10 dark:bg-red-500/15
+                       ring-2 ring-red-500/20 pointer-events-none"
+            style={{ height: 64 }}
+          >
+            <div className="p-2">
+              <div className="text-[12px] font-black text-red-900 dark:text-red-100 leading-tight">
+                Remover bloco
+              </div>
+              <div className="text-[11px] text-red-900/70 dark:text-red-200/80 mt-0.5">
+                Larga para apagar • ESC para cancelar
+              </div>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    return els;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
@@ -550,11 +706,11 @@ export default function Availability() {
       <div className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 dark:border-gray-800 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <HeaderIcon icon="availability" />
+            <HeaderIcon />
             <div>
               <h1 className="text-xl font-black text-gray-900 dark:text-gray-100">Disponibilidades</h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Marca blocos horários disponíveis (podes clicar e arrastar).
+                Marca blocos com duração livre (clica e arrasta). <span className="font-semibold">ESC</span> cancela.
               </p>
             </div>
           </div>
@@ -564,7 +720,7 @@ export default function Availability() {
               ← Semana
             </Btn>
 
-            <PrimaryBtn tone="blue" onClick={goToday} disabled={loading || saving}>
+            <PrimaryBtn onClick={goToday} disabled={loading || saving}>
               Hoje
             </PrimaryBtn>
 
@@ -572,7 +728,20 @@ export default function Availability() {
               Semana →
             </Btn>
 
-            <Btn onClick={() => navigate("/dashboard")} className="ml-0 md:ml-2">
+            {/* ✅ aparece só quando estás a marcar */}
+            {dragUI?.active && (
+              <DangerBtn onClick={() => cancelDrag("Marcação cancelada.")} disabled={saving}>
+                Cancelar marcação
+              </DangerBtn>
+            )}
+
+            <Btn
+              onClick={() => {
+                if (dragRef.current.active) cancelDrag("Marcação cancelada.");
+                navigate("/dashboard");
+              }}
+              className="ml-0 md:ml-2"
+            >
               ← Voltar
             </Btn>
           </div>
@@ -581,10 +750,9 @@ export default function Availability() {
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
-        {/* Alerts */}
         {!isFormador && (
           <div className="mb-5 bg-red-50 border border-red-200 dark:bg-red-950/25 dark:border-red-900/40 rounded-xl p-4 text-sm text-red-700 dark:text-red-200">
-            Esta página é apenas para o role <b>Formador</b>. O teu role atual é: <b>{role}</b>
+            Esta página é apenas para o role <b>Formador</b>. Role atual: <b>{role}</b>
           </div>
         )}
 
@@ -609,35 +777,32 @@ export default function Availability() {
             <div className="flex flex-wrap items-center gap-4">
               <div className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                 <span className="inline-block w-3 h-3 rounded bg-emerald-500" />
-                Disponível
+                Bloco disponível
               </div>
 
               <div className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                 <span className="inline-block w-3 h-3 rounded bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700" />
-                Não definido
+                Livre
               </div>
 
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Semana:{" "}
-                <span className="font-semibold text-gray-900 dark:text-gray-100">{weekLabel}</span>
+                Semana: <span className="font-semibold text-gray-900 dark:text-gray-100">{weekRange}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {(loading || saving) && (
-                <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-                  <span className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                  {loading ? "A carregar..." : "A guardar..."}
-                </div>
-              )}
-            </div>
+            {(loading || saving) && (
+              <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                <span className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                {loading ? "A carregar..." : "A guardar..."}
+              </div>
+            )}
           </div>
 
           <div className="mt-4">
             <HoursPager
               page={hourPage}
               perPage={hoursPerPage}
-              total={hours.length}
+              total={allHours.length}
               onPageChange={setHourPage}
               onPerPageChange={(n) => {
                 setHoursPerPage(n);
@@ -648,14 +813,15 @@ export default function Availability() {
           </div>
 
           <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-            Dica: se começares o arrasto num bloco já marcado, o arrasto apaga. Se começares num bloco vazio, marca.
+            Dica: arrasta para criar um intervalo. Se começares em cima de um bloco, ao largar apaga o bloco.{" "}
+            <span className="font-semibold">ESC</span> cancela.
           </div>
         </div>
 
         {/* Grid */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
           {/* Header row */}
-          <div className="grid" style={{ gridTemplateColumns: `90px repeat(7, minmax(130px, 1fr))` }}>
+          <div className="grid" style={{ gridTemplateColumns: `90px repeat(7, minmax(140px, 1fr))` }}>
             <div className="p-3 text-xs font-semibold text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/30">
               Hora
             </div>
@@ -680,53 +846,64 @@ export default function Availability() {
               <span className="ml-3 text-gray-600 dark:text-gray-300">A carregar...</span>
             </div>
           ) : (
-            <div className="select-none">
-              {pagedHours.map((h) => (
-                <div
-                  key={h}
-                  className="grid border-t border-gray-200 dark:border-gray-800"
-                  style={{ gridTemplateColumns: `90px repeat(7, minmax(130px, 1fr))` }}
-                >
-                  {/* Hour label */}
-                  <div className="p-3 text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-950/20 border-r border-gray-200 dark:border-gray-800 flex items-center justify-center">
+            <div className="grid" style={{ gridTemplateColumns: `90px repeat(7, minmax(140px, 1fr))` }}>
+              {/* Hour labels */}
+              <div className="border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/20">
+                {visibleHours.map((h) => (
+                  <div
+                    key={h}
+                    className="h-[56px] flex items-center justify-center text-sm text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800"
+                  >
                     {pad2(h)}:00
                   </div>
+                ))}
+              </div>
 
-                  {/* Cells */}
-                  {days.map((d) => {
-                    const key = cellKey(d, h);
-                    const available = isAvailable(key);
+              {/* Day columns */}
+              {days.map((d) => {
+                const dateISO = toISODate(d);
+                const colHeight = visibleHours.length * rowH;
 
-                    return (
+                return (
+                  <div
+                    key={dateISO}
+                    className="relative border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+                    style={{ height: colHeight }}
+                    onMouseUp={() => endDrag()}
+                    onContextMenu={(e) => {
+                      // ✅ botão direito cancela (super prático)
+                      if (dragRef.current.active) {
+                        e.preventDefault();
+                        cancelDrag("Marcação cancelada (botão direito).");
+                      }
+                    }}
+                  >
+                    {/* background grid rows */}
+                    {visibleHours.map((h) => (
                       <div
-                        key={key}
+                        key={`${dateISO}|${h}`}
                         className={[
-                          "relative border-r border-gray-200 dark:border-gray-800 h-12",
-                          "transition-colors",
-                          available
-                            ? "bg-emerald-500/15 hover:bg-emerald-500/20"
-                            : "bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/40",
-                          !isFormador || saving ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
+                          "h-[56px] border-b border-gray-200 dark:border-gray-800",
+                          "hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors",
+                          !isFormador || saving ? "cursor-not-allowed opacity-60" : "cursor-pointer",
                         ].join(" ")}
-                        onMouseDown={() => beginDrag(d, h)}
-                        onMouseEnter={() => enterDrag(d, h)}
-                        onMouseUp={() => endDrag()}
-                        title={available ? "Disponível (clicar para remover)" : "Não definido (clicar para marcar disponível)"}
-                      >
-                        {available && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="px-2 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-bold shadow-sm">
-                              Disponível
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+                        onMouseDown={() => beginDrag(dateISO, h)}
+                        onMouseEnter={() => enterDrag(dateISO, h)}
+                        title="Clica e arrasta para marcar intervalo (ESC cancela)"
+                      />
+                    ))}
+
+                    {/* overlay blocks + preview */}
+                    {renderBlocksForDay(dateISO)}
+                  </div>
+                );
+              })}
             </div>
           )}
+        </div>
+
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+          Nota: aqui gravamos <b>intervalos</b> (ex: 09:00 → 12:00), não hora-a-hora, para não encher a base de dados.
         </div>
       </div>
     </div>

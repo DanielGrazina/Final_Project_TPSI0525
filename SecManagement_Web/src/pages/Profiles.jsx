@@ -9,7 +9,9 @@ import { getToken, getUserRoleFromToken } from "../utils/auth";
 function safeStr(x) {
   return (x ?? "").toString();
 }
-
+function safeLower(x) {
+  return safeStr(x).trim().toLowerCase();
+}
 function safeUrl(x) {
   const s = safeStr(x).trim();
   return s || "";
@@ -35,7 +37,71 @@ function extractError(err, fallback = "Ocorreu um erro.") {
   }
 }
 
-// JWT decode sem libs
+// tenta obter primeira key válida (suporta camelCase/PascalCase)
+function pick(obj, keys) {
+  for (const k of keys) {
+    const v = obj?.[k];
+    if (v !== undefined && v !== null && safeStr(v).trim() !== "") return v;
+  }
+  return null;
+}
+
+// tenta obter valor por caminhos aninhados (ex: "user.nome", "User.Nome")
+function pickPath(obj, paths) {
+  for (const p of paths) {
+    const parts = p.split(".");
+    let cur = obj;
+    let ok = true;
+    for (const part of parts) {
+      if (cur && Object.prototype.hasOwnProperty.call(cur, part)) cur = cur[part];
+      else {
+        ok = false;
+        break;
+      }
+    }
+    if (ok && cur !== undefined && cur !== null && safeStr(cur).trim() !== "") return cur;
+  }
+  return null;
+}
+
+function normFiles(raw) {
+  const arr =
+    Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.Ficheiros)
+        ? raw.Ficheiros
+        : Array.isArray(raw?.ficheiros)
+          ? raw.ficheiros
+          : [];
+
+  return arr.map((f) => ({
+    id: Number(pick(f, ["id", "Id"])) || 0,
+    nomeFicheiro: safeStr(pick(f, ["nomeFicheiro", "NomeFicheiro", "fileName", "FileName"])) || "ficheiro",
+    contentType: safeStr(pick(f, ["contentType", "ContentType", "mimeType", "MimeType"])) || "",
+  }));
+}
+
+function buildDisplayName({ nome, email, numeroAluno, userId, id, fallbackLabel }) {
+  const n = safeStr(nome).trim();
+  if (n) return n;
+
+  const na = safeStr(numeroAluno).trim();
+  if (na) return `${fallbackLabel} ${na}`;
+
+  const em = safeStr(email).trim();
+  if (em) return em.includes("@") ? em.split("@")[0] : em;
+
+  const uid = safeStr(userId).trim();
+  if (uid) return `${fallbackLabel} #${uid}`;
+
+  const rid = safeStr(id).trim();
+  if (rid) return `${fallbackLabel} #${rid}`;
+
+  return fallbackLabel;
+}
+
+/* ---------------- JWT decode sem libs ---------------- */
+
 function decodeJwt(token) {
   try {
     const part = token.split(".")[1];
@@ -52,7 +118,6 @@ function decodeJwt(token) {
   }
 }
 
-// tenta buscar UserId do token (suporta nameid / sub / etc.)
 function getUserIdFromToken(token) {
   const p = decodeJwt(token);
   if (!p) return null;
@@ -84,24 +149,261 @@ function getUserIdFromToken(token) {
   return null;
 }
 
-/* ---------------- UI components (dashboard-like) ---------------- */
+/* ---------------- normalização (agressiva) ---------------- */
+
+function readNomePessoa(raw) {
+  // 1) nomes diretos
+  const direct = pick(raw, [
+    "nome",
+    "Nome",
+    "nomeCompleto",
+    "NomeCompleto",
+    "fullName",
+    "FullName",
+    "userNome",
+    "UserNome",
+    "userName",
+    "UserName",
+    "formandoNome",
+    "FormandoNome",
+    "formadorNome",
+    "FormadorNome",
+  ]);
+  if (direct) return safeStr(direct);
+
+  // 2) aninhados (muito comum: raw.user.nome / raw.User.Nome)
+  const nested = pickPath(raw, [
+    "user.nome",
+    "user.Nome",
+    "user.nomeCompleto",
+    "user.NomeCompleto",
+    "user.fullName",
+    "user.FullName",
+    "user.userNome",
+    "user.UserNome",
+    "user.userName",
+    "user.UserName",
+    "User.nome",
+    "User.Nome",
+    "User.NomeCompleto",
+    "User.FullName",
+    "User.UserName",
+  ]);
+  if (nested) return safeStr(nested);
+
+  // 3) composição: primeiro+apelido
+  const first = pick(raw, ["primeiroNome", "PrimeiroNome", "firstName", "FirstName", "nomeProprio", "NomeProprio"]);
+  const last = pick(raw, ["apelido", "Apelido", "lastName", "LastName", "sobrenome", "Sobrenome"]);
+  const composed = [safeStr(first).trim(), safeStr(last).trim()].filter(Boolean).join(" ").trim();
+  if (composed) return composed;
+
+  // 4) composição aninhada
+  const first2 = pickPath(raw, ["user.primeiroNome", "user.PrimeiroNome", "User.FirstName", "User.firstName"]);
+  const last2 = pickPath(raw, ["user.apelido", "user.Apelido", "User.LastName", "User.lastName"]);
+  const composed2 = [safeStr(first2).trim(), safeStr(last2).trim()].filter(Boolean).join(" ").trim();
+  if (composed2) return composed2;
+
+  return "";
+}
+
+function readEmail(raw) {
+  return (
+    safeStr(
+      pick(raw, ["email", "Email", "userEmail", "UserEmail"]) ??
+        pickPath(raw, ["user.email", "user.Email", "User.Email", "User.email"])
+    ) || ""
+  );
+}
+
+function readAvatar(raw) {
+  return (
+    safeStr(
+      pick(raw, ["avatarUrl", "AvatarUrl", "avatar", "Avatar", "userAvatar", "UserAvatar"]) ??
+        pickPath(raw, ["user.avatar", "user.Avatar", "User.Avatar", "User.avatar", "user.avatarUrl", "User.AvatarUrl"])
+    ) || ""
+  );
+}
+
+function readTurmaNome(raw) {
+  // pode vir como string ou nested object
+  const direct = pick(raw, ["turmaNome", "TurmaNome", "turmaAtualNome", "TurmaAtualNome"]);
+  if (direct) return safeStr(direct);
+
+  const nested = pickPath(raw, [
+    "turma.nome",
+    "turma.Nome",
+    "Turma.Nome",
+    "Turma.nome",
+    "turmaAtual.nome",
+    "turmaAtual.Nome",
+    "TurmaAtual.Nome",
+    "TurmaAtual.nome",
+    "turmaAtual.turmaNome",
+    "TurmaAtual.TurmaNome",
+  ]);
+  if (nested) return safeStr(nested);
+
+  // turma pode ser uma string (ex: "TPSI-0525")
+  const maybeTurma = pick(raw, ["turma", "Turma", "turmaAtual", "TurmaAtual"]);
+  if (typeof maybeTurma === "string") return safeStr(maybeTurma);
+
+  return "";
+}
+
+function readTurmaId(raw) {
+  const direct = pick(raw, ["turmaId", "TurmaId", "turmaAtualId", "TurmaAtualId"]);
+  if (direct) return safeStr(direct);
+
+  const nested = pickPath(raw, [
+    "turma.id",
+    "turma.Id",
+    "Turma.Id",
+    "Turma.id",
+    "turmaAtual.id",
+    "turmaAtual.Id",
+    "TurmaAtual.Id",
+    "TurmaAtual.id",
+  ]);
+  if (nested) return safeStr(nested);
+
+  return "";
+}
+
+function readNumeroAluno(raw) {
+  return safeStr(pick(raw, ["numeroAluno", "NumeroAluno", "nAluno", "NAluno", "numero", "Numero"])) || "";
+}
+
+function normFormando(raw) {
+  const id = Number(pick(raw, ["id", "Id"])) || 0;
+  const userId = Number(pick(raw, ["userId", "UserId"]) ?? pickPath(raw, ["user.id", "user.Id", "User.Id", "User.id"])) || 0;
+
+  const email = readEmail(raw);
+  const numeroAluno = readNumeroAluno(raw);
+  const nome = readNomePessoa(raw);
+
+  const turmaNome = readTurmaNome(raw);
+  const turmaId = readTurmaId(raw);
+
+  const avatarUrl = readAvatar(raw);
+  const dataNascimento = pick(raw, ["dataNascimento", "DataNascimento"]) ?? pickPath(raw, ["user.dataNascimento", "User.DataNascimento"]) ?? null;
+
+  const telefone = safeStr(pick(raw, ["telefone", "Telefone"]) ?? pickPath(raw, ["user.telefone", "User.Telefone"])) || "";
+  const nif = safeStr(pick(raw, ["nif", "Nif"]) ?? pickPath(raw, ["user.nif", "User.Nif"])) || "";
+  const morada = safeStr(pick(raw, ["morada", "Morada"]) ?? pickPath(raw, ["user.morada", "User.Morada"])) || "";
+  const cc = safeStr(pick(raw, ["cc", "CC", "cartaoCidadao", "CartaoCidadao"]) ?? pickPath(raw, ["user.cc", "User.CC"])) || "";
+
+  const ficheiros = normFiles(raw?.ficheiros ?? raw?.Ficheiros ?? raw);
+
+  const displayName = buildDisplayName({
+    nome,
+    email,
+    numeroAluno,
+    userId,
+    id,
+    fallbackLabel: "Formando",
+  });
+
+  // blob de pesquisa que inclui TUDO relevante (resolve pesquisa para qualquer dto)
+  const searchBlob = [
+    id,
+    userId,
+    displayName,
+    nome,
+    email,
+    numeroAluno,
+    turmaNome,
+    turmaId,
+  ]
+    .map((x) => safeLower(x))
+    .filter(Boolean)
+    .join(" ");
+
+  return {
+    _raw: raw,
+    id,
+    userId,
+    nome: displayName,
+    __nomeReal: safeStr(nome),
+    email,
+    numeroAluno,
+    turmaNome,
+    turmaId,
+    avatarUrl,
+    dataNascimento,
+    telefone,
+    nif,
+    morada,
+    cc,
+    ficheiros,
+    __search: searchBlob,
+  };
+}
+
+function normFormador(raw) {
+  const id = Number(pick(raw, ["id", "Id"])) || 0;
+  const userId = Number(pick(raw, ["userId", "UserId"]) ?? pickPath(raw, ["user.id", "user.Id", "User.Id", "User.id"])) || 0;
+
+  const email = readEmail(raw);
+  const nome = readNomePessoa(raw);
+
+  const areaEspecializacao =
+    safeStr(
+      pick(raw, ["areaEspecializacao", "AreaEspecializacao", "area", "Area", "especializacao", "Especializacao"]) ??
+        pickPath(raw, ["user.areaEspecializacao", "User.AreaEspecializacao"])
+    ) || "";
+
+  const corCalendario = safeStr(pick(raw, ["corCalendario", "CorCalendario"]) ?? pickPath(raw, ["user.corCalendario", "User.CorCalendario"])) || "";
+  const avatarUrl = readAvatar(raw);
+
+  const telefone = safeStr(pick(raw, ["telefone", "Telefone"]) ?? pickPath(raw, ["user.telefone", "User.Telefone"])) || "";
+  const nif = safeStr(pick(raw, ["nif", "Nif"]) ?? pickPath(raw, ["user.nif", "User.Nif"])) || "";
+  const morada = safeStr(pick(raw, ["morada", "Morada"]) ?? pickPath(raw, ["user.morada", "User.Morada"])) || "";
+  const cc = safeStr(pick(raw, ["cc", "CC"]) ?? pickPath(raw, ["user.cc", "User.CC"])) || "";
+
+  const ficheiros = normFiles(raw?.ficheiros ?? raw?.Ficheiros ?? raw);
+
+  const displayName = buildDisplayName({
+    nome,
+    email,
+    numeroAluno: "",
+    userId,
+    id,
+    fallbackLabel: "Formador",
+  });
+
+  const searchBlob = [id, userId, displayName, nome, email, areaEspecializacao]
+    .map((x) => safeLower(x))
+    .filter(Boolean)
+    .join(" ");
+
+  return {
+    _raw: raw,
+    id,
+    userId,
+    nome: displayName,
+    __nomeReal: safeStr(nome),
+    email,
+    areaEspecializacao,
+    corCalendario,
+    avatarUrl,
+    telefone,
+    nif,
+    morada,
+    cc,
+    ficheiros,
+    __search: searchBlob,
+  };
+}
+
+/* ---------------- UI components ---------------- */
 
 function HeaderIcon({ icon = "profile" }) {
   return (
     <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
       {icon === "profile" ? (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M20 21a8 8 0 0 0-16 0"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M12 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
+          <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <path d="M12 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" strokeWidth="2" />
         </svg>
       ) : (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -164,8 +466,7 @@ function PrimaryBtn({ children, tone = "blue", className = "", ...props }) {
 }
 
 function SegTabs({ value, onChange, left, right, disabled }) {
-  const base =
-    "px-4 py-2 text-sm font-semibold transition-colors border border-gray-200 dark:border-gray-700";
+  const base = "px-4 py-2 text-sm font-semibold transition-colors border border-gray-200 dark:border-gray-700";
   const active = "bg-blue-600 text-white border-blue-600";
   const idle =
     "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800";
@@ -376,13 +677,7 @@ export default function Profiles() {
   const [openDetail, setOpenDetail] = useState(false);
 
   const [saving, setSaving] = useState(false);
-  const [editForm, setEditForm] = useState({
-    nome: "",
-    telefone: "",
-    nif: "",
-    morada: "",
-    cc: "",
-  });
+  const [editForm, setEditForm] = useState({ nome: "", telefone: "", nif: "", morada: "", cc: "" });
 
   const [uploading, setUploading] = useState(false);
   const [fileToUpload, setFileToUpload] = useState(null);
@@ -410,24 +705,27 @@ export default function Profiles() {
     try {
       if (canManage) {
         const results = await Promise.allSettled([api.get("/Profiles/formandos"), api.get("/Profiles/formadores")]);
-
         const [f1, f2] = results;
 
-        if (f1.status === "fulfilled") setFormandos(Array.isArray(f1.value.data) ? f1.value.data : []);
-        else setError((p) => p || extractError(f1.reason, "Falha ao carregar formandos."));
+        if (f1.status === "fulfilled") {
+          const arr = Array.isArray(f1.value.data) ? f1.value.data : [];
+          setFormandos(arr.map(normFormando));
+        } else setError((p) => p || extractError(f1.reason, "Falha ao carregar formandos."));
 
-        if (f2.status === "fulfilled") setFormadores(Array.isArray(f2.value.data) ? f2.value.data : []);
-        else setError((p) => p || extractError(f2.reason, "Falha ao carregar formadores."));
+        if (f2.status === "fulfilled") {
+          const arr = Array.isArray(f2.value.data) ? f2.value.data : [];
+          setFormadores(arr.map(normFormador));
+        } else setError((p) => p || extractError(f2.reason, "Falha ao carregar formadores."));
       } else {
         const wantsFormador = role === "Formador";
         if (wantsFormador) {
           const r = await api.get(`/Profiles/formador/${myUserId}`);
-          setFormadores([r.data]);
+          setFormadores([normFormador(r.data)]);
           setFormandos([]);
           setTab("formadores");
         } else {
           const r = await api.get(`/Profiles/formando/${myUserId}`);
-          setFormandos([r.data]);
+          setFormandos([normFormando(r.data)]);
           setFormadores([]);
           setTab("formandos");
         }
@@ -448,60 +746,36 @@ export default function Profiles() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ✅ pesquisa agora usa __search (nunca falha)
   const filteredFormandos = useMemo(() => {
-    const s = search.trim().toLowerCase();
-    const t = turmaFilter.trim().toLowerCase();
+    const s = safeLower(search);
+    const t = safeLower(turmaFilter);
 
     return formandos.filter((f) => {
-      const id = safeStr(f.id);
-      const userId = safeStr(f.userId);
-
-      const nome = safeStr(f.nome ?? f.userNome ?? f.formandoNome ?? "");
-      const email = safeStr(f.email ?? "");
-      const numeroAluno = safeStr(f.numeroAluno ?? "");
-      const turmaNome = safeStr(f.turmaNome ?? f.turmaAtualNome ?? "");
-      const turmaId = safeStr(f.turmaId ?? f.turmaAtualId ?? "");
-
-      const matchSearch =
-        !s ||
-        id.includes(s) ||
-        userId.includes(s) ||
-        nome.toLowerCase().includes(s) ||
-        email.toLowerCase().includes(s) ||
-        numeroAluno.toLowerCase().includes(s);
-
-      const matchTurma = !t || turmaNome.toLowerCase().includes(t) || turmaId.toLowerCase().includes(t);
+      const matchSearch = !s || safeLower(f.__search).includes(s);
+      const matchTurma =
+        !t ||
+        safeLower(f.turmaNome).includes(t) ||
+        safeLower(f.turmaId).includes(t);
 
       return matchSearch && matchTurma;
     });
   }, [formandos, search, turmaFilter]);
 
   const filteredFormadores = useMemo(() => {
-    const s = search.trim().toLowerCase();
-    const a = areaFilter.trim().toLowerCase();
+    const s = safeLower(search);
+    const a = safeLower(areaFilter);
 
     return formadores.filter((f) => {
-      const id = safeStr(f.id);
-      const userId = safeStr(f.userId);
-
-      const nome = safeStr(f.nome ?? "");
-      const email = safeStr(f.email ?? "");
-      const area = safeStr(f.areaEspecializacao ?? "");
-
-      const matchSearch =
-        !s || id.includes(s) || userId.includes(s) || nome.toLowerCase().includes(s) || email.toLowerCase().includes(s);
-
-      const matchArea = !a || area.toLowerCase().includes(a);
-
+      const matchSearch = !s || safeLower(f.__search).includes(s);
+      const matchArea = !a || safeLower(f.areaEspecializacao).includes(a);
       return matchSearch && matchArea;
     });
   }, [formadores, search, areaFilter]);
 
   const list = tab === "formandos" ? filteredFormandos : filteredFormadores;
 
-  useEffect(() => {
-    setPage(1);
-  }, [tab, search, turmaFilter, areaFilter, pageSize]);
+  useEffect(() => setPage(1), [tab, search, turmaFilter, areaFilter, pageSize]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(list.length / pageSize)), [list.length, pageSize]);
 
@@ -521,7 +795,7 @@ export default function Profiles() {
     setError("");
 
     setEditForm({
-      nome: safeStr(data.nome ?? data.userNome ?? ""),
+      nome: safeStr(data.nome ?? ""),
       telefone: safeStr(data.telefone ?? ""),
       nif: safeStr(data.nif ?? ""),
       morada: safeStr(data.morada ?? ""),
@@ -532,29 +806,24 @@ export default function Profiles() {
     setAvatarFile(null);
   }
 
-  function closeDetail() {
-    if (saving || uploading || avatarUploading) return;
-    setOpenDetail(false);
-    setSelected(null);
-    setInfo("");
-  }
-
   async function refreshSelected() {
-    if (!selected?.data?.userId) return;
-
-    const userId = selected.data.userId;
-    const type = selected.type;
+    const userId = selected?.data?.userId;
+    const type = selected?.type;
+    if (!userId || !type) return;
 
     try {
       if (type === "formador") {
         const r = await api.get(`/Profiles/formador/${userId}`);
-        setFormadores((prev) => prev.map((x) => (Number(x.userId) === Number(userId) ? r.data : x)));
-        setSelected({ type, data: r.data });
+        const norm = normFormador(r.data);
+        setFormadores((prev) => prev.map((x) => (Number(x.userId) === Number(userId) ? norm : x)));
+        setSelected({ type, data: norm });
       } else {
         const r = await api.get(`/Profiles/formando/${userId}`);
-        setFormandos((prev) => prev.map((x) => (Number(x.userId) === Number(userId) ? r.data : x)));
-        setSelected({ type, data: r.data });
+        const norm = normFormando(r.data);
+        setFormandos((prev) => prev.map((x) => (Number(x.userId) === Number(userId) ? norm : x)));
+        setSelected({ type, data: norm });
       }
+
       setInfo("Dados atualizados.");
       setTimeout(() => setInfo(""), 1200);
     } catch (err) {
@@ -704,8 +973,7 @@ export default function Profiles() {
     const userId = selected?.data?.userId;
     if (!userId) return;
 
-    const endpoint =
-      selected.type === "formador" ? `/Profiles/formador/${userId}/pdf` : `/Profiles/formando/${userId}/pdf`;
+    const endpoint = selected.type === "formador" ? `/Profiles/formador/${userId}/pdf` : `/Profiles/formando/${userId}/pdf`;
 
     try {
       const res = await api.get(endpoint, { responseType: "blob" });
@@ -736,7 +1004,7 @@ export default function Profiles() {
             <SegTabs
               value={tab}
               onChange={setTab}
-              disabled={!canManage && true}
+              disabled={!canManage}
               left={{ value: "formandos", label: "Formandos" }}
               right={{ value: "formadores", label: "Formadores" }}
             />
@@ -755,11 +1023,7 @@ export default function Profiles() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={
-                  tab === "formandos"
-                    ? "Pesquisar por nome, id, userId, email, nº aluno..."
-                    : "Pesquisar por nome, id, userId, email..."
-                }
+                placeholder={tab === "formandos" ? "Pesquisar por nome, id, userId, email, nº aluno..." : "Pesquisar por nome, id, userId, email..."}
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-800
                            bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
                            focus:outline-none focus:ring-2 focus:ring-blue-500/40"
@@ -824,15 +1088,12 @@ export default function Profiles() {
                 const isFormando = tab === "formandos";
                 const type = isFormando ? "formando" : "formador";
 
-                const title = isFormando
-                  ? safeStr(item.nome ?? item.formandoNome ?? "Formando")
-                  : safeStr(item.nome ?? "Formador");
+                const title = safeStr(item.nome || (isFormando ? "Formando" : "Formador"));
+                const avatarUrl = item.avatarUrl;
 
                 const sub = isFormando
-                  ? `UserId: ${item.userId} • Nº: ${safeStr(item.numeroAluno ?? "—")} • Email: ${safeStr(item.email ?? "—")}`
-                  : `UserId: ${item.userId} • Área: ${safeStr(item.areaEspecializacao ?? "—")} • Email: ${safeStr(item.email ?? "—")}`;
-
-                const avatarUrl = item.avatar ?? item.avatarUrl ?? item.userAvatar ?? item.user?.avatar;
+                  ? `UserId: ${item.userId} • Nº: ${safeStr(item.numeroAluno || "—")} • Email: ${safeStr(item.email || "—")} • Turma: ${safeStr(item.turmaNome || item.turmaId || "—")}`
+                  : `UserId: ${item.userId} • Área: ${safeStr(item.areaEspecializacao || "—")} • Email: ${safeStr(item.email || "—")}`;
 
                 return (
                   <button
@@ -844,7 +1105,6 @@ export default function Profiles() {
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <Avatar url={avatarUrl} name={title} size={44} />
-
                         <div className="min-w-0">
                           <div className="font-bold text-gray-900 dark:text-gray-100 truncate">{title}</div>
                           <div className="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate">{sub}</div>
@@ -894,34 +1154,28 @@ export default function Profiles() {
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <Avatar
-                      url={
-                        selected.data.avatar ??
-                        selected.data.avatarUrl ??
-                        selected.data.userAvatar ??
-                        selected.data.user?.avatar
-                      }
-                      name={safeStr(selected.data.nome ?? selected.data.userNome ?? selected.data.formandoNome ?? "")}
-                      size={60}
-                    />
+                    <Avatar url={selected.data.avatarUrl} name={selected.data.nome} size={60} />
                     <div>
                       <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">Identificação</div>
                       <div className="mt-1 text-sm">
-                        <div className="text-gray-900 dark:text-gray-100 font-bold">
-                          {safeStr(selected.data.nome ?? selected.data.userNome ?? selected.data.formandoNome ?? "—")}
-                        </div>
+                        <div className="text-gray-900 dark:text-gray-100 font-bold">{safeStr(selected.data.nome)}</div>
                         <div className="text-gray-600 dark:text-gray-400">
                           UserId:{" "}
-                          <span className="text-gray-900 dark:text-gray-100 font-semibold">
-                            {safeStr(selected.data.userId)}
-                          </span>
+                          <span className="text-gray-900 dark:text-gray-100 font-semibold">{safeStr(selected.data.userId)}</span>
                         </div>
                         <div className="text-gray-600 dark:text-gray-400">
                           Email:{" "}
-                          <span className="text-gray-900 dark:text-gray-100 font-semibold">
-                            {safeStr(selected.data.email ?? "—")}
-                          </span>
+                          <span className="text-gray-900 dark:text-gray-100 font-semibold">{safeStr(selected.data.email || "—")}</span>
                         </div>
+
+                        {selected.type === "formando" && (
+                          <div className="text-gray-600 dark:text-gray-400">
+                            Turma:{" "}
+                            <span className="text-gray-900 dark:text-gray-100 font-semibold">
+                              {safeStr(selected.data.turmaNome || selected.data.turmaId || "—")}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -942,20 +1196,13 @@ export default function Profiles() {
                           />
                         </label>
 
-                        <PrimaryBtn
-                          tone="blue"
-                          onClick={uploadAvatar}
-                          disabled={avatarUploading || !avatarFile}
-                        >
+                        <PrimaryBtn tone="blue" onClick={uploadAvatar} disabled={avatarUploading || !avatarFile}>
                           {avatarUploading ? "A enviar..." : "Upload"}
                         </PrimaryBtn>
                       </div>
 
                       {avatarFile && (
-                        <div
-                          className="text-xs text-gray-500 dark:text-gray-400 max-w-[240px] truncate"
-                          title={avatarFile.name}
-                        >
+                        <div className="text-xs text-gray-500 dark:text-gray-400 max-w-[240px] truncate" title={avatarFile.name}>
                           {avatarFile.name}
                         </div>
                       )}
@@ -968,48 +1215,34 @@ export default function Profiles() {
                     <>
                       <div className="text-gray-700 dark:text-gray-300">
                         <span className="text-gray-500 dark:text-gray-400">Telefone:</span>{" "}
-                        <span className="font-semibold text-gray-900 dark:text-gray-100">
-                          {safeStr(selected.data.telefone ?? "—")}
-                        </span>
+                        <span className="font-semibold text-gray-900 dark:text-gray-100">{safeStr(selected.data.telefone || "—")}</span>
                       </div>
                       <div className="text-gray-700 dark:text-gray-300">
                         <span className="text-gray-500 dark:text-gray-400">Área:</span>{" "}
-                        <span className="font-semibold text-gray-900 dark:text-gray-100">
-                          {safeStr(selected.data.areaEspecializacao ?? "—")}
-                        </span>
+                        <span className="font-semibold text-gray-900 dark:text-gray-100">{safeStr(selected.data.areaEspecializacao || "—")}</span>
                       </div>
                       <div className="text-gray-700 dark:text-gray-300">
                         <span className="text-gray-500 dark:text-gray-400">Cor calendário:</span>{" "}
-                        <span className="font-semibold text-gray-900 dark:text-gray-100">
-                          {safeStr(selected.data.corCalendario ?? "—")}
-                        </span>
+                        <span className="font-semibold text-gray-900 dark:text-gray-100">{safeStr(selected.data.corCalendario || "—")}</span>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="text-gray-700 dark:text-gray-300">
                         <span className="text-gray-500 dark:text-gray-400">Nº Aluno:</span>{" "}
-                        <span className="font-semibold text-gray-900 dark:text-gray-100">
-                          {safeStr(selected.data.numeroAluno ?? "—")}
-                        </span>
+                        <span className="font-semibold text-gray-900 dark:text-gray-100">{safeStr(selected.data.numeroAluno || "—")}</span>
                       </div>
                       <div className="text-gray-700 dark:text-gray-300">
                         <span className="text-gray-500 dark:text-gray-400">Data nascimento:</span>{" "}
                         <span className="font-semibold text-gray-900 dark:text-gray-100">
-                          {selected.data.dataNascimento
-                            ? new Date(selected.data.dataNascimento).toLocaleDateString("pt-PT")
-                            : "—"}
+                          {selected.data.dataNascimento ? new Date(selected.data.dataNascimento).toLocaleDateString("pt-PT") : "—"}
                         </span>
                       </div>
                     </>
                   )}
                 </div>
 
-                {!canManage && (
-                  <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-                    Nota: estás em modo só leitura.
-                  </div>
-                )}
+                {!canManage && <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">Nota: estás em modo só leitura.</div>}
               </div>
 
               {/* Files */}
@@ -1037,12 +1270,8 @@ export default function Profiles() {
                         className="flex items-center justify-between gap-2 p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/40"
                       >
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                            {safeStr(f.nomeFicheiro)}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {safeStr(f.contentType)}
-                          </div>
+                          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{safeStr(f.nomeFicheiro)}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{safeStr(f.contentType)}</div>
                         </div>
 
                         <div className="flex gap-2 flex-wrap justify-end">
@@ -1089,9 +1318,7 @@ export default function Profiles() {
               {/* Personal data */}
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
                 <div className="text-sm font-black text-gray-900 dark:text-gray-100">Dados pessoais</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">
-                  {canManage ? "Admin/Secretaria podem editar." : "Só leitura."}
-                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">{canManage ? "Admin/Secretaria podem editar." : "Só leitura."}</div>
 
                 <form onSubmit={saveDadosPessoais} className="mt-4 space-y-3">
                   <div>
