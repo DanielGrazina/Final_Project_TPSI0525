@@ -8,6 +8,8 @@ data class SessaoDto(
     val turmaNome: String,
     val salaId: Int,
     val salaNome: String,
-    val horarioInicio: String, // vem como ISO (DateTime)
+    val horarioInicio: String,
     val horarioFim: String
 )
+
+

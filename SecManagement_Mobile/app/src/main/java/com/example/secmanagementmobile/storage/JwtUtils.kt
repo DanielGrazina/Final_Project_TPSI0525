@@ -1,4 +1,4 @@
-package com.example.secmanagementmobile.utils
+package com.example.secmanagementmobile.storage
 
 import android.util.Base64
 import org.json.JSONObject
@@ -16,7 +16,9 @@ object JwtUtils {
 
             val decoded = String(Base64.decode(payload, Base64.DEFAULT))
             JSONObject(decoded)
-        } catch (e: Exception) { null }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     fun getRole(token: String): String? {
@@ -31,18 +33,14 @@ object JwtUtils {
 
     fun getUserId(token: String): Int? {
         val json = payloadJson(token) ?: return null
-        val key1 = "nameid"
-        val key2 = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
-        val key3 = "sub"
-
         val raw = when {
-            json.has(key1) -> json.getString(key1)
-            json.has(key2) -> json.getString(key2)
-            json.has(key3) -> json.getString(key3)
+            json.has("nameid") -> json.getString("nameid")
+            json.has("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier") ->
+                json.getString("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+            json.has("sub") -> json.getString("sub")
             else -> null
         } ?: return null
 
         return raw.toIntOrNull()
     }
 }
-

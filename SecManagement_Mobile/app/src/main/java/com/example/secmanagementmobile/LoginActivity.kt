@@ -6,19 +6,19 @@ import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.example.secmanagementmobile.R
+import com.example.secmanagementmobile.models.LoginRequest
+import com.example.secmanagementmobile.network.ApiClient
+import com.example.secmanagementmobile.storage.JwtUtils
+import com.example.secmanagementmobile.storage.TokenStore
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
-import com.example.secmanagementmobile.models.AuthResponse
-import com.example.secmanagementmobile.models.LoginRequest
-import com.example.secmanagementmobile.network.ApiClient
-import com.example.secmanagementmobile.storage.TokenStore
-import com.example.secmanagementmobile.utils.JwtUtils
 import kotlinx.coroutines.*
 
 class LoginActivity : AppCompatActivity() {
 
-    private val scope = CoroutineScope(Dispatchers.Main + Job())
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private lateinit var tilEmail: TextInputLayout
     private lateinit var tilPassword: TextInputLayout
@@ -35,7 +35,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var txtError: TextView
     private lateinit var txtSubtitle: TextView
 
-    private var requires2FA: Boolean = false
+    private var requires2FA = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,13 +56,6 @@ class LoginActivity : AppCompatActivity() {
         txtError = findViewById(R.id.txtError)
         txtSubtitle = findViewById(R.id.txtSubtitle)
 
-        // Se já houver token guardado, pode saltar login (opcional)
-        val tokenStore = TokenStore(this)
-        if (!tokenStore.getToken().isNullOrEmpty()) {
-            goHome()
-            return
-        }
-
         set2faMode(false)
         hideError()
         setLoading(false)
@@ -75,17 +68,15 @@ class LoginActivity : AppCompatActivity() {
 
         val email = etEmail.text?.toString()?.trim().orEmpty()
         val password = etPassword.text?.toString()?.trim().orEmpty()
-        val code2fa = et2fa.text?.toString()?.trim().orEmpty()
+        val code = et2fa.text?.toString()?.trim().orEmpty()
 
-        // validação básica
         if (!requires2FA) {
             if (email.isEmpty() || password.isEmpty()) {
                 showError("Preenche email e password.")
                 return
             }
         } else {
-            // Em modo 2FA, normalmente já tens email/pass preenchidos
-            if (code2fa.length != 6) {
+            if (code.length != 6) {
                 showError("O código 2FA deve ter 6 dígitos.")
                 return
             }
@@ -98,18 +89,14 @@ class LoginActivity : AppCompatActivity() {
                 val payload = LoginRequest(
                     email = email,
                     password = password,
-                    twoFactorCode = if (requires2FA) code2fa else ""
+                    twoFactorCode = if (requires2FA) code else ""
                 )
 
-                val res: AuthResponse = withContext(Dispatchers.IO) {
+                val res = withContext(Dispatchers.IO) {
                     ApiClient.api.login(payload)
                 }
 
-                val needs2fa = res.requiresTwoFactor
-
-                // Se a tua API usar 202, o Retrofit normalmente entra no catch se não fores buscar Response<>
-                // Mas como também devolves requiresTwoFactor no body, isto chega.
-                if (needs2fa) {
+                if (res.requiresTwoFactor) {
                     requires2FA = true
                     set2faMode(true)
                     et2fa.setText("")
@@ -126,16 +113,12 @@ class LoginActivity : AppCompatActivity() {
                 val store = TokenStore(this@LoginActivity)
                 store.saveToken(token)
 
-                // Guardar role do JWT
-                val role = JwtUtils.getRole(token)
-                if (!role.isNullOrEmpty()) {
-                    store.saveRole(role)
-                }
+                JwtUtils.getRole(token)?.let { store.saveRole(it) }
 
-                goHome()
+                startActivity(Intent(this@LoginActivity, HomeActivity::class.java))
+                finish()
 
             } catch (e: Exception) {
-                // Mensagem simples e útil
                 showError("Erro no login: ${e.message}")
                 if (requires2FA) et2fa.setText("")
             } finally {
@@ -168,11 +151,6 @@ class LoginActivity : AppCompatActivity() {
 
     private fun hideError() {
         cardError.visibility = View.GONE
-    }
-
-    private fun goHome() {
-        startActivity(Intent(this, HomeActivity::class.java))
-        finish()
     }
 
     override fun onDestroy() {

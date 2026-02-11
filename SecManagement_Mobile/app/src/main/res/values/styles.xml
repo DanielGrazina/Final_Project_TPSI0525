@@ -1,0 +1,32 @@
+<resources>
+
+    <!-- Card padrão (dark) -->
+    <style name="AtecCard" parent="">
+        <item name="cardCornerRadius">22dp</item>
+        <item name="cardElevation">10dp</item>
+        <item name="cardBackgroundColor">@color/cardDark</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">#1FFFFFFF</item>
+    </style>
+
+    <!-- Card “item de lista” (um pouco mais baixo) -->
+    <style name="AtecItemCard" parent="">
+        <item name="cardCornerRadius">18dp</item>
+        <item name="cardElevation">2dp</item>
+        <item name="cardBackgroundColor">@color/cardDark</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">#1FFFFFFF</item>
+    </style>
+
+    <!-- Input padrão -->
+    <style name="AtecInput" parent="Widget.Material3.TextInputLayout.FilledBox">
+        <item name="boxBackgroundColor">@color/inputDark</item>
+        <item name="boxStrokeColor">@color/strokeDark</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
+        <item name="hintTextColor">@color/textSecondary</item>
+        <item name="startIconTint">@color/textSecondary</item>
+        <item name="endIconTint">@color/textSecondary</item>
+    </style>
+
+</resources>

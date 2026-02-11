@@ -29,7 +29,7 @@ namespace SecManagement_API.Services
             {
                 Id = formador.Id,
                 UserId = formador.UserId,
-                Nome = formador.User?.Email ?? "N/A", // Ou outro campo de nome se tiveres
+                Nome = formador.User?.Nome ?? "N/A",
                 Email = formador.User?.Email ?? "",
                 Telefone = formador.User?.Telefone,
                 AreaEspecializacao = formador.AreaEspecializacao,

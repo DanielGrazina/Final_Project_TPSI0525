@@ -1,32 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/AtecItemCard"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="14dp">
+        android:padding="14dp"
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/txtNome"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:text="Nome do curso"
+            android:textColor="@color/textPrimary"
+            android:textStyle="bold"
+            android:textSize="16sp"/>
 
         <TextView
             android:id="@+id/txtArea"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp" />
+            android:text="Área: ..."
+            android:textColor="@color/textSecondary"
+            android:layout_marginTop="4dp"/>
 
         <TextView
             android:id="@+id/txtNivel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp" />
-
+            android:text="Nível: ..."
+            android:textColor="@color/textSecondary"
+            android:layout_marginTop="2dp"/>
     </LinearLayout>
-</androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

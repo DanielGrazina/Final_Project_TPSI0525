@@ -5,16 +5,18 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.secmanagementmobile.models.*
+import com.example.secmanagementmobile.models.SessaoDto
 import com.example.secmanagementmobile.R
 
-class SessoesAdapter(private var items: List<SessaoDto>) :
-    RecyclerView.Adapter<SessoesAdapter.VH>() {
+class SessoesAdapter(
+    private var items: List<SessaoDto>
+) : RecyclerView.Adapter<SessoesAdapter.VH>() {
 
     class VH(v: View) : RecyclerView.ViewHolder(v) {
-        val l1: TextView = v.findViewById(R.id.txtLinha1)
-        val l2: TextView = v.findViewById(R.id.txtLinha2)
-        val l3: TextView = v.findViewById(R.id.txtLinha3)
+        val modulo: TextView = v.findViewById(R.id.txtModulo)
+        val formador: TextView = v.findViewById(R.id.txtFormador)
+        val sala: TextView = v.findViewById(R.id.txtSala)
+        val hora: TextView = v.findViewById(R.id.txtHora)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -26,13 +28,23 @@ class SessoesAdapter(private var items: List<SessaoDto>) :
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val s = items[position]
-        holder.l1.text = "${s.turmaNome} — ${s.moduloNome}"
-        holder.l2.text = "Formador: ${s.formadorNome} | Sala: ${s.salaNome}"
-        holder.l3.text = "${s.horarioInicio}  →  ${s.horarioFim}"
+        holder.modulo.text = s.moduloNome
+        holder.formador.text = "Formador: ${s.formadorNome}"
+        holder.sala.text = "Sala: ${s.salaNome}"
+        holder.hora.text = formatRange(s.horarioInicio, s.horarioFim)
     }
 
     fun update(newItems: List<SessaoDto>) {
         items = newItems
         notifyDataSetChanged()
     }
+
+    private fun formatRange(start: String, end: String): String {
+        // Mostra só HH:mm se vier em ISO; caso contrário mostra como está
+        fun hhmm(x: String): String {
+            return if (x.length >= 16 && x.contains("T")) x.substring(11, 16) else x
+        }
+        return "${hhmm(start)} - ${hhmm(end)}"
+    }
 }
+
