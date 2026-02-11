@@ -30,6 +30,147 @@ function Modal({ title, children, onClose, disableClose }) {
   );
 }
 
+/* ---------------- Pagination (top + bottom) ---------------- */
+
+function PaginationBar({
+  total,
+  page,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  disabled,
+  position = "bottom", // "top" | "bottom"
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+
+  const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const to = Math.min(total, safePage * pageSize);
+
+  const pagesToShow = (() => {
+    const win = 7;
+    const half = Math.floor(win / 2);
+    let start = Math.max(1, safePage - half);
+    let end = Math.min(totalPages, start + win - 1);
+    start = Math.max(1, end - win + 1);
+    const arr = [];
+    for (let p = start; p <= end; p++) arr.push(p);
+    return arr;
+  })();
+
+  const borderClass =
+    position === "top"
+      ? "border-b border-gray-200 dark:border-gray-800"
+      : "border-t border-gray-200 dark:border-gray-800";
+
+  const baseBtn =
+    "px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 " +
+    "hover:bg-gray-50 dark:hover:bg-gray-800 transition active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold";
+
+  return (
+    <div
+      className={[
+        "flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-4",
+        "bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm",
+        borderClass,
+      ].join(" ")}
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          A mostrar{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{from}</span>–{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{to}</span> de{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{total}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Por página</span>
+          <select
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            disabled={disabled}
+            className="border border-gray-300 dark:border-gray-700 rounded-lg px-2 py-1.5
+                       bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-60"
+          >
+            {[10, 25, 50, 100].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <button type="button" className={baseBtn} onClick={() => onPageChange(1)} disabled={disabled || safePage === 1}>
+          «
+        </button>
+        <button
+          type="button"
+          className={baseBtn}
+          onClick={() => onPageChange(safePage - 1)}
+          disabled={disabled || safePage === 1}
+        >
+          ‹
+        </button>
+
+        {pagesToShow[0] > 1 && (
+          <>
+            <button type="button" className={baseBtn} onClick={() => onPageChange(1)} disabled={disabled}>
+              1
+            </button>
+            <span className="text-gray-400 px-1">…</span>
+          </>
+        )}
+
+        {pagesToShow.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPageChange(p)}
+            disabled={disabled}
+            className={[
+              "px-3 py-1.5 rounded-lg border text-sm font-semibold transition active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+              p === safePage
+                ? "bg-blue-600 text-white border-blue-600"
+                : "border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800",
+            ].join(" ")}
+          >
+            {p}
+          </button>
+        ))}
+
+        {pagesToShow[pagesToShow.length - 1] < totalPages && (
+          <>
+            <span className="text-gray-400 px-1">…</span>
+            <button type="button" className={baseBtn} onClick={() => onPageChange(totalPages)} disabled={disabled}>
+              {totalPages}
+            </button>
+          </>
+        )}
+
+        <button
+          type="button"
+          className={baseBtn}
+          onClick={() => onPageChange(safePage + 1)}
+          disabled={disabled || safePage === totalPages}
+        >
+          ›
+        </button>
+        <button
+          type="button"
+          className={baseBtn}
+          onClick={() => onPageChange(totalPages)}
+          disabled={disabled || safePage === totalPages}
+        >
+          »
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const ESTADOS = ["Planeada", "Decorrer", "Terminada", "Cancelada"];
 
 const estadoColors = {
@@ -95,6 +236,10 @@ export default function AdminTurmas() {
   const [search, setSearch] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("Todos");
 
+  // pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     nome: "",
@@ -127,7 +272,6 @@ export default function AdminTurmas() {
     setError("");
 
     try {
-      // ⚠️ Se o /Formadores ainda der 404: rebuild da API no Docker
       const [tRes, cRes, fRes] = await Promise.all([
         api.get("/Turmas"),
         api.get("/Cursos"),
@@ -175,6 +319,23 @@ export default function AdminTurmas() {
       return matchesSearch && matchesEstado;
     });
   }, [turmas, search, estadoFilter]);
+
+  // reset page when filters/pageSize change
+  useEffect(() => {
+    setPage(1);
+  }, [search, estadoFilter, pageSize]);
+
+  // clamp page if filtered shrinks
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filtered.length / pageSize)), [filtered.length, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const paged = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
 
   function openCreate() {
     setForm({
@@ -232,7 +393,7 @@ export default function AdminTurmas() {
     const payload = {
       Nome: nome,
       CursoId: cursoIdNum,
-      CoordenadorId: coordenadorIdNum, // ✅ Formadores.Id
+      CoordenadorId: coordenadorIdNum,
       DataInicio: dataInicioIso,
       DataFim: dataFimIso,
       Local: local,
@@ -279,10 +440,7 @@ export default function AdminTurmas() {
     setAssocForm({ moduloId: "", formadorId: "", sequencia: 1 });
 
     try {
-      const [mRes, aRes] = await Promise.all([
-        api.get("/Modulos"),
-        api.get(`/Turmas/${turma.id}/modulos`),
-      ]);
+      const [mRes, aRes] = await Promise.all([api.get("/Modulos"), api.get(`/Turmas/${turma.id}/modulos`)]);
 
       setModulosDisponiveis(Array.isArray(mRes.data) ? mRes.data : []);
       setAssociados(Array.isArray(aRes.data) ? aRes.data : []);
@@ -313,7 +471,7 @@ export default function AdminTurmas() {
 
     const turmaId = Number(selectedTurma.id);
     const moduloId = Number(assocForm.moduloId);
-    const formadorId = Number(assocForm.formadorId); // ✅ Formadores.Id
+    const formadorId = Number(assocForm.formadorId);
     const sequencia = Number(assocForm.sequencia);
 
     if (!Number.isFinite(moduloId) || moduloId <= 0) return alert("Seleciona um módulo.");
@@ -332,7 +490,6 @@ export default function AdminTurmas() {
 
     setModSaving(true);
     try {
-      // ✅ rota correta (singular)
       await api.post("/Turmas/modulo", payload);
       await refreshAssociados(turmaId);
       setAssocForm((p) => ({ ...p, moduloId: "" }));
@@ -353,7 +510,6 @@ export default function AdminTurmas() {
 
     setModError("");
     try {
-      // ✅ rota correta (singular)
       await api.delete(`/Turmas/modulo/${turmaModuloId}`);
       if (selectedTurma) await refreshAssociados(selectedTurma.id);
     } catch (err) {
@@ -445,13 +601,17 @@ export default function AdminTurmas() {
                 >
                   <option value="Todos">Todos</option>
                   {ESTADOS.map((x) => (
-                    <option key={x} value={x}>{x}</option>
+                    <option key={x} value={x}>
+                      {x}
+                    </option>
                   ))}
                 </select>
               </div>
 
-              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 
-                              rounded-lg border border-blue-200 dark:border-blue-800">
+              <div
+                className="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 
+                              rounded-lg border border-blue-200 dark:border-blue-800"
+              >
                 <span className="text-sm font-semibold text-blue-900 dark:text-blue-300">
                   {filtered.length} {filtered.length === 1 ? "turma" : "turmas"}
                 </span>
@@ -461,27 +621,61 @@ export default function AdminTurmas() {
         </div>
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 
-                          px-5 py-4 rounded-xl mb-6 text-sm shadow-sm">
+          <div
+            className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 
+                          px-5 py-4 rounded-xl mb-6 text-sm shadow-sm"
+          >
             {error}
           </div>
         )}
 
         {/* Table */}
         <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden">
+          {/* Pagination TOP */}
+          <PaginationBar
+            total={filtered.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setPage(1);
+            }}
+            disabled={loading}
+            position="top"
+          />
+
           <div className="overflow-auto">
             <table className="min-w-full">
               <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">ID</th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Nome</th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Curso</th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Coordenador</th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Início</th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Fim</th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Local</th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Estado</th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">Ações</th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    ID
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Nome
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Curso
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Coordenador
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Início
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Fim
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Local
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Estado
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
+                    Ações
+                  </th>
                 </tr>
               </thead>
 
@@ -501,19 +695,32 @@ export default function AdminTurmas() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((t) => (
-                    <tr key={t.id} className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150">
+                  paged.map((t) => (
+                    <tr
+                      key={t.id}
+                      className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150"
+                    >
                       <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">#{t.id}</td>
                       <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">{t.nome}</td>
-                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{t.cursoNome || `#${t.cursoId}`}</td>
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+                        {t.cursoNome || `#${t.cursoId}`}
+                      </td>
                       <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
                         {t.coordenadorNome || (t.coordenadorId ? `#${t.coordenadorId}` : "Sem Coordenador")}
                       </td>
-                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{toDateInputValue(t.dataInicio) || "—"}</td>
-                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{toDateInputValue(t.dataFim) || "—"}</td>
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+                        {toDateInputValue(t.dataInicio) || "—"}
+                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+                        {toDateInputValue(t.dataFim) || "—"}
+                      </td>
                       <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{t.local || "—"}</td>
                       <td className="py-4 px-6">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${estadoColors[t.estado] || estadoColors.Planeada}`}>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            estadoColors[t.estado] || estadoColors.Planeada
+                          }`}
+                        >
                           {t.estado || "Planeada"}
                         </span>
                       </td>
@@ -544,6 +751,20 @@ export default function AdminTurmas() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination BOTTOM */}
+          <PaginationBar
+            total={filtered.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setPage(1);
+            }}
+            disabled={loading}
+            position="bottom"
+          />
         </div>
       </div>
 
@@ -578,7 +799,9 @@ export default function AdminTurmas() {
               >
                 <option value="">Seleciona um curso...</option>
                 {cursos.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nome}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
                 ))}
               </select>
             </div>
@@ -659,14 +882,18 @@ export default function AdminTurmas() {
                 disabled={saving}
               >
                 {ESTADOS.map((x) => (
-                  <option key={x} value={x}>{x}</option>
+                  <option key={x} value={x}>
+                    {x}
+                  </option>
                 ))}
               </select>
             </div>
 
             {error && (
-              <div className="md:col-span-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 
-                              text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
+              <div
+                className="md:col-span-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 
+                              text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm"
+              >
                 {error}
               </div>
             )}
@@ -698,10 +925,16 @@ export default function AdminTurmas() {
 
       {/* Modal Turma -> Módulos */}
       {showModulos && selectedTurma && (
-        <Modal title={`📚 Módulos — ${selectedTurma.nome}`} onClose={() => closeModulosModal(false)} disableClose={modSaving}>
+        <Modal
+          title={`📚 Módulos — ${selectedTurma.nome}`}
+          onClose={() => closeModulosModal(false)}
+          disableClose={modSaving}
+        >
           {modError && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 
-                            px-4 py-3 rounded-lg mb-5 text-sm">
+            <div
+              className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 
+                            px-4 py-3 rounded-lg mb-5 text-sm"
+            >
               {modError}
             </div>
           )}
@@ -800,19 +1033,33 @@ export default function AdminTurmas() {
                     <table className="min-w-full">
                       <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                         <tr>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">Seq</th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">Módulo</th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">Formador</th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">Ações</th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">
+                            Seq
+                          </th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">
+                            Módulo
+                          </th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">
+                            Formador
+                          </th>
+                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">
+                            Ações
+                          </th>
                         </tr>
                       </thead>
 
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                         {associadosOrdenados.map((tm) => (
                           <tr key={tm.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
-                            <td className="py-3 px-5 text-sm text-gray-600 dark:text-gray-400 font-mono">#{tm.sequencia ?? "—"}</td>
-                            <td className="py-3 px-5 text-sm text-gray-900 dark:text-gray-100 font-semibold">{tm.moduloNome || `#${tm.moduloId}`}</td>
-                            <td className="py-3 px-5 text-sm text-gray-700 dark:text-gray-300">{tm.formadorNome || `#${tm.formadorId}`}</td>
+                            <td className="py-3 px-5 text-sm text-gray-600 dark:text-gray-400 font-mono">
+                              #{tm.sequencia ?? "—"}
+                            </td>
+                            <td className="py-3 px-5 text-sm text-gray-900 dark:text-gray-100 font-semibold">
+                              {tm.moduloNome || `#${tm.moduloId}`}
+                            </td>
+                            <td className="py-3 px-5 text-sm text-gray-700 dark:text-gray-300">
+                              {tm.formadorNome || `#${tm.formadorId}`}
+                            </td>
                             <td className="py-3 px-5">
                               <button
                                 onClick={() => removerAssociacao(tm.id)}

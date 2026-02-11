@@ -127,7 +127,15 @@ function Modal({ title, children, onClose, disabled }) {
 
 /* ---------------- Pagination ---------------- */
 
-function PaginationBar({ total, page, pageSize, onPageChange, onPageSizeChange, disabled }) {
+function PaginationBar({
+  total,
+  page,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  disabled,
+  position = "bottom", // "top" | "bottom"
+}) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
 
@@ -145,8 +153,19 @@ function PaginationBar({ total, page, pageSize, onPageChange, onPageSizeChange, 
     return arr;
   })();
 
+  const borderClass =
+    position === "top"
+      ? "border-b border-gray-200 dark:border-gray-800"
+      : "border-t border-gray-200 dark:border-gray-800";
+
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+    <div
+      className={[
+        "flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-4",
+        borderClass,
+        "bg-white dark:bg-gray-900",
+      ].join(" ")}
+    >
       <div className="flex flex-wrap items-center gap-3">
         <div className="text-sm text-gray-600 dark:text-gray-400">
           A mostrar{" "}
@@ -457,8 +476,22 @@ export default function Areas() {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Table + Pagination */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
+          {/* ✅ PAGINAÇÃO NO TOPO */}
+          <PaginationBar
+            total={filtered.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setPage(1);
+            }}
+            disabled={loading}
+            position="top"
+          />
+
           {loading ? (
             <div className="p-10 flex items-center justify-center">
               <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -506,6 +539,7 @@ export default function Areas() {
             </div>
           )}
 
+          {/* ✅ PAGINAÇÃO NO FUNDO */}
           <PaginationBar
             total={filtered.length}
             page={page}
@@ -516,6 +550,7 @@ export default function Areas() {
               setPage(1);
             }}
             disabled={loading}
+            position="bottom"
           />
         </div>
       </div>

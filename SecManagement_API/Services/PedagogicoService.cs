@@ -28,6 +28,7 @@ namespace SecManagement_API.Services
             var area = new Area { Nome = dto.Nome };
             _context.Areas.Add(area);
             await _context.SaveChangesAsync();
+
             return new AreaDto { Id = area.Id, Nome = area.Nome };
         }
 
@@ -35,6 +36,7 @@ namespace SecManagement_API.Services
         {
             var a = await _context.Areas.FindAsync(id);
             if (a == null) return null;
+
             return new AreaDto { Id = a.Id, Nome = a.Nome };
         }
 
@@ -54,7 +56,6 @@ namespace SecManagement_API.Services
             var area = await _context.Areas.FindAsync(id);
             if (area == null) return false;
 
-            // Validar se tem Cursos
             bool temCursos = await _context.Cursos.AnyAsync(c => c.AreaId == id);
             if (temCursos) throw new Exception("Não é possível apagar esta área porque existem cursos associados.");
 
@@ -64,10 +65,11 @@ namespace SecManagement_API.Services
         }
 
         // --- CURSOS ---
+        // ✅ IMPORTANTE: aqui NÃO existe "Local" (nem no CursoDto nem no Model Curso)
         public async Task<IEnumerable<CursoDto>> GetCursosAsync()
         {
             return await _context.Cursos
-                .Include(c => c.Area) // Join com Area
+                .Include(c => c.Area)
                 .Select(c => new CursoDto
                 {
                     Id = c.Id,
@@ -129,7 +131,6 @@ namespace SecManagement_API.Services
             var curso = await _context.Cursos.Include(c => c.Area).FirstOrDefaultAsync(c => c.Id == id);
             if (curso == null) throw new Exception("Curso não encontrado.");
 
-            // Validar se a nova Area existe
             if (!await _context.Areas.AnyAsync(a => a.Id == dto.AreaId))
                 throw new Exception("A Área indicada não existe.");
 
@@ -139,7 +140,6 @@ namespace SecManagement_API.Services
 
             await _context.SaveChangesAsync();
 
-            // Recarregar area para o retorno
             var area = await _context.Areas.FindAsync(dto.AreaId);
 
             return new CursoDto
@@ -166,7 +166,7 @@ namespace SecManagement_API.Services
         }
 
         // --- MÓDULOS ---
-
+        // ✅ Agora devolve e aceita "Nivel" para aparecer no frontend
         public async Task<IEnumerable<ModuloDto>> GetModulosAsync()
         {
             return await _context.Modulos
@@ -174,7 +174,8 @@ namespace SecManagement_API.Services
                 {
                     Id = m.Id,
                     Nome = m.Nome,
-                    CargaHoraria = m.CargaHoraria
+                    CargaHoraria = m.CargaHoraria,
+                    Nivel = m.Nivel
                 })
                 .ToListAsync();
         }
@@ -188,17 +189,20 @@ namespace SecManagement_API.Services
             {
                 Id = m.Id,
                 Nome = m.Nome,
-                CargaHoraria = m.CargaHoraria
+                CargaHoraria = m.CargaHoraria,
+                Nivel = m.Nivel
             };
         }
 
         public async Task<ModuloDto> CreateModuloAsync(CreateModuloDto dto)
         {
+            var nivel = string.IsNullOrWhiteSpace(dto.Nivel) ? "1" : dto.Nivel.Trim();
+
             var modulo = new Modulo
             {
                 Nome = dto.Nome,
                 CargaHoraria = dto.CargaHoraria,
-                Nivel = "1"
+                Nivel = nivel
             };
 
             _context.Modulos.Add(modulo);
@@ -208,7 +212,8 @@ namespace SecManagement_API.Services
             {
                 Id = modulo.Id,
                 Nome = modulo.Nome,
-                CargaHoraria = modulo.CargaHoraria
+                CargaHoraria = modulo.CargaHoraria,
+                Nivel = modulo.Nivel
             };
         }
 
@@ -219,7 +224,10 @@ namespace SecManagement_API.Services
 
             modulo.Nome = dto.Nome;
             modulo.CargaHoraria = dto.CargaHoraria;
-            // modulo.Nivel = dto.Nivel;
+
+            // só altera o nível se vier preenchido (para não “apagar” sem querer)
+            if (!string.IsNullOrWhiteSpace(dto.Nivel))
+                modulo.Nivel = dto.Nivel.Trim();
 
             await _context.SaveChangesAsync();
 
@@ -227,7 +235,8 @@ namespace SecManagement_API.Services
             {
                 Id = modulo.Id,
                 Nome = modulo.Nome,
-                CargaHoraria = modulo.CargaHoraria
+                CargaHoraria = modulo.CargaHoraria,
+                Nivel = modulo.Nivel
             };
         }
 

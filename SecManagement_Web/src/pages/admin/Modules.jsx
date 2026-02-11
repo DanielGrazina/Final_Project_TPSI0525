@@ -4,7 +4,10 @@ import api from "../../api/axios";
 
 function Modal({ title, children, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
       <div
         className="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border dark:border-gray-800 animate-in fade-in zoom-in duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -14,6 +17,7 @@ function Modal({ title, children, onClose }) {
           <button
             onClick={onClose}
             className="p-2 rounded-lg border hover:bg-gray-100 transition-colors
+                       text-gray-700 dark:text-gray-200
                        dark:border-gray-700 dark:hover:bg-gray-800"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -25,6 +29,25 @@ function Modal({ title, children, onClose }) {
       </div>
     </div>
   );
+}
+
+function buildPageItems(current, total) {
+  // Mostra: 1 ... (c-1) c (c+1) ... total  (com limites)
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+  const items = new Set([1, total, current, current - 1, current + 1]);
+  const filtered = [...items].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
+
+  const result = [];
+  for (let i = 0; i < filtered.length; i++) {
+    const p = filtered[i];
+    const prev = filtered[i - 1];
+
+    if (i > 0 && p - prev > 1) result.push("...");
+    result.push(p);
+  }
+
+  return result;
 }
 
 export default function AdminModules() {
@@ -39,6 +62,10 @@ export default function AdminModules() {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+
+  // Paginação
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const [form, setForm] = useState({
     nome: "",
@@ -68,8 +95,8 @@ export default function AdminModules() {
   const stats = useMemo(() => {
     const total = modules.length;
     const totalHoras = modules.reduce((sum, m) => sum + (Number(m.cargaHoraria) || 0), 0);
-    const niveis = new Set(modules.map(m => m.nivel).filter(Boolean)).size;
-    
+    const niveis = new Set(modules.map((m) => (m.nivel || "").trim()).filter(Boolean)).size;
+
     return { total, totalHoras, niveis };
   }, [modules]);
 
@@ -85,6 +112,33 @@ export default function AdminModules() {
       );
     });
   }, [modules, search]);
+
+  // Sempre que a pesquisa muda ou o tamanho muda, volta à 1ª página
+  useEffect(() => {
+    setPage(1);
+  }, [search, pageSize]);
+
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(filtered.length / pageSize));
+  }, [filtered.length, pageSize]);
+
+  // Clamp page
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+    if (page < 1) setPage(1);
+  }, [page, totalPages]);
+
+  const paged = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
+
+  const rangeLabel = useMemo(() => {
+    if (filtered.length === 0) return "0";
+    const start = (page - 1) * pageSize + 1;
+    const end = Math.min(page * pageSize, filtered.length);
+    return `${start}-${end} de ${filtered.length}`;
+  }, [filtered.length, page, pageSize]);
 
   function openCreate() {
     setEditing(null);
@@ -161,6 +215,8 @@ export default function AdminModules() {
     }
   }
 
+  const pageItems = useMemo(() => buildPageItems(page, totalPages), [page, totalPages]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header */}
@@ -176,9 +232,7 @@ export default function AdminModules() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Módulos</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Gestão do catálogo de módulos formativos
-                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Gestão do catálogo de módulos formativos</p>
                 </div>
               </div>
             </div>
@@ -187,7 +241,9 @@ export default function AdminModules() {
               <button
                 onClick={() => navigate("/dashboard")}
                 className="px-4 py-2 rounded-lg border hover:bg-gray-100 transition-colors
-                           dark:border-gray-700 dark:hover:bg-gray-800"
+                           text-gray-700 dark:text-gray-200
+                           border-gray-200 dark:border-gray-700
+                           dark:hover:bg-gray-800"
               >
                 ← Voltar
               </button>
@@ -217,7 +273,7 @@ export default function AdminModules() {
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</div>
             </div>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 opacity-50" />
             <div className="relative">
@@ -225,7 +281,7 @@ export default function AdminModules() {
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalHoras}h</div>
             </div>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-purple-600/5 dark:from-purple-500/20 dark:to-purple-600/10 opacity-50" />
             <div className="relative">
@@ -237,7 +293,7 @@ export default function AdminModules() {
 
         {/* Toolbar */}
         <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             <div className="flex-1 relative">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -253,10 +309,31 @@ export default function AdminModules() {
               />
             </div>
 
-            <div className="px-3 py-2 rounded-lg bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-900/50">
-              <span className="text-sm font-semibold text-cyan-700 dark:text-cyan-300">
-                {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
-              </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="px-3 py-2 rounded-lg bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-900/50">
+                <span className="text-sm font-semibold text-cyan-700 dark:text-cyan-300">
+                  {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Por página</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="border rounded-lg px-3 py-2 bg-white dark:bg-gray-950 dark:border-gray-800
+                             text-gray-900 dark:text-gray-100"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {rangeLabel}
+              </div>
             </div>
           </div>
         </div>
@@ -312,11 +389,12 @@ export default function AdminModules() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((m) => (
+                  paged.map((m) => (
                     <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="py-4 px-6">
                         <span className="text-sm font-mono text-gray-600 dark:text-gray-400">#{m.id}</span>
                       </td>
+
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
@@ -325,6 +403,7 @@ export default function AdminModules() {
                           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{m.nome}</span>
                         </div>
                       </td>
+
                       <td className="py-4 px-6">
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -333,9 +412,11 @@ export default function AdminModules() {
                           {m.cargaHoraria}h
                         </div>
                       </td>
+
                       <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
-                        {m.nivel || <span className="text-gray-400">—</span>}
+                        {m.nivel ? m.nivel : <span className="text-gray-400">—</span>}
                       </td>
+
                       <td className="py-4 px-6">
                         <div className="flex flex-wrap gap-2">
                           <button
@@ -365,6 +446,61 @@ export default function AdminModules() {
               </tbody>
             </table>
           </div>
+
+          {/* Paginação */}
+          {!loading && filtered.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 border-t dark:border-gray-800">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Página <span className="font-semibold text-gray-900 dark:text-gray-100">{page}</span> de{" "}
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{totalPages}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-3 py-2 rounded-lg border hover:bg-gray-100 transition-colors
+                             text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 dark:hover:bg-gray-800
+                             disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Anterior
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {pageItems.map((it, idx) =>
+                    it === "..." ? (
+                      <span key={`e-${idx}`} className="px-2 text-gray-500 dark:text-gray-400">
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={it}
+                        onClick={() => setPage(it)}
+                        className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                          ${
+                            it === page
+                              ? "bg-cyan-600 text-white"
+                              : "border border-gray-200 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+                          }`}
+                      >
+                        {it}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                <button
+                  className="px-3 py-2 rounded-lg border hover:bg-gray-100 transition-colors
+                             text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 dark:hover:bg-gray-800
+                             disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  Seguinte
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -373,9 +509,7 @@ export default function AdminModules() {
           <form onSubmit={saveModule} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Nome do Módulo
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nome do Módulo</label>
                 <input
                   name="nome"
                   value={form.nome}
@@ -391,9 +525,7 @@ export default function AdminModules() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Carga Horária
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Carga Horária</label>
                 <input
                   type="number"
                   name="cargaHoraria"
@@ -411,9 +543,7 @@ export default function AdminModules() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Nível
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nível</label>
                 <input
                   name="nivel"
                   value={form.nivel}
@@ -422,7 +552,7 @@ export default function AdminModules() {
                              bg-white dark:bg-gray-950 dark:border-gray-800
                              text-gray-900 dark:text-gray-100
                              focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
-                  placeholder="Ex: Nível 4"
+                  placeholder="Ex: 1 / Nível 4 / Avançado"
                   disabled={saving}
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Opcional</p>
@@ -434,7 +564,7 @@ export default function AdminModules() {
                 type="button"
                 onClick={closeForm}
                 className="px-5 py-2.5 rounded-lg border hover:bg-gray-100 transition-colors
-                           dark:border-gray-700 dark:hover:bg-gray-800"
+                           text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 dark:hover:bg-gray-800"
                 disabled={saving}
               >
                 Cancelar

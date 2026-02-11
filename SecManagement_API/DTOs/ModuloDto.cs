@@ -7,6 +7,7 @@ namespace SecManagement_API.DTOs
         public int Id { get; set; }
         public string Nome { get; set; } = string.Empty;
         public int CargaHoraria { get; set; }
+        public string Nivel { get; set; } = string.Empty; // ✅ NOVO
     }
 
     public class CreateModuloDto
@@ -16,5 +17,7 @@ namespace SecManagement_API.DTOs
 
         [Range(1, 1000)]
         public int CargaHoraria { get; set; }
+
+        public string Nivel { get; set; } = ""; // ✅ NOVO (opcional)
     }
 }
