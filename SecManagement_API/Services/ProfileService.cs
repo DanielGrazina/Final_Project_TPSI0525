@@ -29,11 +29,8 @@ namespace SecManagement_API.Services
             {
                 Id = formador.Id,
                 UserId = formador.UserId,
-<<<<<<< HEAD
 
                 // ✅ Nome real (estava a devolver Email)
-=======
->>>>>>> 1b6524440f5f3fcaf69944f4a503f326750db399
                 Nome = formador.User?.Nome ?? "N/A",
                 Email = formador.User?.Email ?? "",
                 Telefone = formador.User?.Telefone,
