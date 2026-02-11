@@ -1,7 +1,17 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.SecManagementMobile" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <style name="Theme.AtecGestao" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brandBlue</item>
+        <item name="colorSecondary">@color/brandPurple</item>
+        <item name="colorTertiary">@color/brandPurple</item>
+
+        <item name="colorSurface">@color/cardDark</item>
+        <item name="colorOnSurface">@color/textPrimary</item>
+
+        <item name="android:textColorPrimary">@color/textPrimary</item>
+        <item name="android:textColorSecondary">@color/textSecondary</item>
+
+        <item name="android:statusBarColor">@color/bgDark</item>
+        <item name="android:navigationBarColor">@color/bgDark</item>
+        <item name="android:fontFamily">sans-serif</item>
     </style>
 </resources>

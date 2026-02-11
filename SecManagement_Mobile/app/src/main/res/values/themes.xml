@@ -1,13 +1,29 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.SecManagementMobile" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
-    </style>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+      Material 3 DayNight theme.
+      If your project uses Theme.MaterialComponents.* (Material 2), you can still copy the colors
+      and apply the same component attributes in layouts.
+    -->
     <style name="Theme.SecManagementMobile" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/brandBlue</item>
         <item name="colorSecondary">@color/brandPurple</item>
+        <item name="colorTertiary">@color/brandPurple</item>
+
+        <!-- Keep surfaces neutral -->
+        <item name="colorSurface">@color/cardDark</item>
+        <item name="colorOnSurface">@color/textPrimary</item>
+
+        <!-- Default text -->
+        <item name="android:textColorPrimary">@color/textPrimary</item>
+        <item name="android:textColorSecondary">@color/textSecondary</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/bgDark</item>
+        <item name="android:navigationBarColor">@color/bgDark</item>
+
+        <!-- Fonts (optional) -->
+        <item name="android:fontFamily">sans-serif</item>
     </style>
 
 </resources>

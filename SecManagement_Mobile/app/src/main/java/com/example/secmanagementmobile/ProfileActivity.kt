@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.example.secmanagementmobile.network.ApiClient
 import com.example.secmanagementmobile.storage.TokenStore
-import com.example.secmanagementmobile.utils.JwtUtils
+import com.example.secmanagementmobile.storage.JwtUtils
 import kotlinx.coroutines.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
