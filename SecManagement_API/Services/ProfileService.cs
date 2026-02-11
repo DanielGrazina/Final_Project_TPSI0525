@@ -29,11 +29,20 @@ namespace SecManagement_API.Services
             {
                 Id = formador.Id,
                 UserId = formador.UserId,
-                Nome = formador.User?.Email ?? "N/A", // Ou outro campo de nome se tiveres
+
+                // ✅ Nome real (estava a devolver Email)
+                Nome = formador.User?.Nome ?? "N/A",
                 Email = formador.User?.Email ?? "",
                 Telefone = formador.User?.Telefone,
+
+                NIF = formador.User?.NIF,
+                Morada = formador.User?.Morada,
+                CC = formador.User?.CC,
+                Avatar = formador.User?.Avatar,
+
                 AreaEspecializacao = formador.AreaEspecializacao,
                 CorCalendario = formador.CorCalendario,
+
                 Ficheiros = formador.User?.Ficheiros.Select(f => new UserFicheiroDto
                 {
                     Id = f.Id,
@@ -45,11 +54,9 @@ namespace SecManagement_API.Services
 
         public async Task<FormadorProfileDto> CreateFormadorProfileAsync(CreateFormadorProfileDto dto)
         {
-            // Verifica se User existe
             var user = await _context.Users.FindAsync(dto.UserId);
             if (user == null) throw new Exception("Utilizador não encontrado.");
 
-            // Verifica se já é formador
             if (await _context.Formadores.AnyAsync(f => f.UserId == dto.UserId))
                 throw new Exception("Este utilizador já tem perfil de formador.");
 
@@ -62,13 +69,12 @@ namespace SecManagement_API.Services
 
             _context.Formadores.Add(formador);
 
-            // Atualizar Role do user se necessário
             user.Role = "Formador";
-
             await _context.SaveChangesAsync();
 
             return await GetFormadorProfileAsync(dto.UserId);
         }
+
         public async Task<IEnumerable<FormadorProfileDto>> GetAllFormadoresAsync()
         {
             var list = await _context.Formadores
@@ -79,13 +85,21 @@ namespace SecManagement_API.Services
             {
                 Id = f.Id,
                 UserId = f.UserId,
+
                 Nome = f.User?.Nome ?? "N/A",
                 Email = f.User?.Email ?? "",
                 Telefone = f.User?.Telefone,
+
+                NIF = f.User?.NIF,
+                Morada = f.User?.Morada,
+                CC = f.User?.CC,
+                Avatar = f.User?.Avatar,
+
                 AreaEspecializacao = f.AreaEspecializacao,
                 CorCalendario = f.CorCalendario,
+
                 Ficheiros = f.User?.Ficheiros
-                    .Where(x => x.ContentType.StartsWith("image/")) // Opcional: só retornar avatar na lista
+                    .Where(x => x.ContentType.StartsWith("image/"))
                     .Select(file => new UserFicheiroDto
                     {
                         Id = file.Id,
@@ -94,8 +108,6 @@ namespace SecManagement_API.Services
                     }).ToList() ?? new List<UserFicheiroDto>()
             });
         }
-
-
 
         // --- FORMANDOS ---
 
@@ -115,9 +127,19 @@ namespace SecManagement_API.Services
             {
                 Id = formando.Id,
                 UserId = formando.UserId,
+
+                Nome = formando.User?.Nome ?? "N/A",
+                Telefone = formando.User?.Telefone,
+                NIF = formando.User?.NIF,
+                Morada = formando.User?.Morada,
+                CC = formando.User?.CC,
+                Avatar = formando.User?.Avatar,
+
                 Email = formando.User?.Email ?? "",
+
                 NumeroAluno = formando.NumeroAluno,
                 DataNascimento = formando.DataNascimento,
+
                 TurmaId = inscricaoAtiva?.TurmaId,
                 TurmaNome = inscricaoAtiva?.Turma?.Nome,
 
@@ -129,27 +151,57 @@ namespace SecManagement_API.Services
                 }).ToList() ?? new List<UserFicheiroDto>()
             };
         }
+
         public async Task<IEnumerable<FormandoProfileDto>> GetAllFormandosAsync()
         {
             var list = await _context.Formandos
                 .Include(f => f.User).ThenInclude(u => u.Ficheiros)
                 .ToListAsync();
 
-            return list.Select(f => new FormandoProfileDto
+            // ✅ Para a lista/pesquisa precisamos de Turma (via Inscricoes 'Ativo')
+            var formandoIds = list.Select(f => f.Id).ToList();
+
+            var inscricoesAtivas = await _context.Inscricoes
+                .Include(i => i.Turma)
+                .Where(i => formandoIds.Contains(i.FormandoId) && i.Estado == "Ativo")
+                .ToListAsync();
+
+            var turmaByFormandoId = inscricoesAtivas
+                .GroupBy(i => i.FormandoId)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            return list.Select(f =>
             {
-                Id = f.Id,
-                UserId = f.UserId,
-                Email = f.User?.Email ?? "",
-                NumeroAluno = f.NumeroAluno,
-                DataNascimento = f.DataNascimento,
-                Ficheiros = f.User?.Ficheiros
-                    .Where(x => x.ContentType.StartsWith("image/"))
-                    .Select(file => new UserFicheiroDto
-                    {
-                        Id = file.Id,
-                        NomeFicheiro = file.NomeFicheiro,
-                        ContentType = file.ContentType
-                    }).ToList() ?? new List<UserFicheiroDto>()
+                turmaByFormandoId.TryGetValue(f.Id, out var ins);
+
+                return new FormandoProfileDto
+                {
+                    Id = f.Id,
+                    UserId = f.UserId,
+
+                    Nome = f.User?.Nome ?? "N/A",
+                    Telefone = f.User?.Telefone,
+                    NIF = f.User?.NIF,
+                    Morada = f.User?.Morada,
+                    CC = f.User?.CC,
+                    Avatar = f.User?.Avatar,
+
+                    Email = f.User?.Email ?? "",
+                    NumeroAluno = f.NumeroAluno,
+                    DataNascimento = f.DataNascimento,
+
+                    TurmaId = ins?.TurmaId,
+                    TurmaNome = ins?.Turma?.Nome,
+
+                    Ficheiros = f.User?.Ficheiros
+                        .Where(x => x.ContentType.StartsWith("image/"))
+                        .Select(file => new UserFicheiroDto
+                        {
+                            Id = file.Id,
+                            NomeFicheiro = file.NomeFicheiro,
+                            ContentType = file.ContentType
+                        }).ToList() ?? new List<UserFicheiroDto>()
+                };
             });
         }
 
@@ -172,7 +224,6 @@ namespace SecManagement_API.Services
             user.Role = "Formando";
 
             await _context.SaveChangesAsync();
-
             return await GetFormandoProfileAsync(dto.UserId);
         }
 
@@ -184,14 +235,12 @@ namespace SecManagement_API.Services
 
             if (formando == null) throw new Exception("Perfil não encontrado.");
 
-            // Validar unicidade
             if (await _context.Formandos.AnyAsync(f => f.NumeroAluno == novoNumero && f.Id != formando.Id))
                 throw new Exception("Esse número de aluno já existe.");
 
             formando.NumeroAluno = novoNumero;
             await _context.SaveChangesAsync();
 
-            // Como estamos dentro do ProfileService, este método JÁ existe aqui
             return await GetFormandoProfileAsync(userId);
         }
 
@@ -201,7 +250,6 @@ namespace SecManagement_API.Services
         {
             if (file == null || file.Length == 0) throw new Exception("Ficheiro inválido.");
 
-            // Converter IFormFile para byte[]
             using var memoryStream = new MemoryStream();
             await file.CopyToAsync(memoryStream);
 
@@ -260,28 +308,30 @@ namespace SecManagement_API.Services
             var user = await _context.Users.FindAsync(userId);
             if (user == null) throw new Exception("Utilizador não encontrado.");
 
-            // Atualiza apenas se o campo não for nulo (permite atualizações parciais)
             if (dto.Telefone != null) user.Telefone = dto.Telefone;
             if (dto.NIF != null) user.NIF = dto.NIF;
             if (dto.Morada != null) user.Morada = dto.Morada;
             if (dto.CC != null) user.CC = dto.CC;
-            if (dto.Nome != null) user.Nome = dto.Nome; // Atualiza o nome de exibição
+            if (dto.Nome != null) user.Nome = dto.Nome;
 
             await _context.SaveChangesAsync();
 
-            // Retorna um DTO simples com os dados atualizados
+            var isFormador = await _context.Formadores.AnyAsync(f => f.UserId == userId);
+            var isFormando = await _context.Formandos.AnyAsync(f => f.UserId == userId);
+
             return new UserDto
             {
                 Id = user.Id,
                 Email = user.Email,
                 Role = user.Role,
-                IsActive = user.IsActive
+                IsActive = user.IsActive,
+                IsFormador = isFormador,
+                IsFormando = isFormando
             };
         }
 
         public async Task<string> UpdateAvatarAsync(int userId, IFormFile file)
         {
-            // A lógica mantém-se a mesma, mas agora será chamada pela Secretaria
             var user = await _context.Users.FindAsync(userId);
             if (user == null) throw new Exception("Utilizador não encontrado.");
 
@@ -302,12 +352,10 @@ namespace SecManagement_API.Services
             _context.UserFicheiros.Add(userFicheiro);
             await _context.SaveChangesAsync();
 
-            // Atualiza link no User
             string avatarUrl = $"/api/Profiles/file/{userFicheiro.Id}";
             user.Avatar = avatarUrl;
 
             await _context.SaveChangesAsync();
-
             return avatarUrl;
         }
     }

@@ -27,6 +27,12 @@ namespace SecManagement_API.DTOs
         public string Email { get; set; } = string.Empty;
         public string? Telefone { get; set; }
 
+        // Dados pessoais (vêm da tabela Users)
+        public string? NIF { get; set; }
+        public string? Morada { get; set; }
+        public string? CC { get; set; }
+        public string? Avatar { get; set; }
+
         public string AreaEspecializacao { get; set; } = string.Empty;
         public string CorCalendario { get; set; } = string.Empty;
 
@@ -47,6 +53,16 @@ namespace SecManagement_API.DTOs
     {
         public int Id { get; set; }
         public int UserId { get; set; }
+
+        // Nome real do utilizador (antes o frontend fazia fallback para "Formando")
+        public string Nome { get; set; } = string.Empty;
+
+        public string? Telefone { get; set; }
+        public string? NIF { get; set; }
+        public string? Morada { get; set; }
+        public string? CC { get; set; }
+        public string? Avatar { get; set; }
+
         public string Email { get; set; } = string.Empty;
 
         public string NumeroAluno { get; set; } = string.Empty;
@@ -54,6 +70,7 @@ namespace SecManagement_API.DTOs
 
         public int? TurmaId { get; set; }
         public string? TurmaNome { get; set; }
+
         public List<UserFicheiroDto> Ficheiros { get; set; } = new List<UserFicheiroDto>();
     }
 
