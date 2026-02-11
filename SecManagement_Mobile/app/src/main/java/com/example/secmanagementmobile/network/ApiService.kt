@@ -1,31 +1,38 @@
 package com.example.secmanagementmobile.network
 
-import retrofit2.http.*
 import com.example.secmanagementmobile.models.*
 import okhttp3.MultipartBody
-import retrofit2.http.GET
-import retrofit2.http.Path
+import retrofit2.http.*
+
 interface ApiService {
+
+    // ---------- AUTH ----------
     @POST("api/Auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
 
-    @GET("api/Cursos")
-    suspend fun getCursos(@Header("Authorization") bearer: String): List<CursoDto>
-
+    // ---------- CURSOS ----------
     @GET("api/Cursos")
     suspend fun getCursos(): List<CursoDto>
 
     @GET("api/Cursos/{id}")
     suspend fun getCurso(@Path("id") id: Int): CursoDto
 
-    @Multipart
-    @POST("api/Profiles/user/{userId}/avatar")
-    suspend fun uploadAvatar(
-        @Path("userId") userId: Int,
-        @Part ficheiro: MultipartBody.Part,
-        @Header("Authorization") bearer: String
-    ): AvatarResponse
+    // ---------- TURMAS ----------
+    @GET("api/Turmas")
+    suspend fun getTurmas(): List<TurmaDto>
 
+    @GET("api/Cursos/{id}/turmas")
+    suspend fun getTurmasByCurso(@Path("id") cursoId: Int): List<TurmaDto>
+
+    // ---------- SALAS ----------
+    @GET("api/Salas")
+    suspend fun getSalas(): List<SalaDto>
+
+    // ---------- FORMADORES (PRECISA TOKEN) ----------
+    @GET("api/Formadores")
+    suspend fun getFormadores(@Header("Authorization") bearer: String): List<FormadorDto>
+
+    // ---------- SESSOES / HORARIO ----------
     @GET("api/Sessoes/turma/{turmaId}")
     suspend fun getHorarioTurma(
         @Path("turmaId") turmaId: Int,
@@ -47,13 +54,12 @@ interface ApiService {
         @Query("end") end: String
     ): List<SessaoDto>
 
-    @GET("api/Turmas")
-    suspend fun getTurmas(): List<TurmaDto>
-
-    @GET("api/Formadores")
-    suspend fun getFormadores(@Header("Authorization") bearer: String): List<FormadorDto>
-
-    @GET("api/Salas")
-    suspend fun getSalas(): List<SalaDto>
-
+    // ---------- AVATAR UPLOAD (se ainda quiseres manter) ----------
+    @Multipart
+    @POST("api/Profiles/user/{userId}/avatar")
+    suspend fun uploadAvatar(
+        @Path("userId") userId: Int,
+        @Part ficheiro: MultipartBody.Part,
+        @Header("Authorization") bearer: String
+    ): AvatarResponse
 }

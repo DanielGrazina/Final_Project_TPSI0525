@@ -1,57 +1,311 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".HomeActivity">
+    android:background="@drawable/bg_gradient_dark">
 
-    <LinearLayout
+    <!-- blobs decorativos -->
+    <View
+        android:layout_width="260dp"
+        android:layout_height="260dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="-70dp"
+        android:layout_marginEnd="-70dp"
+        android:background="@drawable/blob_blue" />
+
+    <View
+        android:layout_width="260dp"
+        android:layout_height="260dp"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="-70dp"
+        android:layout_marginBottom="-70dp"
+        android:background="@drawable/blob_purple" />
+
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical">
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="18dp">
 
-            <Button
-                android:id="@+id/btnCursos"
+            <!-- Header -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Cursos" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <Button
-                android:id="@+id/btnPerfil"
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/txtHello"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ATEC Gestão"
+                        android:textStyle="bold"
+                        android:textSize="24sp"
+                        android:textColor="@color/textPrimary"/>
+
+                    <TextView
+                        android:id="@+id/txtSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Visualização de dados"
+                        android:textSize="13sp"
+                        android:textColor="@color/textSecondary"
+                        android:layout_marginTop="4dp"/>
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnLogout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:text="Logout"
+                    android:textColor="@color/textPrimary"
+                    android:backgroundTint="@color/inputDark"
+                    android:paddingLeft="16dp"
+                    android:paddingRight="16dp"/>
+            </LinearLayout>
+
+            <!-- Card “Resumo” -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Perfil" />
+                android:layout_marginTop="14dp"
+                style="@style/AtecCard">
 
-            <Button
-                android:id="@+id/btnHorario"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Atalhos"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:textColor="@color/textPrimary"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Escolhe uma secção para ver dados"
+                        android:textSize="13sp"
+                        android:textColor="@color/textSecondary"
+                        android:layout_marginTop="4dp"/>
+
+                    <!-- Grid de atalhos (2 colunas) -->
+                    <GridLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:columnCount="2"
+                        android:useDefaultMargins="true">
+
+                        <!-- Cursos -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardCursos"
+                            style="@style/AtecItemCard"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="14dp"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Cursos"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/textPrimary"/>
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Lista e detalhes"
+                                    android:textColor="@color/textSecondary"
+                                    android:textSize="12sp"
+                                    android:layout_marginTop="4dp"/>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Horário -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardHorario"
+                            style="@style/AtecItemCard"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="14dp"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Horário"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/textPrimary"/>
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Turma/Formador/Sala"
+                                    android:textColor="@color/textSecondary"
+                                    android:textSize="12sp"
+                                    android:layout_marginTop="4dp"/>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Turmas -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardTurmas"
+                            style="@style/AtecItemCard"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="14dp"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Turmas"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/textPrimary"/>
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Ver turmas"
+                                    android:textColor="@color/textSecondary"
+                                    android:textSize="12sp"
+                                    android:layout_marginTop="4dp"/>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Salas -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardSalas"
+                            style="@style/AtecItemCard"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="14dp"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Salas"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/textPrimary"/>
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Lista de salas"
+                                    android:textColor="@color/textSecondary"
+                                    android:textSize="12sp"
+                                    android:layout_marginTop="4dp"/>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Perfil -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardPerfil"
+                            style="@style/AtecItemCard"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="14dp"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Perfil"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/textPrimary"/>
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Dados do utilizador"
+                                    android:textColor="@color/textSecondary"
+                                    android:textSize="12sp"
+                                    android:layout_marginTop="4dp"/>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                    </GridLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- (Opcional) Próximas sessões -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Horário" />
+                android:layout_marginTop="14dp"
+                style="@style/AtecCard">
 
-            <Button
-                android:id="@+id/btnLogout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Logout"
-                android:layout_marginTop="12dp"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Próximas sessões"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:textColor="@color/textPrimary"/>
+
+                    <TextView
+                        android:id="@+id/txtNextHint"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="(vamos ligar isto ao horário a seguir)"
+                        android:textSize="13sp"
+                        android:textColor="@color/textSecondary"
+                        android:layout_marginTop="4dp"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
+    </ScrollView>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Home" />
-
-    </LinearLayout>
-</androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>

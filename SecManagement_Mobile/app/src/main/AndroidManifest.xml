@@ -15,16 +15,22 @@
         android:theme="@style/Theme.SecManagementMobile"
         android:usesCleartextTraffic="true">
         <activity
-            android:name=".HorarioActivity"
+            android:name=".HorarioTurmaActivity"
             android:exported="false" />
         <activity
-            android:name=".ProfileActivity"
+            android:name=".TurmasDoCursoActivity"
             android:exported="false" />
         <activity
             android:name=".CursoDetailActivity"
             android:exported="false" />
         <activity
-            android:name=".CursosListActivity"
+            android:name=".CursosActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HorarioActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProfileActivity"
             android:exported="false" />
         <activity android:name=".HomeActivity" />
         <activity android:name=".MainActivity" />

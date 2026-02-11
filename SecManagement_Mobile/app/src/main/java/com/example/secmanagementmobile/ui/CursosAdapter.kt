@@ -8,7 +8,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.secmanagementmobile.models.*
 import com.example.secmanagementmobile.R
 
-
 class CursosAdapter(
     private var items: List<CursoDto>,
     private val onClick: (CursoDto) -> Unit
@@ -41,3 +40,4 @@ class CursosAdapter(
         notifyDataSetChanged()
     }
 }
+

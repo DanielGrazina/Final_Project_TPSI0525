@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".CursoDetailActivity">
+    tools:context=".CursosActivity">
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -42,7 +42,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Detalhe do Curso"
+                        android:text="Cursos"
                         android:textColor="@color/textPrimary"
                         android:textSize="24sp"
                         android:textStyle="bold" />
@@ -58,94 +58,24 @@
                         android:textColor="@color/textPrimary" />
                 </LinearLayout>
 
-                <!-- Card principal -->
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/AtecCard"
+                <!-- Search -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilSearch"
+                    style="@style/AtecInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp">
+                    android:layout_marginTop="14dp"
+                    app:startIconDrawable="@android:drawable/ic_menu_search">
 
-                    <LinearLayout
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etSearch"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:id="@+id/txtNome"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="—"
-                            android:textColor="@color/textPrimary"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/txtArea"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="Área: —"
-                            android:textColor="@color/textSecondary" />
-
-                        <TextView
-                            android:id="@+id/txtNivel"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Nível: —"
-                            android:textColor="@color/textSecondary" />
-
-                        <TextView
-                            android:id="@+id/txtId"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="ID: —"
-                            android:textColor="@color/textSecondary" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Ações read-only -->
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/AtecCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Ver mais"
-                            android:textColor="@color/textPrimary"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <Button
-                            android:id="@+id/btnVerTurmas"
-                            android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:layout_marginTop="12dp"
-                            android:backgroundTint="@color/inputDark"
-                            android:text="Ver turmas deste curso"
-                            android:textColor="@color/textPrimary" />
-
-                        <Button
-                            android:id="@+id/btnVerModulos"
-                            android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:layout_marginTop="10dp"
-                            android:backgroundTint="@color/inputDark"
-                            android:text="Ver módulos deste curso"
-                            android:textColor="@color/textPrimary" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                        android:hint="Pesquisar curso (nome/área)"
+                        android:inputType="text"
+                        android:textColor="@color/textPrimary"
+                        android:textColorHint="@color/textSecondary" />
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- States -->
                 <com.google.android.material.progressindicator.CircularProgressIndicator
@@ -189,6 +119,22 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <TextView
+                    android:id="@+id/txtEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="Sem cursos para mostrar."
+                    android:textColor="@color/textSecondary"
+                    android:visibility="gone" />
+
+                <!-- Lista -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvCursos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:nestedScrollingEnabled="false" />
             </LinearLayout>
         </ScrollView>
     </FrameLayout>
