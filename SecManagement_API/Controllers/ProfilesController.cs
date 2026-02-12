@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using SecManagement_API.DTOs;
 using SecManagement_API.Helpers;
 using SecManagement_API.Services.Interfaces;
-using System.Security.Claims;
 
 namespace SecManagement_API.Controllers
 {
@@ -21,11 +20,32 @@ namespace SecManagement_API.Controllers
             _pdfService = pdfService;
         }
 
+        // -------------------------
+        // ✅ PUBLIC FILE (AVATAR)
+        // -------------------------
+        // GET: api/Profiles/public-file/10
+        // Serve APENAS imagens, sem auth (para <img src="...">)
+        [HttpGet("public-file/{fileId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> PublicDownloadImage(int fileId)
+        {
+            var result = await _service.GetFileContentAsync(fileId);
+            if (result == null) return NotFound("Ficheiro não encontrado.");
+
+            // Segurança: só permite imagens neste endpoint público
+            if (string.IsNullOrWhiteSpace(result.Value.ContentType) || !result.Value.ContentType.StartsWith("image/"))
+                return NotFound("Ficheiro não disponível publicamente.");
+
+            return File(result.Value.Bytes, result.Value.ContentType, result.Value.FileName);
+        }
+
+        // -------------------------
         // --- FORMADORES ---
+        // -------------------------
 
         // GET: api/Profiles/formadores
         [HttpGet("formadores")]
-        [Authorize] // Qualquer utilizador logado pode ver a lista (ajusta Roles se quiseres restringir)
+        [Authorize] // Qualquer utilizador logado pode ver (ajusta Roles se quiseres)
         public async Task<ActionResult<IEnumerable<FormadorProfileDto>>> GetTodosFormadores()
         {
             try
@@ -39,7 +59,7 @@ namespace SecManagement_API.Controllers
             }
         }
 
-        // GET: api/Profiles/formador/5 (Passar o UserID)
+        // GET: api/Profiles/formador/5 (UserId)
         [HttpGet("formador/{userId}")]
         public async Task<ActionResult<FormadorProfileDto>> GetFormador(int userId)
         {
@@ -47,20 +67,26 @@ namespace SecManagement_API.Controllers
             {
                 return Ok(await _service.GetFormadorProfileAsync(userId));
             }
-            catch (Exception ex) { return NotFound(ex.Message); }
+            catch (Exception ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
 
         // POST: api/Profiles/formador
         [HttpPost("formador")]
         [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
-        public async Task<ActionResult<FormadorProfileDto>> CreateFormador(CreateFormadorProfileDto dto)
+        public async Task<ActionResult<FormadorProfileDto>> CreateFormador([FromBody] CreateFormadorProfileDto dto)
         {
             try
             {
                 var res = await _service.CreateFormadorProfileAsync(dto);
                 return Ok(res);
             }
-            catch (Exception ex) { return BadRequest(ex.Message); }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // GET: api/Profiles/formador/5/pdf
@@ -74,11 +100,13 @@ namespace SecManagement_API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
         }
 
+        // -------------------------
         // --- FORMANDOS ---
+        // -------------------------
 
         // GET: api/Profiles/formandos
         [HttpGet("formandos")]
@@ -96,7 +124,7 @@ namespace SecManagement_API.Controllers
             }
         }
 
-        // GET: api/Profiles/formando/5 (Passar o UserID)
+        // GET: api/Profiles/formando/5 (UserId)
         [HttpGet("formando/{userId}")]
         public async Task<ActionResult<FormandoProfileDto>> GetFormando(int userId)
         {
@@ -104,20 +132,26 @@ namespace SecManagement_API.Controllers
             {
                 return Ok(await _service.GetFormandoProfileAsync(userId));
             }
-            catch (Exception ex) { return NotFound(ex.Message); }
+            catch (Exception ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
 
         // POST: api/Profiles/formando
         [HttpPost("formando")]
         [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
-        public async Task<ActionResult<FormandoProfileDto>> CreateFormando(CreateFormandoProfileDto dto)
+        public async Task<ActionResult<FormandoProfileDto>> CreateFormando([FromBody] CreateFormandoProfileDto dto)
         {
             try
             {
                 var res = await _service.CreateFormandoProfileAsync(dto);
                 return Ok(res);
             }
-            catch (Exception ex) { return BadRequest(ex.Message); }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // GET: api/Profiles/formando/5/pdf
@@ -131,11 +165,13 @@ namespace SecManagement_API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
         }
 
-        // --- FICHEIROS ---
+        // -------------------------
+        // --- FICHEIROS (AUTH) ---
+        // -------------------------
 
         // POST: api/Profiles/upload/5 (UserId)
         [HttpPost("upload/{userId}")]
@@ -147,17 +183,19 @@ namespace SecManagement_API.Controllers
                 var res = await _service.UploadFileAsync(userId, dto.Ficheiro);
                 return Ok(res);
             }
-            catch (Exception ex) { return BadRequest(ex.Message); }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
-        // GET: api/Profiles/file/10 (Download por ID do Ficheiro)
+        // GET: api/Profiles/file/10 (Download por ID) - com auth
         [HttpGet("file/{fileId}")]
         public async Task<IActionResult> DownloadFile(int fileId)
         {
             var result = await _service.GetFileContentAsync(fileId);
             if (result == null) return NotFound("Ficheiro não encontrado.");
 
-            // Retorna o ficheiro binário com o nome original
             return File(result.Value.Bytes, result.Value.ContentType, result.Value.FileName);
         }
 
@@ -166,21 +204,28 @@ namespace SecManagement_API.Controllers
         [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> DeleteFile(int fileId)
         {
-            if (await _service.DeleteFileAsync(fileId)) return NoContent();
-            return NotFound();
+            try
+            {
+                if (await _service.DeleteFileAsync(fileId)) return NoContent();
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
-        // --- SECRETARIA ---
+        // -------------------------
+        // --- SECRETARIA / ADMIN ---
+        // -------------------------
 
         // PUT: api/Profiles/formando/5/numero
-        // Body: { "novoNumero": "A2026001" }
         [HttpPut("formando/{userId}/numero")]
         [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<FormandoProfileDto>> UpdateNumeroAluno(int userId, [FromBody] UpdateNumeroDto request)
         {
             try
             {
-                // Este método foi o que adicionámos ao ProfileService na resposta anterior
                 var result = await _service.UpdateNumeroAlunoAsync(userId, request.NovoNumero);
                 return Ok(result);
             }

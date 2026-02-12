@@ -5,7 +5,6 @@ export default function useTheme() {
     const saved = localStorage.getItem("theme");
     if (saved === "dark" || saved === "light") return saved;
 
-    // fallback para preferencia do sistema
     const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches;
     return prefersDark ? "dark" : "light";
   };

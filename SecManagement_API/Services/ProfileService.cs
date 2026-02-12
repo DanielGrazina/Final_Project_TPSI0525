@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using SecManagement_API.Data;
 using SecManagement_API.DTOs;
 using SecManagement_API.Models;
@@ -9,10 +10,30 @@ namespace SecManagement_API.Services
     public class ProfileService : IProfileService
     {
         private readonly AppDbContext _context;
+        private readonly IHttpContextAccessor _http;
 
-        public ProfileService(AppDbContext context)
+        public ProfileService(AppDbContext context, IHttpContextAccessor http)
         {
             _context = context;
+            _http = http;
+        }
+
+        private string? BuildAbsoluteUrl(string? maybeRelativeOrAbsolute)
+        {
+            var s = (maybeRelativeOrAbsolute ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(s)) return null;
+
+            // já absoluto
+            if (s.StartsWith("http://") || s.StartsWith("https://"))
+                return s;
+
+            // garante "/" no início
+            if (!s.StartsWith("/")) s = "/" + s;
+
+            var req = _http.HttpContext?.Request;
+            if (req == null) return s;
+
+            return $"{req.Scheme}://{req.Host}{s}";
         }
 
         // --- FORMADORES ---
@@ -30,7 +51,6 @@ namespace SecManagement_API.Services
                 Id = formador.Id,
                 UserId = formador.UserId,
 
-                // ✅ Nome real (estava a devolver Email)
                 Nome = formador.User?.Nome ?? "N/A",
                 Email = formador.User?.Email ?? "",
                 Telefone = formador.User?.Telefone,
@@ -38,7 +58,9 @@ namespace SecManagement_API.Services
                 NIF = formador.User?.NIF,
                 Morada = formador.User?.Morada,
                 CC = formador.User?.CC,
-                Avatar = formador.User?.Avatar,
+
+                // ✅ devolve absoluto para o <img>
+                Avatar = BuildAbsoluteUrl(formador.User?.Avatar),
 
                 AreaEspecializacao = formador.AreaEspecializacao,
                 CorCalendario = formador.CorCalendario,
@@ -93,7 +115,9 @@ namespace SecManagement_API.Services
                 NIF = f.User?.NIF,
                 Morada = f.User?.Morada,
                 CC = f.User?.CC,
-                Avatar = f.User?.Avatar,
+
+                // ✅ absoluto
+                Avatar = BuildAbsoluteUrl(f.User?.Avatar),
 
                 AreaEspecializacao = f.AreaEspecializacao,
                 CorCalendario = f.CorCalendario,
@@ -133,7 +157,9 @@ namespace SecManagement_API.Services
                 NIF = formando.User?.NIF,
                 Morada = formando.User?.Morada,
                 CC = formando.User?.CC,
-                Avatar = formando.User?.Avatar,
+
+                // ✅ absoluto
+                Avatar = BuildAbsoluteUrl(formando.User?.Avatar),
 
                 Email = formando.User?.Email ?? "",
 
@@ -158,7 +184,6 @@ namespace SecManagement_API.Services
                 .Include(f => f.User).ThenInclude(u => u.Ficheiros)
                 .ToListAsync();
 
-            // ✅ Para a lista/pesquisa precisamos de Turma (via Inscricoes 'Ativo')
             var formandoIds = list.Select(f => f.Id).ToList();
 
             var inscricoesAtivas = await _context.Inscricoes
@@ -184,7 +209,9 @@ namespace SecManagement_API.Services
                     NIF = f.User?.NIF,
                     Morada = f.User?.Morada,
                     CC = f.User?.CC,
-                    Avatar = f.User?.Avatar,
+
+                    // ✅ absoluto
+                    Avatar = BuildAbsoluteUrl(f.User?.Avatar),
 
                     Email = f.User?.Email ?? "",
                     NumeroAluno = f.NumeroAluno,
@@ -335,7 +362,9 @@ namespace SecManagement_API.Services
             var user = await _context.Users.FindAsync(userId);
             if (user == null) throw new Exception("Utilizador não encontrado.");
 
-            if (!file.ContentType.StartsWith("image/"))
+            if (file == null || file.Length == 0) throw new Exception("Ficheiro inválido.");
+
+            if (string.IsNullOrWhiteSpace(file.ContentType) || !file.ContentType.StartsWith("image/"))
                 throw new Exception("O ficheiro deve ser uma imagem.");
 
             using var memoryStream = new MemoryStream();
@@ -352,11 +381,14 @@ namespace SecManagement_API.Services
             _context.UserFicheiros.Add(userFicheiro);
             await _context.SaveChangesAsync();
 
-            string avatarUrl = $"/api/Profiles/file/{userFicheiro.Id}";
-            user.Avatar = avatarUrl;
+            // ✅ URL público (sem auth) só para imagens
+            string publicAvatarPath = $"/api/Profiles/public-file/{userFicheiro.Id}";
+            user.Avatar = publicAvatarPath;
 
             await _context.SaveChangesAsync();
-            return avatarUrl;
+
+            // ✅ devolve absoluto para o frontend usar imediatamente
+            return BuildAbsoluteUrl(publicAvatarPath) ?? publicAvatarPath;
         }
     }
 }

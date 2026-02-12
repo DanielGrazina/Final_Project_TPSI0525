@@ -4,7 +4,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using QuestPDF.Infrastructure;
 using SecManagement_API.Data;
-using SecManagement_API.Models;
 using SecManagement_API.Services;
 using SecManagement_API.Services.Interfaces;
 using System.Text;
@@ -16,6 +15,8 @@ QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// ✅ NECESSÁRIO para o ProfileService construir URLs absolutas
+builder.Services.AddHttpContextAccessor();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -31,7 +32,6 @@ builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IInscricaoService, InscricaoService>();
-
 
 // JWT Auth
 builder.Services.AddAuthentication(options =>
@@ -102,9 +102,8 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     try
     {
-        var context = services.GetRequiredService<SecManagement_API.Data.AppDbContext>();
-
-        SecManagement_API.Data.DbInitializer.Initialize(context);
+        var context = services.GetRequiredService<AppDbContext>();
+        DbInitializer.Initialize(context);
     }
     catch (Exception ex)
     {
@@ -131,3 +130,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+

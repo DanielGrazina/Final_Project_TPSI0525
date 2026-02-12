@@ -17,6 +17,24 @@ function safeUrl(x) {
   return s || "";
 }
 
+function absolutizeUrl(url, baseURL) {
+  const u = safeUrl(url);
+  if (!u) return "";
+  if (u.startsWith("http://") || u.startsWith("https://")) return u;
+  if (u.startsWith("data:") || u.startsWith("blob:")) return u;
+
+  const base = (baseURL || "").replace(/\/+$/, "");
+  const path = u.startsWith("/") ? u : `/${u}`;
+  return base ? `${base}${path}` : u;
+}
+
+function withCacheBust(url) {
+  const u = safeUrl(url);
+  if (!u) return "";
+  const sep = u.includes("?") ? "&" : "?";
+  return `${u}${sep}v=${Date.now()}`;
+}
+
 function extractError(err, fallback = "Ocorreu um erro.") {
   const data = err?.response?.data;
   if (!data) return fallback;
@@ -209,13 +227,22 @@ function readEmail(raw) {
   );
 }
 
+// ✅ FIX: tenta avatarUrl em vários campos + dentro de user.*
 function readAvatar(raw) {
-  return (
-    safeStr(
-      pick(raw, ["avatarUrl", "AvatarUrl", "avatar", "Avatar", "userAvatar", "UserAvatar"]) ??
-        pickPath(raw, ["user.avatar", "user.Avatar", "User.Avatar", "User.avatar", "user.avatarUrl", "User.AvatarUrl"])
-    ) || ""
-  );
+  const found =
+    pick(raw, ["avatarUrl", "AvatarUrl", "avatar", "Avatar", "userAvatar", "UserAvatar"]) ??
+    pickPath(raw, [
+      "user.avatarUrl",
+      "user.AvatarUrl",
+      "user.avatar",
+      "user.Avatar",
+      "User.AvatarUrl",
+      "User.avatarUrl",
+      "User.Avatar",
+      "User.avatar",
+    ]);
+
+  return safeStr(found || "");
 }
 
 function readTurmaNome(raw) {
@@ -279,7 +306,9 @@ function normFormando(raw) {
 
   const avatarUrl = readAvatar(raw);
   const dataNascimento =
-    pick(raw, ["dataNascimento", "DataNascimento"]) ?? pickPath(raw, ["user.dataNascimento", "User.DataNascimento"]) ?? null;
+    pick(raw, ["dataNascimento", "DataNascimento"]) ??
+    pickPath(raw, ["user.dataNascimento", "User.DataNascimento"]) ??
+    null;
 
   const telefone = safeStr(pick(raw, ["telefone", "Telefone"]) ?? pickPath(raw, ["user.telefone", "User.Telefone"])) || "";
   const nif = safeStr(pick(raw, ["nif", "Nif"]) ?? pickPath(raw, ["user.nif", "User.Nif"])) || "";
@@ -339,7 +368,10 @@ function normFormador(raw) {
     ) || "";
 
   const corCalendario =
-    safeStr(pick(raw, ["corCalendario", "CorCalendario"]) ?? pickPath(raw, ["user.corCalendario", "User.CorCalendario"])) || "";
+    safeStr(
+      pick(raw, ["corCalendario", "CorCalendario"]) ?? pickPath(raw, ["user.corCalendario", "User.CorCalendario"])
+    ) || "";
+
   const avatarUrl = readAvatar(raw);
 
   const telefone = safeStr(pick(raw, ["telefone", "Telefone"]) ?? pickPath(raw, ["user.telefone", "User.Telefone"])) || "";
@@ -501,7 +533,10 @@ function Modal({ title, children, onClose, disabled }) {
   );
 }
 
+// ✅ FIX: URL absoluto + cache bust + fallback se a img falhar
 function Avatar({ url, name, size = 44 }) {
+  const [broken, setBroken] = useState(false);
+
   const s = Number(size);
   const initials = (safeStr(name).trim() || "?")
     .split(" ")
@@ -510,7 +545,9 @@ function Avatar({ url, name, size = 44 }) {
     .map((p) => p[0]?.toUpperCase())
     .join("");
 
-  const u = safeUrl(url);
+  const baseUrl = api?.defaults?.baseURL;
+  const absolute = absolutizeUrl(url, baseUrl);
+  const finalUrl = !broken && absolute ? withCacheBust(absolute) : "";
 
   return (
     <div
@@ -518,7 +555,14 @@ function Avatar({ url, name, size = 44 }) {
       style={{ width: s, height: s }}
       title={safeStr(name)}
     >
-      {u ? <img src={u} alt="Avatar" className="w-full h-full object-cover" /> : (
+      {finalUrl ? (
+        <img
+          src={finalUrl}
+          alt="Avatar"
+          className="w-full h-full object-cover"
+          onError={() => setBroken(true)}
+        />
+      ) : (
         <span className="text-xs font-black text-gray-700 dark:text-gray-200">{initials || "?"}</span>
       )}
     </div>
@@ -850,6 +894,7 @@ export default function Profiles() {
 
       setAvatarFile(null);
       await refreshSelected();
+      await loadAll(); // ✅ garante que aparece na lista também
       setInfo("Avatar atualizado.");
       setTimeout(() => setInfo(""), 1200);
     } catch (err) {

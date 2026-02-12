@@ -6,13 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>secmanagement-web</title>
 
+    <!-- ✅ Aplica tema antes do React (fix refresh -> light + evita flash) -->
     <script>
       (function () {
         try {
-          const t = localStorage.getItem("theme");
-          if (t === "dark") document.documentElement.classList.add("dark");
-          if (t === "light") document.documentElement.classList.remove("dark");
-        } catch {}
+          var saved = localStorage.getItem("theme");
+          var theme =
+            saved === "dark" || saved === "light"
+              ? saved
+              : (window.matchMedia &&
+                 window.matchMedia("(prefers-color-scheme: dark)").matches)
+                ? "dark"
+                : "light";
+
+          var root = document.documentElement;
+          if (theme === "dark") root.classList.add("dark");
+          else root.classList.remove("dark");
+        } catch (e) {}
       })();
     </script>
   </head>
