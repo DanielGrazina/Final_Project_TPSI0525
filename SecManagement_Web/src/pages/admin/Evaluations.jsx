@@ -49,6 +49,63 @@ function Modal({ title, children, onClose, disabled }) {
   );
 }
 
+/* ---------------- Pagination (compact like Turmas) ---------------- */
+
+function PaginationCompact({ total, page, pageSize, onPageChange, disabled, className = "" }) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+
+  const btn =
+    "px-3 py-2 rounded-lg border text-sm font-semibold transition " +
+    "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed " +
+    "border-gray-200 text-gray-700 hover:bg-gray-50 " +
+    "dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-800";
+
+  return (
+    <div className={["flex items-center gap-2 justify-end", className].join(" ")}>
+      <button type="button" className={btn} onClick={() => onPageChange(1)} disabled={disabled || safePage === 1}>
+        «
+      </button>
+      <button
+        type="button"
+        className={btn}
+        onClick={() => onPageChange(safePage - 1)}
+        disabled={disabled || safePage === 1}
+      >
+        ‹
+      </button>
+
+      <div
+        className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                   text-sm font-semibold text-gray-700 dark:text-gray-200
+                   bg-gray-50 dark:bg-gray-950/30"
+      >
+        Página <span className="text-gray-900 dark:text-gray-100">{safePage}</span> /{" "}
+        <span className="text-gray-900 dark:text-gray-100">{totalPages}</span>
+      </div>
+
+      <button
+        type="button"
+        className={btn}
+        onClick={() => onPageChange(safePage + 1)}
+        disabled={disabled || safePage === totalPages}
+      >
+        ›
+      </button>
+      <button
+        type="button"
+        className={btn}
+        onClick={() => onPageChange(totalPages)}
+        disabled={disabled || safePage === totalPages}
+      >
+        »
+      </button>
+    </div>
+  );
+}
+
+/* ---------------- helpers ---------------- */
+
 function safeStr(x) {
   return (x ?? "").toString();
 }
@@ -176,6 +233,10 @@ export default function Evaluations() {
   const [search, setSearch] = useState("");
   const [turmaFilter, setTurmaFilter] = useState("Todos");
 
+  // ✅ pagination (igual ao Turmas)
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(25);
+
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
 
@@ -222,9 +283,7 @@ export default function Evaluations() {
       const ids = new Set(list.map((t) => Number(t.id)).filter((x) => Number.isFinite(x)));
       setAllowedTurmaIds(ids);
     } catch (err) {
-      // se não existir endpoint, fica vazio e nós damos msg clara (sem mostrar “tudo” por engano)
       setAllowedTurmaIds(new Set());
-      // não forçamos error aqui porque pode ser 404 — mostramos um aviso mais abaixo quando necessário
       console.log("Turmas do formador endpoint não encontrado/erro:", err?.response?.status, err?.response?.data);
     }
   }
@@ -292,7 +351,6 @@ export default function Evaluations() {
       const list = Array.isArray(res.data) ? res.data : [];
 
       if (allowedTurmaIds.size === 0) {
-        // segurança: não mostramos nada se não sabemos as turmas do formador
         setError(
           "Como Formador, preciso do endpoint para saber as tuas turmas (ex: GET /Turmas/formador/{id}). Sem isso, por segurança não posso listar avaliações."
         );
@@ -347,7 +405,10 @@ export default function Evaluations() {
 
     try {
       // ajusta estas rotas se o teu backend tiver nomes diferentes
-      const [iRes, mRes] = await Promise.all([api.get(`/Turmas/${turmaId}/alunos`), api.get(`/Turmas/${turmaId}/modulos`)]);
+      const [iRes, mRes] = await Promise.all([
+        api.get(`/Turmas/${turmaId}/alunos`),
+        api.get(`/Turmas/${turmaId}/modulos`),
+      ]);
 
       setInscricoes(Array.isArray(iRes.data) ? iRes.data : []);
       setTurmaModulos(Array.isArray(mRes.data) ? mRes.data : []);
@@ -360,9 +421,14 @@ export default function Evaluations() {
   // stats (o aluno só vê as dele; formador/admin vêem as que estão listadas)
   const stats = useMemo(() => {
     const total = avaliacoes.length;
-    const onlyWithGrade = avaliacoes.filter((a) => a.avaliacao !== null && a.avaliacao !== undefined && a.avaliacao !== "");
+    const onlyWithGrade = avaliacoes.filter(
+      (a) => a.avaliacao !== null && a.avaliacao !== undefined && a.avaliacao !== ""
+    );
     const withGrades = onlyWithGrade.length;
-    const avgGrade = withGrades > 0 ? (onlyWithGrade.reduce((sum, a) => sum + Number(a.avaliacao), 0) / withGrades).toFixed(1) : "—";
+    const avgGrade =
+      withGrades > 0
+        ? (onlyWithGrade.reduce((sum, a) => sum + Number(a.avaliacao), 0) / withGrades).toFixed(1)
+        : "—";
     return { total, withGrades, avgGrade };
   }, [avaliacoes]);
 
@@ -377,7 +443,12 @@ export default function Evaluations() {
     const s = search.trim().toLowerCase();
 
     return avaliacoes.filter((a) => {
-      const turmaNome = (turmas.find((t) => Number(t.id) === Number(a.turmaId))?.nome ?? a.turmaNome ?? "").toLowerCase();
+      const turmaNome = (
+        turmas.find((t) => Number(t.id) === Number(a.turmaId))?.nome ??
+        a.turmaNome ??
+        ""
+      ).toLowerCase();
+
       const alunoNome = (a.formandoNome ?? a.alunoNome ?? a.userNome ?? a.nome ?? "").toLowerCase();
       const moduloNome = (a.moduloNome ?? "").toLowerCase();
 
@@ -397,6 +468,23 @@ export default function Evaluations() {
       return matchesSearch && matchesTurma;
     });
   }, [avaliacoes, turmas, search, turmaFilter]);
+
+  // ✅ reset page when filters change
+  useEffect(() => setPage(1), [search, turmaFilter]);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(filtered.length / pageSize)),
+    [filtered.length, pageSize]
+  );
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const paged = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
 
   function openCreate() {
     // aluno não cria avaliações
@@ -560,7 +648,11 @@ export default function Evaluations() {
       await api.delete(`${BASE}/${id}`);
       setAvaliacoes((prev) => prev.filter((x) => x.id !== id));
     } catch (err) {
-      console.log("DELETE avaliação FAIL", { endpoint: `${BASE}/${id}`, status: err.response?.status, data: err.response?.data });
+      console.log("DELETE avaliação FAIL", {
+        endpoint: `${BASE}/${id}`,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
       setError(extractError(err, "Falha ao apagar avaliação."));
     }
   }
@@ -630,14 +722,19 @@ export default function Evaluations() {
         {/* Avisos úteis */}
         {isFormador && allowedTurmaIds.size === 0 && (
           <div className="mb-6 bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800 rounded-xl p-4 text-sm text-amber-800 dark:text-amber-200">
-            Como Formador, não consegui descobrir as tuas turmas (falta endpoint). Por segurança, não vou listar/gerir avaliações até existir uma rota tipo{" "}
-            <b>GET /Turmas/formador/&#123;id&#125;</b> (ou equivalente).
+            Como Formador, não consegui descobrir as tuas turmas (falta endpoint). Por segurança, não vou listar/gerir
+            avaliações até existir uma rota tipo <b>GET /Turmas/formador/&#123;id&#125;</b> (ou equivalente).
           </div>
         )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800 rounded-xl p-4 mb-6 flex items-start gap-3">
-            <svg className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="text-sm text-red-700 dark:text-red-300 flex-1">{error}</div>
@@ -716,6 +813,17 @@ export default function Evaluations() {
               </div>
             </div>
           </div>
+
+          {/* ✅ Paginação compacta (topo) */}
+          <div className="mt-4">
+            <PaginationCompact
+              total={filtered.length}
+              page={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              disabled={loading}
+            />
+          </div>
         </div>
 
         {/* Table */}
@@ -761,14 +869,16 @@ export default function Evaluations() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((a) => (
+                  paged.map((a) => (
                     <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="py-4 px-6">
                         <span className="text-sm font-mono text-gray-600 dark:text-gray-400">#{a.id}</span>
                       </td>
+
                       <td className="py-4 px-6">
                         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{getTurmaNome(a.turmaId)}</span>
                       </td>
+
                       <td className="py-4 px-6">
                         <div className="flex flex-col">
                           <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -776,14 +886,17 @@ export default function Evaluations() {
                           </span>
                         </div>
                       </td>
+
                       <td className="py-4 px-6">
                         <div className="flex flex-col">
                           <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{a.moduloNome || "Módulo"}</span>
                         </div>
                       </td>
+
                       <td className="py-4 px-6">
                         <Gradebadge grade={a.avaliacao} />
                       </td>
+
                       <td className="py-4 px-6">
                         {a.observacoes ? (
                           <span className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{a.observacoes}</span>
@@ -791,6 +904,7 @@ export default function Evaluations() {
                           <span className="text-sm text-gray-400">—</span>
                         )}
                       </td>
+
                       <td className="py-4 px-6">
                         {canManage ? (
                           <div className="flex flex-wrap gap-2">
@@ -826,6 +940,19 @@ export default function Evaluations() {
               </tbody>
             </table>
           </div>
+
+          {/* ✅ Paginação compacta (fundo) */}
+          {!loading && filtered.length > 0 && (
+            <div className="border-t border-gray-200 dark:border-gray-800 px-6 py-4 bg-white dark:bg-gray-900">
+              <PaginationCompact
+                total={filtered.length}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                disabled={loading}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -914,7 +1041,9 @@ export default function Evaluations() {
                              focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                   placeholder="Ex: 16"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Aceita decimais (ex: 14.5). Deixa vazio para null.</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Aceita decimais (ex: 14.5). Deixa vazio para null.
+                </p>
               </div>
 
               <div className="md:col-span-2">

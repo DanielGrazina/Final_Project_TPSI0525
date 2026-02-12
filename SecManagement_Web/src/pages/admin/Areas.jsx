@@ -125,7 +125,7 @@ function Modal({ title, children, onClose, disabled }) {
   );
 }
 
-/* ---------------- Pagination ---------------- */
+/* ---------------- Pagination (Courses-like) ---------------- */
 
 function PaginationBar({
   total,
@@ -135,6 +135,7 @@ function PaginationBar({
   onPageSizeChange,
   disabled,
   position = "bottom", // "top" | "bottom"
+  label = "Áreas",
 }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
@@ -142,36 +143,28 @@ function PaginationBar({
   const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
   const to = Math.min(total, safePage * pageSize);
 
-  const pagesToShow = (() => {
-    const win = 7;
-    const half = Math.floor(win / 2);
-    let start = Math.max(1, safePage - half);
-    let end = Math.min(totalPages, start + win - 1);
-    start = Math.max(1, end - win + 1);
-    const arr = [];
-    for (let p = start; p <= end; p++) arr.push(p);
-    return arr;
-  })();
-
-  const borderClass =
-    position === "top"
-      ? "border-b border-gray-200 dark:border-gray-800"
-      : "border-t border-gray-200 dark:border-gray-800";
+  const isTop = position === "top";
+  const canPrev = safePage > 1;
+  const canNext = safePage < totalPages;
 
   return (
     <div
       className={[
-        "flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-4",
-        borderClass,
+        "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 px-4 py-4",
         "bg-white dark:bg-gray-900",
+        isTop ? "border-b border-gray-200 dark:border-gray-800" : "border-t border-gray-200 dark:border-gray-800",
       ].join(" ")}
     >
       <div className="flex flex-wrap items-center gap-3">
         <div className="text-sm text-gray-600 dark:text-gray-400">
-          A mostrar{" "}
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{from}</span>–{" "}
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{to}</span> de{" "}
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{total}</span>
+          {label}{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">
+            {from}–{to}
+          </span>{" "}
+          de{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">
+            {total}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -193,54 +186,22 @@ function PaginationBar({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <Btn onClick={() => onPageChange(1)} disabled={disabled || safePage === 1}>
+      <div className="flex items-center gap-2 justify-end">
+        <Btn onClick={() => onPageChange(1)} disabled={disabled || !canPrev} className="px-3 py-2">
           «
         </Btn>
-        <Btn onClick={() => onPageChange(safePage - 1)} disabled={disabled || safePage === 1}>
+        <Btn onClick={() => onPageChange(safePage - 1)} disabled={disabled || !canPrev} className="px-3 py-2">
           ‹
         </Btn>
 
-        {pagesToShow[0] > 1 && (
-          <>
-            <Btn onClick={() => onPageChange(1)} disabled={disabled}>
-              1
-            </Btn>
-            <span className="text-gray-400 px-1">…</span>
-          </>
-        )}
+        <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 px-3">
+          Página {safePage} / {totalPages}
+        </div>
 
-        {pagesToShow.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPageChange(p)}
-            disabled={disabled}
-            className={[
-              "px-3 py-1.5 rounded-lg border text-sm font-semibold transition",
-              "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
-              p === safePage
-                ? "bg-blue-600 text-white border-blue-600"
-                : "border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-800",
-            ].join(" ")}
-          >
-            {p}
-          </button>
-        ))}
-
-        {pagesToShow[pagesToShow.length - 1] < totalPages && (
-          <>
-            <span className="text-gray-400 px-1">…</span>
-            <Btn onClick={() => onPageChange(totalPages)} disabled={disabled}>
-              {totalPages}
-            </Btn>
-          </>
-        )}
-
-        <Btn onClick={() => onPageChange(safePage + 1)} disabled={disabled || safePage === totalPages}>
+        <Btn onClick={() => onPageChange(safePage + 1)} disabled={disabled || !canNext} className="px-3 py-2">
           ›
         </Btn>
-        <Btn onClick={() => onPageChange(totalPages)} disabled={disabled || safePage === totalPages}>
+        <Btn onClick={() => onPageChange(totalPages)} disabled={disabled || !canNext} className="px-3 py-2">
           »
         </Btn>
       </div>
@@ -268,7 +229,7 @@ export default function Areas() {
 
   // pagination
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
 
   // modal create/edit
   const [open, setOpen] = useState(false);
@@ -478,8 +439,10 @@ export default function Areas() {
 
         {/* Table + Pagination */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
-          {/* ✅ PAGINAÇÃO NO TOPO */}
+          {/* ✅ PAGINAÇÃO NO TOPO (estilo Página X/Y) */}
           <PaginationBar
+            position="top"
+            label="Áreas"
             total={filtered.length}
             page={page}
             pageSize={pageSize}
@@ -489,7 +452,6 @@ export default function Areas() {
               setPage(1);
             }}
             disabled={loading}
-            position="top"
           />
 
           {loading ? (
@@ -539,8 +501,10 @@ export default function Areas() {
             </div>
           )}
 
-          {/* ✅ PAGINAÇÃO NO FUNDO */}
+          {/* ✅ PAGINAÇÃO NO FUNDO (estilo Página X/Y) */}
           <PaginationBar
+            position="bottom"
+            label="Áreas"
             total={filtered.length}
             page={page}
             pageSize={pageSize}
@@ -550,7 +514,6 @@ export default function Areas() {
               setPage(1);
             }}
             disabled={loading}
-            position="bottom"
           />
         </div>
       </div>

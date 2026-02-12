@@ -136,7 +136,7 @@ function StatCard({ label, value, color = "blue" }) {
   );
 }
 
-function Btn({ children, tone = "neutral", ...props }) {
+function Btn({ children, tone = "neutral", className = "", ...props }) {
   const map = {
     neutral:
       "border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800",
@@ -155,6 +155,7 @@ function Btn({ children, tone = "neutral", ...props }) {
         "px-3 py-1.5 rounded-lg border text-sm font-semibold transition",
         "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
         map[tone] || map.neutral,
+        className,
       ].join(" ")}
       {...props}
     >
@@ -184,35 +185,46 @@ function PillAction({ label, variant, ...props }) {
   );
 }
 
-/* ---------------- Pagination ---------------- */
+/* ---------------- Pagination (Courses-like) ---------------- */
 
-function PaginationBar({ total, page, pageSize, onPageChange, onPageSizeChange, disabled }) {
+function PaginationBar({
+  total,
+  page,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  disabled,
+  position = "bottom", // "top" | "bottom"
+  label = "Utilizadores",
+}) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
 
   const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
   const to = Math.min(total, safePage * pageSize);
 
-  const pagesToShow = (() => {
-    const win = 7;
-    const half = Math.floor(win / 2);
-    let start = Math.max(1, safePage - half);
-    let end = Math.min(totalPages, start + win - 1);
-    start = Math.max(1, end - win + 1);
-
-    const arr = [];
-    for (let p = start; p <= end; p++) arr.push(p);
-    return arr;
-  })();
+  const isTop = position === "top";
+  const canPrev = safePage > 1;
+  const canNext = safePage < totalPages;
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+    <div
+      className={[
+        "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 px-4 py-4",
+        "bg-white dark:bg-gray-900",
+        isTop ? "border-b border-gray-200 dark:border-gray-800" : "border-t border-gray-200 dark:border-gray-800",
+      ].join(" ")}
+    >
       <div className="flex flex-wrap items-center gap-3">
         <div className="text-sm text-gray-600 dark:text-gray-400">
-          A mostrar{" "}
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{from}</span>–{" "}
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{to}</span> de{" "}
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{total}</span>
+          {label}{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">
+            {from}–{to}
+          </span>{" "}
+          de{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">
+            {total}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -234,54 +246,22 @@ function PaginationBar({ total, page, pageSize, onPageChange, onPageSizeChange, 
         </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <Btn tone="neutral" onClick={() => onPageChange(1)} disabled={disabled || safePage === 1}>
+      <div className="flex items-center gap-2 justify-end">
+        <Btn onClick={() => onPageChange(1)} disabled={disabled || !canPrev} className="px-3 py-2">
           «
         </Btn>
-        <Btn tone="neutral" onClick={() => onPageChange(safePage - 1)} disabled={disabled || safePage === 1}>
+        <Btn onClick={() => onPageChange(safePage - 1)} disabled={disabled || !canPrev} className="px-3 py-2">
           ‹
         </Btn>
 
-        {pagesToShow[0] > 1 && (
-          <>
-            <Btn tone="neutral" onClick={() => onPageChange(1)} disabled={disabled}>
-              1
-            </Btn>
-            <span className="text-gray-400 px-1">…</span>
-          </>
-        )}
+        <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 px-3">
+          Página {safePage} / {totalPages}
+        </div>
 
-        {pagesToShow.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPageChange(p)}
-            disabled={disabled}
-            className={[
-              "px-3 py-1.5 rounded-lg border text-sm font-semibold transition",
-              "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
-              p === safePage
-                ? "bg-blue-600 text-white border-blue-600"
-                : "border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-800",
-            ].join(" ")}
-          >
-            {p}
-          </button>
-        ))}
-
-        {pagesToShow[pagesToShow.length - 1] < totalPages && (
-          <>
-            <span className="text-gray-400 px-1">…</span>
-            <Btn tone="neutral" onClick={() => onPageChange(totalPages)} disabled={disabled}>
-              {totalPages}
-            </Btn>
-          </>
-        )}
-
-        <Btn tone="neutral" onClick={() => onPageChange(safePage + 1)} disabled={disabled || safePage === totalPages}>
+        <Btn onClick={() => onPageChange(safePage + 1)} disabled={disabled || !canNext} className="px-3 py-2">
           ›
         </Btn>
-        <Btn tone="neutral" onClick={() => onPageChange(totalPages)} disabled={disabled || safePage === totalPages}>
+        <Btn onClick={() => onPageChange(totalPages)} disabled={disabled || !canNext} className="px-3 py-2">
           »
         </Btn>
       </div>
@@ -322,7 +302,7 @@ export default function Users() {
 
   // Paginação
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
 
   const [showCreate, setShowCreate] = useState(false);
   const [create, setCreate] = useState({
@@ -453,12 +433,6 @@ export default function Users() {
 
   function cancelEdit() {
     setEditingId(null);
-  }
-
-  function onEditChange(e) {
-    const { name,а, value, type, checked } = e.target;
-    // ^^^ NOTE: this line has a typo "nameа" (cyrillic) in some editors. We'll avoid it by not using destructure name.
-    // We'll rewrite safely:
   }
 
   function onEditChangeSafe(e) {
@@ -696,6 +670,20 @@ export default function Users() {
 
         {/* Table */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
+          <PaginationBar
+            position="top"
+            label="Utilizadores"
+            total={filtered.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setPage(1);
+            }}
+            disabled={loading}
+          />
+
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead className="bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
@@ -735,7 +723,6 @@ export default function Users() {
                   paged.map((u) => {
                     const isEditing = editingId === u.id;
                     const targetIsSuperAdmin = u.role === "SuperAdmin";
-                    const disableEditThisRow = targetIsSuperAdmin;
 
                     return (
                       <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
@@ -780,7 +767,13 @@ export default function Users() {
                               </span>
                             </label>
                           ) : (
-                            <span className={`text-sm font-semibold ${u.isActive ? "text-emerald-700 dark:text-emerald-300" : "text-gray-500 dark:text-gray-400"}`}>
+                            <span
+                              className={`text-sm font-semibold ${
+                                u.isActive
+                                  ? "text-emerald-700 dark:text-emerald-300"
+                                  : "text-gray-500 dark:text-gray-400"
+                              }`}
+                            >
                               {u.isActive ? "Ativo" : "Inativo"}
                             </span>
                           )}
@@ -823,9 +816,9 @@ export default function Users() {
                                   label="Editar"
                                   variant="edit"
                                   onClick={() => startEdit(u)}
-                                  disabled={saving || !perms.canEdit || disableEditThisRow}
+                                  disabled={saving || !perms.canEdit || targetIsSuperAdmin}
                                   title={
-                                    disableEditThisRow
+                                    targetIsSuperAdmin
                                       ? "SuperAdmin não pode ser alterado."
                                       : !perms.canEdit
                                       ? "Sem permissão."
@@ -859,6 +852,8 @@ export default function Users() {
           </div>
 
           <PaginationBar
+            position="bottom"
+            label="Utilizadores"
             total={filtered.length}
             page={page}
             pageSize={pageSize}
@@ -940,7 +935,13 @@ export default function Users() {
 
               <div className="flex items-center">
                 <label className="inline-flex items-center gap-2">
-                  <input type="checkbox" name="isActive" checked={!!create.isActive} onChange={onCreateChange} disabled={saving} />
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={!!create.isActive}
+                    onChange={onCreateChange}
+                    disabled={saving}
+                  />
                   <span className="text-sm text-gray-900 dark:text-gray-100">Conta ativa</span>
                 </label>
               </div>
@@ -949,7 +950,9 @@ export default function Users() {
             {create.role === "Formador" && (
               <div className="pt-4 border-t border-gray-200 dark:border-gray-800 space-y-3">
                 <div>
-                  <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">Área de Especialização</label>
+                  <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">
+                    Área de Especialização
+                  </label>
                   <input
                     name="areaEspecializacao"
                     value={create.areaEspecializacao}
@@ -961,7 +964,9 @@ export default function Users() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">Cor Calendário</label>
+                  <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">
+                    Cor Calendário
+                  </label>
                   <input
                     name="corCalendario"
                     value={create.corCalendario}
@@ -978,7 +983,9 @@ export default function Users() {
             {create.role === "Formando" && (
               <div className="pt-4 border-t border-gray-200 dark:border-gray-800 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">Número de Aluno</label>
+                  <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">
+                    Número de Aluno
+                  </label>
                   <input
                     name="numeroAluno"
                     value={create.numeroAluno}
@@ -990,7 +997,9 @@ export default function Users() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">Data de Nascimento</label>
+                  <label className="block text-sm font-semibold mb-1 text-gray-700 dark:text-gray-200">
+                    Data de Nascimento
+                  </label>
                   <input
                     type="date"
                     name="dataNascimento"
@@ -1015,7 +1024,9 @@ export default function Users() {
                 disabled={saving}
                 className={[
                   "px-4 py-2 rounded-lg font-semibold text-white transition active:scale-95 disabled:opacity-60",
-                  saving ? "bg-gray-400 cursor-not-allowed" : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800",
+                  saving
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800",
                 ].join(" ")}
               >
                 {saving ? "A criar..." : "Criar"}

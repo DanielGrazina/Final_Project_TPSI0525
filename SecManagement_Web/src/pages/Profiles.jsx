@@ -37,7 +37,6 @@ function extractError(err, fallback = "Ocorreu um erro.") {
   }
 }
 
-// tenta obter primeira key válida (suporta camelCase/PascalCase)
 function pick(obj, keys) {
   for (const k of keys) {
     const v = obj?.[k];
@@ -46,7 +45,6 @@ function pick(obj, keys) {
   return null;
 }
 
-// tenta obter valor por caminhos aninhados (ex: "user.nome", "User.Nome")
 function pickPath(obj, paths) {
   for (const p of paths) {
     const parts = p.split(".");
@@ -149,10 +147,9 @@ function getUserIdFromToken(token) {
   return null;
 }
 
-/* ---------------- normalização (agressiva) ---------------- */
+/* ---------------- normalização ---------------- */
 
 function readNomePessoa(raw) {
-  // 1) nomes diretos
   const direct = pick(raw, [
     "nome",
     "Nome",
@@ -171,7 +168,6 @@ function readNomePessoa(raw) {
   ]);
   if (direct) return safeStr(direct);
 
-  // 2) aninhados (muito comum: raw.user.nome / raw.User.Nome)
   const nested = pickPath(raw, [
     "user.nome",
     "user.Nome",
@@ -191,13 +187,11 @@ function readNomePessoa(raw) {
   ]);
   if (nested) return safeStr(nested);
 
-  // 3) composição: primeiro+apelido
   const first = pick(raw, ["primeiroNome", "PrimeiroNome", "firstName", "FirstName", "nomeProprio", "NomeProprio"]);
   const last = pick(raw, ["apelido", "Apelido", "lastName", "LastName", "sobrenome", "Sobrenome"]);
   const composed = [safeStr(first).trim(), safeStr(last).trim()].filter(Boolean).join(" ").trim();
   if (composed) return composed;
 
-  // 4) composição aninhada
   const first2 = pickPath(raw, ["user.primeiroNome", "user.PrimeiroNome", "User.FirstName", "User.firstName"]);
   const last2 = pickPath(raw, ["user.apelido", "user.Apelido", "User.LastName", "User.lastName"]);
   const composed2 = [safeStr(first2).trim(), safeStr(last2).trim()].filter(Boolean).join(" ").trim();
@@ -225,7 +219,6 @@ function readAvatar(raw) {
 }
 
 function readTurmaNome(raw) {
-  // pode vir como string ou nested object
   const direct = pick(raw, ["turmaNome", "TurmaNome", "turmaAtualNome", "TurmaAtualNome"]);
   if (direct) return safeStr(direct);
 
@@ -243,7 +236,6 @@ function readTurmaNome(raw) {
   ]);
   if (nested) return safeStr(nested);
 
-  // turma pode ser uma string (ex: "TPSI-0525")
   const maybeTurma = pick(raw, ["turma", "Turma", "turmaAtual", "TurmaAtual"]);
   if (typeof maybeTurma === "string") return safeStr(maybeTurma);
 
@@ -275,7 +267,8 @@ function readNumeroAluno(raw) {
 
 function normFormando(raw) {
   const id = Number(pick(raw, ["id", "Id"])) || 0;
-  const userId = Number(pick(raw, ["userId", "UserId"]) ?? pickPath(raw, ["user.id", "user.Id", "User.Id", "User.id"])) || 0;
+  const userId =
+    Number(pick(raw, ["userId", "UserId"]) ?? pickPath(raw, ["user.id", "user.Id", "User.Id", "User.id"])) || 0;
 
   const email = readEmail(raw);
   const numeroAluno = readNumeroAluno(raw);
@@ -285,12 +278,14 @@ function normFormando(raw) {
   const turmaId = readTurmaId(raw);
 
   const avatarUrl = readAvatar(raw);
-  const dataNascimento = pick(raw, ["dataNascimento", "DataNascimento"]) ?? pickPath(raw, ["user.dataNascimento", "User.DataNascimento"]) ?? null;
+  const dataNascimento =
+    pick(raw, ["dataNascimento", "DataNascimento"]) ?? pickPath(raw, ["user.dataNascimento", "User.DataNascimento"]) ?? null;
 
   const telefone = safeStr(pick(raw, ["telefone", "Telefone"]) ?? pickPath(raw, ["user.telefone", "User.Telefone"])) || "";
   const nif = safeStr(pick(raw, ["nif", "Nif"]) ?? pickPath(raw, ["user.nif", "User.Nif"])) || "";
   const morada = safeStr(pick(raw, ["morada", "Morada"]) ?? pickPath(raw, ["user.morada", "User.Morada"])) || "";
-  const cc = safeStr(pick(raw, ["cc", "CC", "cartaoCidadao", "CartaoCidadao"]) ?? pickPath(raw, ["user.cc", "User.CC"])) || "";
+  const cc =
+    safeStr(pick(raw, ["cc", "CC", "cartaoCidadao", "CartaoCidadao"]) ?? pickPath(raw, ["user.cc", "User.CC"])) || "";
 
   const ficheiros = normFiles(raw?.ficheiros ?? raw?.Ficheiros ?? raw);
 
@@ -303,17 +298,7 @@ function normFormando(raw) {
     fallbackLabel: "Formando",
   });
 
-  // blob de pesquisa que inclui TUDO relevante (resolve pesquisa para qualquer dto)
-  const searchBlob = [
-    id,
-    userId,
-    displayName,
-    nome,
-    email,
-    numeroAluno,
-    turmaNome,
-    turmaId,
-  ]
+  const searchBlob = [id, userId, displayName, nome, email, numeroAluno, turmaNome, turmaId]
     .map((x) => safeLower(x))
     .filter(Boolean)
     .join(" ");
@@ -341,7 +326,8 @@ function normFormando(raw) {
 
 function normFormador(raw) {
   const id = Number(pick(raw, ["id", "Id"])) || 0;
-  const userId = Number(pick(raw, ["userId", "UserId"]) ?? pickPath(raw, ["user.id", "user.Id", "User.Id", "User.id"])) || 0;
+  const userId =
+    Number(pick(raw, ["userId", "UserId"]) ?? pickPath(raw, ["user.id", "user.Id", "User.Id", "User.id"])) || 0;
 
   const email = readEmail(raw);
   const nome = readNomePessoa(raw);
@@ -352,7 +338,8 @@ function normFormador(raw) {
         pickPath(raw, ["user.areaEspecializacao", "User.AreaEspecializacao"])
     ) || "";
 
-  const corCalendario = safeStr(pick(raw, ["corCalendario", "CorCalendario"]) ?? pickPath(raw, ["user.corCalendario", "User.CorCalendario"])) || "";
+  const corCalendario =
+    safeStr(pick(raw, ["corCalendario", "CorCalendario"]) ?? pickPath(raw, ["user.corCalendario", "User.CorCalendario"])) || "";
   const avatarUrl = readAvatar(raw);
 
   const telefone = safeStr(pick(raw, ["telefone", "Telefone"]) ?? pickPath(raw, ["user.telefone", "User.Telefone"])) || "";
@@ -442,7 +429,7 @@ function Btn({ children, tone = "neutral", className = "", ...props }) {
   );
 }
 
-function PrimaryBtn({ children, tone = "blue", className = "", ...props }) {
+function PrimaryBtn({ children, tone = "blue", className = "", type = "button", ...props }) {
   const map = {
     blue: "from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-500/25",
     green: "from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-emerald-500/25",
@@ -451,7 +438,7 @@ function PrimaryBtn({ children, tone = "blue", className = "", ...props }) {
 
   return (
     <button
-      type="button"
+      type={type}
       className={[
         "px-4 py-2 rounded-lg font-semibold text-white transition",
         "shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
@@ -468,8 +455,7 @@ function PrimaryBtn({ children, tone = "blue", className = "", ...props }) {
 function SegTabs({ value, onChange, left, right, disabled }) {
   const base = "px-4 py-2 text-sm font-semibold transition-colors border border-gray-200 dark:border-gray-700";
   const active = "bg-blue-600 text-white border-blue-600";
-  const idle =
-    "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800";
+  const idle = "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800";
 
   return (
     <div className="inline-flex rounded-lg overflow-hidden">
@@ -509,7 +495,6 @@ function Modal({ title, children, onClose, disabled }) {
             Fechar
           </Btn>
         </div>
-
         <div className="p-6">{children}</div>
       </div>
     </div>
@@ -533,43 +518,53 @@ function Avatar({ url, name, size = 44 }) {
       style={{ width: s, height: s }}
       title={safeStr(name)}
     >
-      {u ? (
-        <img src={u} alt="Avatar" className="w-full h-full object-cover" />
-      ) : (
+      {u ? <img src={u} alt="Avatar" className="w-full h-full object-cover" /> : (
         <span className="text-xs font-black text-gray-700 dark:text-gray-200">{initials || "?"}</span>
       )}
     </div>
   );
 }
 
-/* ---------------- Pagination ---------------- */
+/* ---------------- Pagination (Courses-like) ---------------- */
 
-function PaginationBar({ total, page, pageSize, onPageChange, onPageSizeChange, disabled }) {
+function PaginationBar({
+  total,
+  page,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  disabled,
+  position = "bottom", // "top" | "bottom"
+  label = "Perfis",
+}) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
 
   const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
   const to = Math.min(total, safePage * pageSize);
 
-  const pagesToShow = (() => {
-    const win = 7;
-    const half = Math.floor(win / 2);
-    let start = Math.max(1, safePage - half);
-    let end = Math.min(totalPages, start + win - 1);
-    start = Math.max(1, end - win + 1);
-    const arr = [];
-    for (let p = start; p <= end; p++) arr.push(p);
-    return arr;
-  })();
+  const isTop = position === "top";
+  const canPrev = safePage > 1;
+  const canNext = safePage < totalPages;
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+    <div
+      className={[
+        "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 px-4 py-4",
+        "bg-white dark:bg-gray-900",
+        isTop ? "border-b border-gray-200 dark:border-gray-800" : "border-t border-gray-200 dark:border-gray-800",
+      ].join(" ")}
+    >
       <div className="flex flex-wrap items-center gap-3">
         <div className="text-sm text-gray-600 dark:text-gray-400">
-          A mostrar{" "}
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{from}</span>–{" "}
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{to}</span> de{" "}
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{total}</span>
+          {label}{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">
+            {from}–{to}
+          </span>{" "}
+          de{" "}
+          <span className="font-semibold text-gray-900 dark:text-gray-100">
+            {total}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -591,54 +586,22 @@ function PaginationBar({ total, page, pageSize, onPageChange, onPageSizeChange, 
         </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <Btn onClick={() => onPageChange(1)} disabled={disabled || safePage === 1}>
+      <div className="flex items-center gap-2 justify-end">
+        <Btn onClick={() => onPageChange(1)} disabled={disabled || !canPrev} className="px-3 py-2">
           «
         </Btn>
-        <Btn onClick={() => onPageChange(safePage - 1)} disabled={disabled || safePage === 1}>
+        <Btn onClick={() => onPageChange(safePage - 1)} disabled={disabled || !canPrev} className="px-3 py-2">
           ‹
         </Btn>
 
-        {pagesToShow[0] > 1 && (
-          <>
-            <Btn onClick={() => onPageChange(1)} disabled={disabled}>
-              1
-            </Btn>
-            <span className="text-gray-400 px-1">…</span>
-          </>
-        )}
+        <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 px-3">
+          Página {safePage} / {totalPages}
+        </div>
 
-        {pagesToShow.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPageChange(p)}
-            disabled={disabled}
-            className={[
-              "px-3 py-1.5 rounded-lg border text-sm font-semibold transition",
-              "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
-              p === safePage
-                ? "bg-blue-600 text-white border-blue-600"
-                : "border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-800",
-            ].join(" ")}
-          >
-            {p}
-          </button>
-        ))}
-
-        {pagesToShow[pagesToShow.length - 1] < totalPages && (
-          <>
-            <span className="text-gray-400 px-1">…</span>
-            <Btn onClick={() => onPageChange(totalPages)} disabled={disabled}>
-              {totalPages}
-            </Btn>
-          </>
-        )}
-
-        <Btn onClick={() => onPageChange(safePage + 1)} disabled={disabled || safePage === totalPages}>
+        <Btn onClick={() => onPageChange(safePage + 1)} disabled={disabled || !canNext} className="px-3 py-2">
           ›
         </Btn>
-        <Btn onClick={() => onPageChange(totalPages)} disabled={disabled || safePage === totalPages}>
+        <Btn onClick={() => onPageChange(totalPages)} disabled={disabled || !canNext} className="px-3 py-2">
           »
         </Btn>
       </div>
@@ -671,7 +634,7 @@ export default function Profiles() {
   const [areaFilter, setAreaFilter] = useState("");
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
 
   const [selected, setSelected] = useState(null); // { type, data }
   const [openDetail, setOpenDetail] = useState(false);
@@ -697,7 +660,7 @@ export default function Profiles() {
     }
 
     if (!myUserId) {
-      setError("Não consegui ler o teu UserId do token. Diz-me que claim está a vir no JWT.");
+      setError("Não consegui ler o teu UserId do token.");
       setLoading(false);
       return;
     }
@@ -746,18 +709,13 @@ export default function Profiles() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ pesquisa agora usa __search (nunca falha)
   const filteredFormandos = useMemo(() => {
     const s = safeLower(search);
     const t = safeLower(turmaFilter);
 
     return formandos.filter((f) => {
       const matchSearch = !s || safeLower(f.__search).includes(s);
-      const matchTurma =
-        !t ||
-        safeLower(f.turmaNome).includes(t) ||
-        safeLower(f.turmaId).includes(t);
-
+      const matchTurma = !t || safeLower(f.turmaNome).includes(t) || safeLower(f.turmaId).includes(t);
       return matchSearch && matchTurma;
     });
   }, [formandos, search, turmaFilter]);
@@ -985,6 +943,8 @@ export default function Profiles() {
     }
   }
 
+  const listLabel = tab === "formandos" ? "Formandos" : "Formadores";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header */}
@@ -1023,7 +983,11 @@ export default function Profiles() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={tab === "formandos" ? "Pesquisar por nome, id, userId, email, nº aluno..." : "Pesquisar por nome, id, userId, email..."}
+                placeholder={
+                  tab === "formandos"
+                    ? "Pesquisar por nome, id, userId, email, nº aluno..."
+                    : "Pesquisar por nome, id, userId, email..."
+                }
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-800
                            bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
                            focus:outline-none focus:ring-2 focus:ring-blue-500/40"
@@ -1050,11 +1014,9 @@ export default function Profiles() {
               />
             )}
 
-            <div className="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50">
-              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                {list.length} resultado{list.length !== 1 ? "s" : ""}
-              </span>
-            </div>
+            <Btn tone="blue" onClick={() => loadAll()} disabled={loading}>
+              Atualizar
+            </Btn>
           </div>
         </div>
 
@@ -1073,8 +1035,22 @@ export default function Profiles() {
           </div>
         )}
 
-        {/* List */}
+        {/* List Card */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
+          <PaginationBar
+            position="top"
+            label={listLabel}
+            total={list.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setPage(1);
+            }}
+            disabled={loading}
+          />
+
           {loading ? (
             <div className="p-10 flex items-center justify-center">
               <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -1092,8 +1068,12 @@ export default function Profiles() {
                 const avatarUrl = item.avatarUrl;
 
                 const sub = isFormando
-                  ? `UserId: ${item.userId} • Nº: ${safeStr(item.numeroAluno || "—")} • Email: ${safeStr(item.email || "—")} • Turma: ${safeStr(item.turmaNome || item.turmaId || "—")}`
-                  : `UserId: ${item.userId} • Área: ${safeStr(item.areaEspecializacao || "—")} • Email: ${safeStr(item.email || "—")}`;
+                  ? `UserId: ${item.userId} • Nº: ${safeStr(item.numeroAluno || "—")} • Email: ${safeStr(
+                      item.email || "—"
+                    )} • Turma: ${safeStr(item.turmaNome || item.turmaId || "—")}`
+                  : `UserId: ${item.userId} • Área: ${safeStr(item.areaEspecializacao || "—")} • Email: ${safeStr(
+                      item.email || "—"
+                    )}`;
 
                 return (
                   <button
@@ -1122,6 +1102,8 @@ export default function Profiles() {
           )}
 
           <PaginationBar
+            position="bottom"
+            label={listLabel}
             total={list.length}
             page={page}
             pageSize={pageSize}
@@ -1242,7 +1224,11 @@ export default function Profiles() {
                   )}
                 </div>
 
-                {!canManage && <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">Nota: estás em modo só leitura.</div>}
+                {!canManage && (
+                  <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+                    Nota: estás em modo só leitura.
+                  </div>
+                )}
               </div>
 
               {/* Files */}
@@ -1270,7 +1256,9 @@ export default function Profiles() {
                         className="flex items-center justify-between gap-2 p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/40"
                       >
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{safeStr(f.nomeFicheiro)}</div>
+                          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            {safeStr(f.nomeFicheiro)}
+                          </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{safeStr(f.contentType)}</div>
                         </div>
 
@@ -1315,10 +1303,11 @@ export default function Profiles() {
 
             {/* RIGHT */}
             <div className="space-y-4">
-              {/* Personal data */}
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
                 <div className="text-sm font-black text-gray-900 dark:text-gray-100">Dados pessoais</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">{canManage ? "Admin/Secretaria podem editar." : "Só leitura."}</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  {canManage ? "Admin/Secretaria podem editar." : "Só leitura."}
+                </div>
 
                 <form onSubmit={saveDadosPessoais} className="mt-4 space-y-3">
                   <div>
@@ -1396,7 +1385,6 @@ export default function Profiles() {
                 </form>
               </div>
 
-              {/* PDF */}
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
                 <div className="text-sm font-black text-gray-900 dark:text-gray-100">PDF</div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">Relatório do perfil.</div>

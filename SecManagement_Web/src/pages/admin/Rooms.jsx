@@ -3,11 +3,44 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 
-function Modal({ title, children, onClose }) {
+/* ---------------- helpers ---------------- */
+
+function safeStr(x) {
+  return (x ?? "").toString();
+}
+
+function extractError(err, fallback = "Ocorreu um erro.") {
+  const status = err?.response?.status;
+  const data = err?.response?.data;
+
+  if (status === 401) return "Sessão expirada. Faz login novamente.";
+  if (status === 403) return "Sem permissão para executar esta ação.";
+
+  if (!data) return fallback;
+  if (typeof data === "string") return data;
+  if (typeof data?.message === "string") return data.message;
+
+  if (data?.errors && typeof data.errors === "object") {
+    const k = Object.keys(data.errors)[0];
+    const arr = data.errors[k];
+    if (Array.isArray(arr) && arr.length) return arr[0];
+    return "Dados inválidos.";
+  }
+
+  try {
+    return JSON.stringify(data);
+  } catch {
+    return fallback;
+  }
+}
+
+/* ---------------- UI ---------------- */
+
+function Modal({ title, children, onClose, disabled }) {
   return (
     <div
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={onClose}
+      onClick={() => !disabled && onClose()}
     >
       <div
         className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
@@ -16,9 +49,12 @@ function Modal({ title, children, onClose }) {
         <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight">{title}</h3>
           <button
+            type="button"
             onClick={onClose}
+            disabled={disabled}
             className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 
-                       hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm"
+                       hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 font-medium text-sm
+                       disabled:opacity-60 disabled:cursor-not-allowed"
           >
             Fechar
           </button>
@@ -28,6 +64,63 @@ function Modal({ title, children, onClose }) {
     </div>
   );
 }
+
+/* ---------------- Pagination (compact like Turmas) ---------------- */
+
+function PaginationCompact({ total, page, pageSize, onPageChange, disabled, className = "" }) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+
+  const btn =
+    "px-3 py-2 rounded-lg border text-sm font-semibold transition " +
+    "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed " +
+    "border-gray-200 text-gray-700 hover:bg-gray-50 " +
+    "dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-800";
+
+  return (
+    <div className={["flex items-center gap-2 justify-end", className].join(" ")}>
+      <button type="button" className={btn} onClick={() => onPageChange(1)} disabled={disabled || safePage === 1}>
+        «
+      </button>
+      <button
+        type="button"
+        className={btn}
+        onClick={() => onPageChange(safePage - 1)}
+        disabled={disabled || safePage === 1}
+      >
+        ‹
+      </button>
+
+      <div
+        className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                   text-sm font-semibold text-gray-700 dark:text-gray-200
+                   bg-gray-50 dark:bg-gray-950/30"
+      >
+        Página <span className="text-gray-900 dark:text-gray-100">{safePage}</span> /{" "}
+        <span className="text-gray-900 dark:text-gray-100">{totalPages}</span>
+      </div>
+
+      <button
+        type="button"
+        className={btn}
+        onClick={() => onPageChange(safePage + 1)}
+        disabled={disabled || safePage === totalPages}
+      >
+        ›
+      </button>
+      <button
+        type="button"
+        className={btn}
+        onClick={() => onPageChange(totalPages)}
+        disabled={disabled || safePage === totalPages}
+      >
+        »
+      </button>
+    </div>
+  );
+}
+
+/* ---------------- domain ---------------- */
 
 const TIPOS = ["Teorica", "Informatica", "Oficina", "Reuniao"];
 
@@ -64,6 +157,10 @@ export default function AdminSalas() {
     tipo: "Teorica",
   });
 
+  // pagination (igual ao Turmas)
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(25);
+
   useEffect(() => {
     loadSalas();
   }, []);
@@ -74,10 +171,9 @@ export default function AdminSalas() {
 
     try {
       const res = await api.get("/Salas");
-      setSalas(res.data || []);
+      setSalas(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.response?.data || "Falha ao carregar salas.";
-      setError(typeof msg === "string" ? msg : "Falha ao carregar salas.");
+      setError(extractError(err, "Falha ao carregar salas."));
     } finally {
       setLoading(false);
     }
@@ -87,15 +183,32 @@ export default function AdminSalas() {
     const s = search.trim().toLowerCase();
     if (!s) return salas;
 
-    return salas.filter((r) => {
+    return (salas || []).filter((r) => {
       return (
-        String(r.id).includes(s) ||
-        (r.nome || "").toLowerCase().includes(s) ||
-        (r.tipo || "").toLowerCase().includes(s) ||
-        String(r.capacidade ?? "").includes(s)
+        safeStr(r.id).includes(s) ||
+        safeStr(r.nome).toLowerCase().includes(s) ||
+        safeStr(r.tipo).toLowerCase().includes(s) ||
+        safeStr(r.capacidade).includes(s)
       );
     });
   }, [salas, search]);
+
+  // reset page when filters change
+  useEffect(() => setPage(1), [search]);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(filtered.length / pageSize)),
+    [filtered.length, pageSize]
+  );
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const paged = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
 
   function openCreate() {
     setEditing(null);
@@ -107,9 +220,9 @@ export default function AdminSalas() {
   function openEdit(sala) {
     setEditing(sala);
     setForm({
-      nome: sala.nome ?? "",
-      capacidade: Number(sala.capacidade ?? 1),
-      tipo: sala.tipo ?? "Teorica",
+      nome: sala?.nome ?? "",
+      capacidade: Number(sala?.capacidade ?? 1),
+      tipo: sala?.tipo ?? "Teorica",
     });
     setError("");
     setShowForm(true);
@@ -130,9 +243,9 @@ export default function AdminSalas() {
     e.preventDefault();
     setError("");
 
-    const nome = form.nome.trim();
+    const nome = safeStr(form.nome).trim();
     const capacidade = Number(form.capacidade);
-    const tipo = form.tipo;
+    const tipo = safeStr(form.tipo).trim();
 
     if (!nome) return alert("O nome da sala é obrigatório.");
     if (!Number.isFinite(capacidade) || capacidade < 1) return alert("Capacidade tem de ser >= 1.");
@@ -152,8 +265,7 @@ export default function AdminSalas() {
       setShowForm(false);
       setEditing(null);
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.response?.data || "Erro ao guardar sala.";
-      setError(typeof msg === "string" ? msg : "Erro ao guardar sala.");
+      setError(extractError(err, "Erro ao guardar sala."));
     } finally {
       setSaving(false);
     }
@@ -167,8 +279,7 @@ export default function AdminSalas() {
       await api.delete(`/Salas/${id}`);
       setSalas((prev) => prev.filter((s) => s.id !== id));
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.response?.data || "Erro ao apagar sala.";
-      setError(typeof msg === "string" ? msg : "Erro ao apagar sala.");
+      setError(extractError(err, "Erro ao apagar sala."));
     }
   }
 
@@ -182,13 +293,12 @@ export default function AdminSalas() {
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
                 Gestão de Salas
               </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Administre as salas disponíveis na instituição
-              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Administre as salas disponíveis na instituição</p>
             </div>
 
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => navigate("/dashboard")}
                 className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 
                            hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium"
@@ -197,9 +307,12 @@ export default function AdminSalas() {
               </button>
 
               <button
+                type="button"
                 onClick={openCreate}
+                disabled={loading}
                 className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white 
-                           hover:from-purple-700 hover:to-pink-700 transition-all duration-200 font-medium shadow-lg shadow-purple-500/30"
+                           hover:from-purple-700 hover:to-pink-700 transition-all duration-200 font-medium shadow-lg shadow-purple-500/30
+                           disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 + Nova Sala
               </button>
@@ -224,18 +337,33 @@ export default function AdminSalas() {
               />
             </div>
 
-            <div className="px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 
-                            rounded-lg border border-purple-200 dark:border-purple-800">
+            <div
+              className="px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 
+                            rounded-lg border border-purple-200 dark:border-purple-800"
+            >
               <span className="text-sm font-semibold text-purple-900 dark:text-purple-300">
-                {filtered.length} {filtered.length === 1 ? 'sala' : 'salas'}
+                {filtered.length} {filtered.length === 1 ? "sala" : "salas"}
               </span>
             </div>
+          </div>
+
+          {/* ✅ Paginação compacta (topo) */}
+          <div className="mt-4">
+            <PaginationCompact
+              total={filtered.length}
+              page={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              disabled={loading}
+            />
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 
-                          px-5 py-4 rounded-xl text-sm shadow-sm">
+          <div
+            className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 
+                          px-5 py-4 rounded-xl text-sm shadow-sm"
+          >
             {error}
           </div>
         )}
@@ -280,33 +408,38 @@ export default function AdminSalas() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((r) => (
+                  paged.map((r) => (
                     <tr
                       key={r.id}
                       className="hover:bg-purple-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150"
                     >
-                      <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">
-                        #{r.id}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">
-                        {r.nome}
-                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">#{r.id}</td>
+
+                      <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">{r.nome}</td>
+
                       <td className="py-4 px-6">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${tipoColors[r.tipo] || tipoColors.Teorica}`}>
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                            tipoColors[r.tipo] || tipoColors.Teorica
+                          }`}
+                        >
                           <span>{tipoIcons[r.tipo] || "📍"}</span>
                           {r.tipo}
                         </span>
                       </td>
+
                       <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
                         <span className="inline-flex items-center gap-1.5">
                           <span>👤</span>
                           <span className="font-semibold">{r.capacidade}</span>
-                          {r.capacidade === 1 ? 'pessoa' : 'pessoas'}
+                          {Number(r.capacidade) === 1 ? "pessoa" : "pessoas"}
                         </span>
                       </td>
+
                       <td className="py-4 px-6">
                         <div className="flex flex-wrap gap-2">
                           <button
+                            type="button"
                             onClick={() => openEdit(r)}
                             className="px-4 py-2 rounded-lg text-sm font-medium text-yellow-700 dark:text-yellow-400 
                                        bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 
@@ -316,6 +449,7 @@ export default function AdminSalas() {
                           </button>
 
                           <button
+                            type="button"
                             onClick={() => deleteSala(r.id)}
                             className="px-4 py-2 rounded-lg text-sm font-medium text-red-700 dark:text-red-400 
                                        bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 
@@ -331,17 +465,28 @@ export default function AdminSalas() {
               </tbody>
             </table>
           </div>
+
+          {/* ✅ Paginação compacta (fundo) */}
+          {!loading && filtered.length > 0 && (
+            <div className="border-t border-gray-200 dark:border-gray-800 px-6 py-4 bg-white/70 dark:bg-gray-900/70">
+              <PaginationCompact
+                total={filtered.length}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                disabled={loading}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       {/* Modal Create/Edit */}
       {showForm && (
-        <Modal title={editing ? "✏️ Editar Sala" : "✨ Nova Sala"} onClose={closeForm}>
+        <Modal title={editing ? "✏️ Editar Sala" : "✨ Nova Sala"} onClose={closeForm} disabled={saving}>
           <form onSubmit={saveSala} className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="md:col-span-2">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
-                Nome da Sala
-              </label>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Nome da Sala</label>
               <input
                 name="nome"
                 value={form.nome}
@@ -355,9 +500,7 @@ export default function AdminSalas() {
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
-                Tipo de Sala
-              </label>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Tipo de Sala</label>
               <select
                 name="tipo"
                 value={form.tipo}
@@ -373,15 +516,11 @@ export default function AdminSalas() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Escolha o tipo que melhor descreve esta sala
-              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Escolha o tipo que melhor descreve esta sala</p>
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
-                Capacidade
-              </label>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Capacidade</label>
               <input
                 type="number"
                 name="capacidade"
@@ -393,14 +532,14 @@ export default function AdminSalas() {
                 min="1"
                 disabled={saving}
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Número máximo de pessoas
-              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Número máximo de pessoas</p>
             </div>
 
             {error && (
-              <div className="md:col-span-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 
-                              text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
+              <div
+                className="md:col-span-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 
+                              text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm"
+              >
                 {error}
               </div>
             )}

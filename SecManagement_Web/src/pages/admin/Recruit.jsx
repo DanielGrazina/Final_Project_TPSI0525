@@ -98,6 +98,61 @@ function validateCC(cc) {
   return raw.length >= 6 && raw.length <= 20 && digits.length >= 6;
 }
 
+/* ---------------- Pagination (compact like Turmas) ---------------- */
+
+function PaginationCompact({ total, page, pageSize, onPageChange, disabled, className = "" }) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+
+  const btn =
+    "px-3 py-2 rounded-lg border text-sm font-semibold transition " +
+    "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed " +
+    "border-gray-200 text-gray-700 hover:bg-gray-50 " +
+    "dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-800";
+
+  return (
+    <div className={["flex items-center gap-2 justify-end", className].join(" ")}>
+      <button type="button" className={btn} onClick={() => onPageChange(1)} disabled={disabled || safePage === 1}>
+        «
+      </button>
+      <button
+        type="button"
+        className={btn}
+        onClick={() => onPageChange(safePage - 1)}
+        disabled={disabled || safePage === 1}
+      >
+        ‹
+      </button>
+
+      <div
+        className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                   text-sm font-semibold text-gray-700 dark:text-gray-200
+                   bg-gray-50 dark:bg-gray-950/30"
+      >
+        Página <span className="text-gray-900 dark:text-gray-100">{safePage}</span> /{" "}
+        <span className="text-gray-900 dark:text-gray-100">{totalPages}</span>
+      </div>
+
+      <button
+        type="button"
+        className={btn}
+        onClick={() => onPageChange(safePage + 1)}
+        disabled={disabled || safePage === totalPages}
+      >
+        ›
+      </button>
+      <button
+        type="button"
+        className={btn}
+        onClick={() => onPageChange(totalPages)}
+        disabled={disabled || safePage === totalPages}
+      >
+        »
+      </button>
+    </div>
+  );
+}
+
 export default function Recruit() {
   const navigate = useNavigate();
 
@@ -156,6 +211,12 @@ export default function Recruit() {
   const [colocarInscricaoId, setColocarInscricaoId] = useState("");
   const [colocarTurmaId, setColocarTurmaId] = useState("");
   const [placing, setPlacing] = useState(false);
+
+  // ✅ Pagination states (Turmas-style) for big lists
+  const [pageCursos, setPageCursos] = useState(1);
+  const [pagePendentes, setPagePendentes] = useState(1);
+  const [pageInscritos, setPageInscritos] = useState(1);
+  const pageSize = 25;
 
   const inputCls =
     "w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5 " +
@@ -230,9 +291,7 @@ export default function Recruit() {
     setError("");
 
     try {
-      const endpoint = filtrarCursoId
-        ? `/Inscricoes/pendentes/curso/${filtrarCursoId}`
-        : "/Inscricoes/pendentes";
+      const endpoint = filtrarCursoId ? `/Inscricoes/pendentes/curso/${filtrarCursoId}` : "/Inscricoes/pendentes";
 
       const res = await api.get(endpoint);
       setPendentes(Array.isArray(res.data) ? res.data : []);
@@ -311,6 +370,53 @@ export default function Recruit() {
       return nome.includes(s) || curso.includes(s) || id.includes(s);
     });
   }, [pendentes, searchPendentes]);
+
+  // ✅ reset pagination when filters change / tab changes / turma changes
+  useEffect(() => setPageCursos(1), [searchCursos]);
+  useEffect(() => setPagePendentes(1), [searchPendentes, filtrarCursoId, tab]);
+  useEffect(() => setPageInscritos(1), [searchInscritos, selectedTurmaId, tab]);
+
+  // ✅ ensure pages are within bounds
+  const totalPagesCursos = useMemo(
+    () => Math.max(1, Math.ceil(cursosFiltrados.length / pageSize)),
+    [cursosFiltrados.length]
+  );
+  const totalPagesPendentes = useMemo(
+    () => Math.max(1, Math.ceil(pendentesFiltrados.length / pageSize)),
+    [pendentesFiltrados.length]
+  );
+  const totalPagesInscritos = useMemo(
+    () => Math.max(1, Math.ceil(inscritosFiltrados.length / pageSize)),
+    [inscritosFiltrados.length]
+  );
+
+  useEffect(() => {
+    if (pageCursos > totalPagesCursos) setPageCursos(totalPagesCursos);
+  }, [pageCursos, totalPagesCursos]);
+
+  useEffect(() => {
+    if (pagePendentes > totalPagesPendentes) setPagePendentes(totalPagesPendentes);
+  }, [pagePendentes, totalPagesPendentes]);
+
+  useEffect(() => {
+    if (pageInscritos > totalPagesInscritos) setPageInscritos(totalPagesInscritos);
+  }, [pageInscritos, totalPagesInscritos]);
+
+  // ✅ paged arrays
+  const cursosPaged = useMemo(() => {
+    const start = (pageCursos - 1) * pageSize;
+    return cursosFiltrados.slice(start, start + pageSize);
+  }, [cursosFiltrados, pageCursos]);
+
+  const pendentesPaged = useMemo(() => {
+    const start = (pagePendentes - 1) * pageSize;
+    return pendentesFiltrados.slice(start, start + pageSize);
+  }, [pendentesFiltrados, pagePendentes]);
+
+  const inscritosPaged = useMemo(() => {
+    const start = (pageInscritos - 1) * pageSize;
+    return inscritosFiltrados.slice(start, start + pageSize);
+  }, [inscritosFiltrados, pageInscritos]);
 
   function onChangeExtra(e) {
     const { name, value } = e.target;
@@ -487,7 +593,9 @@ export default function Recruit() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">Inscrições</h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {isStaff ? "Gere candidaturas pendentes e consulta inscritos por turma" : "Candidata-te a cursos e acompanha o estado"}
+                {isStaff
+                  ? "Gere candidaturas pendentes e consulta inscritos por turma"
+                  : "Candidata-te a cursos e acompanha o estado"}
               </p>
             </div>
 
@@ -514,7 +622,9 @@ export default function Recruit() {
                   >
                     Candidaturas
                     {pendentes.length > 0 && (
-                      <span className="ml-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-xs">{pendentes.length}</span>
+                      <span className="ml-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-xs">
+                        {pendentes.length}
+                      </span>
                     )}
                   </button>
                   <button
@@ -584,7 +694,9 @@ export default function Recruit() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Curso</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Filtrar por Curso
+                    </label>
                     <select
                       value={filtrarCursoId}
                       onChange={(e) => setFiltrarCursoId(e.target.value)}
@@ -631,8 +743,12 @@ export default function Recruit() {
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Turma de Aprovação</label>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{selectedPendentes.size} selecionada(s)</span>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Turma de Aprovação
+                      </label>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {selectedPendentes.size} selecionada(s)
+                      </span>
                     </div>
                     <select
                       value={turmaAprovacao}
@@ -671,6 +787,17 @@ export default function Recruit() {
               </div>
             </div>
 
+            {/* Pagination (top) */}
+            <div className="mb-3">
+              <PaginationCompact
+                total={pendentesFiltrados.length}
+                page={pagePendentes}
+                pageSize={pageSize}
+                onPageChange={setPagePendentes}
+                disabled={loadingPendentes}
+              />
+            </div>
+
             {/* Tabela de Candidaturas Pendentes */}
             <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden">
               <div className="overflow-auto">
@@ -680,7 +807,9 @@ export default function Recruit() {
                       <th className="py-4 px-6">
                         <input
                           type="checkbox"
-                          checked={pendentesFiltrados.length > 0 && selectedPendentes.size === pendentesFiltrados.length}
+                          checked={
+                            pendentesFiltrados.length > 0 && selectedPendentes.size === pendentesFiltrados.length
+                          }
                           onChange={toggleAllPendentes}
                           className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
@@ -717,11 +846,13 @@ export default function Recruit() {
                     ) : pendentesFiltrados.length === 0 ? (
                       <tr>
                         <td colSpan="7" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
-                          {pendentes.length === 0 ? "Nenhuma candidatura pendente." : "Nenhuma candidatura encontrada com os filtros aplicados."}
+                          {pendentes.length === 0
+                            ? "Nenhuma candidatura pendente."
+                            : "Nenhuma candidatura encontrada com os filtros aplicados."}
                         </td>
                       </tr>
                     ) : (
-                      pendentesFiltrados.map((p) => (
+                      pendentesPaged.map((p) => (
                         <tr
                           key={p.id}
                           className={`hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150 ${
@@ -743,7 +874,9 @@ export default function Recruit() {
                           <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
                             {p.cursoNome || `#${p.cursoId}`}
                           </td>
-                          <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{toLocalDateTime(p.dataInscricao)}</td>
+                          <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+                            {toLocalDateTime(p.dataInscricao)}
+                          </td>
                           <td className="py-4 px-6">
                             <EstadoBadge estado={p.estado} />
                           </td>
@@ -762,6 +895,19 @@ export default function Recruit() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination (bottom) */}
+              {!loadingPendentes && pendentesFiltrados.length > 0 && (
+                <div className="border-t border-gray-200 dark:border-gray-800 px-6 py-4 bg-white/60 dark:bg-gray-900/60">
+                  <PaginationCompact
+                    total={pendentesFiltrados.length}
+                    page={pagePendentes}
+                    pageSize={pageSize}
+                    onPageChange={setPagePendentes}
+                    disabled={loadingPendentes}
+                  />
+                </div>
+              )}
             </div>
           </>
         )}
@@ -846,6 +992,17 @@ export default function Recruit() {
               </div>
             </div>
 
+            {/* Pagination (top) */}
+            <div className="mb-3">
+              <PaginationCompact
+                total={inscritosFiltrados.length}
+                page={pageInscritos}
+                pageSize={pageSize}
+                onPageChange={setPageInscritos}
+                disabled={loadingBase || loadingInscritos}
+              />
+            </div>
+
             {/* Tabela inscritos */}
             <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden">
               <div className="overflow-auto">
@@ -882,13 +1039,18 @@ export default function Recruit() {
                         </td>
                       </tr>
                     ) : (
-                      inscritosFiltrados.map((i) => (
-                        <tr key={i.id} className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150">
+                      inscritosPaged.map((i) => (
+                        <tr
+                          key={i.id}
+                          className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150"
+                        >
                           <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">#{i.id}</td>
                           <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">
                             {i.formandoNome || `#${i.formandoId}`}
                           </td>
-                          <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{toLocalDateTime(i.dataInscricao)}</td>
+                          <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+                            {toLocalDateTime(i.dataInscricao)}
+                          </td>
                           <td className="py-4 px-6">
                             <EstadoBadge estado={i.estado} />
                           </td>
@@ -898,6 +1060,19 @@ export default function Recruit() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination (bottom) */}
+              {!loadingBase && !loadingInscritos && inscritosFiltrados.length > 0 && (
+                <div className="border-t border-gray-200 dark:border-gray-800 px-6 py-4 bg-white/60 dark:bg-gray-900/60">
+                  <PaginationCompact
+                    total={inscritosFiltrados.length}
+                    page={pageInscritos}
+                    pageSize={pageSize}
+                    onPageChange={setPageInscritos}
+                    disabled={loadingBase || loadingInscritos}
+                  />
+                </div>
+              )}
             </div>
           </>
         )}
@@ -917,16 +1092,12 @@ export default function Recruit() {
                         Estes dados são obrigatórios e vão atualizar o teu perfil (User) no backend.
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      * obrigatório
-                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">* obrigatório</div>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Telefone *
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Telefone *</label>
                       <input
                         name="telefone"
                         value={extra.telefone}
@@ -937,9 +1108,7 @@ export default function Recruit() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        NIF *
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">NIF *</label>
                       <input
                         name="nif"
                         value={extra.nif}
@@ -950,9 +1119,7 @@ export default function Recruit() {
                     </div>
 
                     <div className="lg:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Morada *
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Morada *</label>
                       <input
                         name="morada"
                         value={extra.morada}
@@ -982,7 +1149,7 @@ export default function Recruit() {
                 </div>
 
                 {/* Search + reload */}
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-4">
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
                     <input
                       value={searchCursos}
@@ -999,6 +1166,17 @@ export default function Recruit() {
                     >
                       Recarregar
                     </button>
+                  </div>
+
+                  {/* Pagination (top) */}
+                  <div className="mt-4">
+                    <PaginationCompact
+                      total={cursosFiltrados.length}
+                      page={pageCursos}
+                      pageSize={pageSize}
+                      onPageChange={setPageCursos}
+                      disabled={loadingBase}
+                    />
                   </div>
                 </div>
 
@@ -1035,8 +1213,11 @@ export default function Recruit() {
                             </td>
                           </tr>
                         ) : (
-                          cursosFiltrados.map((c) => (
-                            <tr key={c.id} className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150">
+                          cursosPaged.map((c) => (
+                            <tr
+                              key={c.id}
+                              className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150"
+                            >
                               <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">
                                 {c.nome} <span className="text-gray-400 font-normal">#{c.id}</span>
                               </td>
@@ -1059,6 +1240,19 @@ export default function Recruit() {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Pagination (bottom) */}
+                  {!loadingBase && cursosFiltrados.length > 0 && (
+                    <div className="border-t border-gray-200 dark:border-gray-800 px-6 py-4 bg-white/60 dark:bg-gray-900/60">
+                      <PaginationCompact
+                        total={cursosFiltrados.length}
+                        page={pageCursos}
+                        pageSize={pageSize}
+                        onPageChange={setPageCursos}
+                        disabled={loadingBase}
+                      />
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -1122,14 +1316,19 @@ export default function Recruit() {
                           </tr>
                         ) : (
                           minhas.map((i) => (
-                            <tr key={i.id} className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150">
+                            <tr
+                              key={i.id}
+                              className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150"
+                            >
                               <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">
                                 {i.cursoNome || `#${i.cursoId}`}
                               </td>
                               <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
                                 {i.turmaNome || (i.turmaId ? `#${i.turmaId}` : "A aguardar colocação")}
                               </td>
-                              <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{toLocalDateTime(i.dataInscricao)}</td>
+                              <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+                                {toLocalDateTime(i.dataInscricao)}
+                              </td>
                               <td className="py-4 px-6">
                                 <EstadoBadge estado={i.estado} />
                               </td>
@@ -1153,7 +1352,8 @@ export default function Recruit() {
 
                 {minhas.some(isNullishTurma) && (
                   <div className="mt-5 text-sm text-gray-600 dark:text-gray-400">
-                    Nota: quando a secretaria te colocar numa turma, a tua candidatura passa para <b>Ativo</b> e aparece aqui a turma atribuída.
+                    Nota: quando a secretaria te colocar numa turma, a tua candidatura passa para <b>Ativo</b> e aparece
+                    aqui a turma atribuída.
                   </div>
                 )}
               </>

@@ -1,197 +1,20 @@
+// src/pages/admin/Turmas.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 
-function Modal({ title, children, onClose, disableClose }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={() => !disableClose && onClose()}
-    >
-      <div
-        className="w-full max-w-4xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight">{title}</h3>
-          <button
-            onClick={onClose}
-            disabled={disableClose}
-            className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 
-                       hover:bg-white dark:hover:bg-gray-800 disabled:opacity-50 transition-all duration-200
-                       font-medium text-sm"
-          >
-            Fechar
-          </button>
-        </div>
-        <div className="p-6 max-h-[70vh] overflow-y-auto">{children}</div>
-      </div>
-    </div>
-  );
+/* ---------------- helpers ---------------- */
+
+function safeStr(x) {
+  return (x ?? "").toString();
 }
 
-/* ---------------- Pagination (top + bottom) ---------------- */
-
-function PaginationBar({
-  total,
-  page,
-  pageSize,
-  onPageChange,
-  onPageSizeChange,
-  disabled,
-  position = "bottom", // "top" | "bottom"
-}) {
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const safePage = Math.min(Math.max(1, page), totalPages);
-
-  const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
-  const to = Math.min(total, safePage * pageSize);
-
-  const pagesToShow = (() => {
-    const win = 7;
-    const half = Math.floor(win / 2);
-    let start = Math.max(1, safePage - half);
-    let end = Math.min(totalPages, start + win - 1);
-    start = Math.max(1, end - win + 1);
-    const arr = [];
-    for (let p = start; p <= end; p++) arr.push(p);
-    return arr;
-  })();
-
-  const borderClass =
-    position === "top"
-      ? "border-b border-gray-200 dark:border-gray-800"
-      : "border-t border-gray-200 dark:border-gray-800";
-
-  const baseBtn =
-    "px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 " +
-    "hover:bg-gray-50 dark:hover:bg-gray-800 transition active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold";
-
-  return (
-    <div
-      className={[
-        "flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-4",
-        "bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm",
-        borderClass,
-      ].join(" ")}
-    >
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          A mostrar{" "}
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{from}</span>–{" "}
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{to}</span> de{" "}
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{total}</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Por página</span>
-          <select
-            value={pageSize}
-            onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            disabled={disabled}
-            className="border border-gray-300 dark:border-gray-700 rounded-lg px-2 py-1.5
-                       bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-60"
-          >
-            {[10, 25, 50, 100].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 flex-wrap">
-        <button type="button" className={baseBtn} onClick={() => onPageChange(1)} disabled={disabled || safePage === 1}>
-          «
-        </button>
-        <button
-          type="button"
-          className={baseBtn}
-          onClick={() => onPageChange(safePage - 1)}
-          disabled={disabled || safePage === 1}
-        >
-          ‹
-        </button>
-
-        {pagesToShow[0] > 1 && (
-          <>
-            <button type="button" className={baseBtn} onClick={() => onPageChange(1)} disabled={disabled}>
-              1
-            </button>
-            <span className="text-gray-400 px-1">…</span>
-          </>
-        )}
-
-        {pagesToShow.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPageChange(p)}
-            disabled={disabled}
-            className={[
-              "px-3 py-1.5 rounded-lg border text-sm font-semibold transition active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
-              p === safePage
-                ? "bg-blue-600 text-white border-blue-600"
-                : "border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800",
-            ].join(" ")}
-          >
-            {p}
-          </button>
-        ))}
-
-        {pagesToShow[pagesToShow.length - 1] < totalPages && (
-          <>
-            <span className="text-gray-400 px-1">…</span>
-            <button type="button" className={baseBtn} onClick={() => onPageChange(totalPages)} disabled={disabled}>
-              {totalPages}
-            </button>
-          </>
-        )}
-
-        <button
-          type="button"
-          className={baseBtn}
-          onClick={() => onPageChange(safePage + 1)}
-          disabled={disabled || safePage === totalPages}
-        >
-          ›
-        </button>
-        <button
-          type="button"
-          className={baseBtn}
-          onClick={() => onPageChange(totalPages)}
-          disabled={disabled || safePage === totalPages}
-        >
-          »
-        </button>
-      </div>
-    </div>
-  );
-}
-
-const ESTADOS = ["Planeada", "Decorrer", "Terminada", "Cancelada"];
-
-const estadoColors = {
-  Planeada: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  Decorrer: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-  Terminada: "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300",
-  Cancelada: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-};
-
-function toDateInputValue(dateLike) {
-  if (!dateLike) return "";
-  return String(dateLike).slice(0, 10);
-}
-
-function toIsoUtcAtMidnight(dateStr) {
-  if (!dateStr) return null;
-  return new Date(`${dateStr}T00:00:00Z`).toISOString();
-}
-
-function extractError(err, fallback) {
+function extractError(err, fallback = "Ocorreu um erro.") {
+  const status = err?.response?.status;
   const data = err?.response?.data;
+
+  if (status === 401) return "Sessão expirada. Faz login novamente.";
+  if (status === 403) return "Sem permissão para executar esta ação.";
 
   if (!data) return fallback;
   if (typeof data === "string") return data;
@@ -211,6 +34,165 @@ function extractError(err, fallback) {
   }
 }
 
+function toDateInputValue(dateLike) {
+  if (!dateLike) return "";
+  return String(dateLike).slice(0, 10);
+}
+
+function toIsoUtcAtMidnight(dateStr) {
+  if (!dateStr) return null;
+  return new Date(`${dateStr}T00:00:00Z`).toISOString();
+}
+
+/* ---------------- UI (uniform) ---------------- */
+
+function HeaderIcon() {
+  return (
+    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
+      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path d="M8 8h8M8 12h8M8 16h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+}
+
+function Btn({ children, tone = "neutral", className = "", ...props }) {
+  const map = {
+    neutral:
+      "border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800",
+    blue:
+      "border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-200 dark:hover:bg-blue-950/30",
+    green:
+      "border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900/50 dark:text-emerald-200 dark:hover:bg-emerald-950/30",
+    red:
+      "border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900/50 dark:text-red-200 dark:hover:bg-red-950/30",
+  };
+
+  return (
+    <button
+      type="button"
+      className={[
+        "px-4 py-2 rounded-lg border text-sm font-semibold transition",
+        "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+        map[tone] || map.neutral,
+        className,
+      ].join(" ")}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PrimaryBtn({ children, tone = "blue", className = "", ...props }) {
+  const map = {
+    blue: "from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/25",
+    green: "from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-emerald-500/25",
+    red: "from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-red-500/25",
+  };
+
+  return (
+    <button
+      type="button"
+      className={[
+        "px-4 py-2 rounded-lg font-semibold text-white transition",
+        "shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed",
+        `bg-gradient-to-r ${map[tone] || map.blue}`,
+        className,
+      ].join(" ")}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Modal({ title, children, onClose, disabled }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={() => !disabled && onClose()}
+    >
+      <div
+        className="w-full max-w-4xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur">
+          <h3 className="font-black text-lg text-gray-900 dark:text-gray-100">{title}</h3>
+          <Btn onClick={onClose} disabled={disabled}>
+            Fechar
+          </Btn>
+        </div>
+        <div className="p-6 max-h-[70vh] overflow-y-auto">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Pagination (compact like screenshot) ---------------- */
+
+function PaginationCompact({
+  total,
+  page,
+  pageSize,
+  onPageChange,
+  disabled,
+  className = "",
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+
+  const btn =
+    "px-3 py-2 rounded-lg border text-sm font-semibold transition " +
+    "active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed " +
+    "border-gray-200 text-gray-700 hover:bg-gray-50 " +
+    "dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-800";
+
+  return (
+    <div className={["flex items-center gap-2 justify-end", className].join(" ")}>
+      <button type="button" className={btn} onClick={() => onPageChange(1)} disabled={disabled || safePage === 1}>
+        «
+      </button>
+      <button type="button" className={btn} onClick={() => onPageChange(safePage - 1)} disabled={disabled || safePage === 1}>
+        ‹
+      </button>
+
+      <div
+        className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                   text-sm font-semibold text-gray-700 dark:text-gray-200
+                   bg-gray-50 dark:bg-gray-950/30"
+      >
+        Página <span className="text-gray-900 dark:text-gray-100">{safePage}</span> /{" "}
+        <span className="text-gray-900 dark:text-gray-100">{totalPages}</span>
+      </div>
+
+      <button type="button" className={btn} onClick={() => onPageChange(safePage + 1)} disabled={disabled || safePage === totalPages}>
+        ›
+      </button>
+      <button type="button" className={btn} onClick={() => onPageChange(totalPages)} disabled={disabled || safePage === totalPages}>
+        »
+      </button>
+    </div>
+  );
+}
+
+/* ---------------- domain helpers ---------------- */
+
+const ESTADOS = ["Planeada", "Decorrer", "Terminada", "Cancelada"];
+
+const estadoColors = {
+  Planeada: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+  Decorrer: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+  Terminada: "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300",
+  Cancelada: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+};
+
 // FormadorDto helpers
 function getFormadorId(f) {
   return Number(f?.id ?? f?.Id);
@@ -222,6 +204,8 @@ function getFormadorDisplay(f) {
   return nome || email || `Formador #${getFormadorId(f) || "?"}`;
 }
 
+/* ---------------- Page ---------------- */
+
 export default function AdminTurmas() {
   const navigate = useNavigate();
 
@@ -231,14 +215,16 @@ export default function AdminTurmas() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
 
   const [search, setSearch] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("Todos");
 
   // pagination
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize] = useState(25); // mantém fixo aqui (como no print). Se quiseres dropdown depois, digo-te.
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -251,6 +237,7 @@ export default function AdminTurmas() {
     estado: "Planeada",
   });
 
+  // Modal Módulos
   const [showModulos, setShowModulos] = useState(false);
   const [selectedTurma, setSelectedTurma] = useState(null);
 
@@ -270,6 +257,7 @@ export default function AdminTurmas() {
   async function loadAll() {
     setLoading(true);
     setError("");
+    setInfo("");
 
     try {
       const [tRes, cRes, fRes] = await Promise.all([
@@ -285,10 +273,6 @@ export default function AdminTurmas() {
       flist.sort((a, b) => getFormadorDisplay(a).localeCompare(getFormadorDisplay(b)));
       setFormadores(flist);
     } catch (err) {
-      console.error("[Turmas] loadAll FAIL:", {
-        status: err?.response?.status,
-        data: err?.response?.data,
-      });
       setError(extractError(err, "Erro ao carregar dados."));
     } finally {
       setLoading(false);
@@ -302,30 +286,30 @@ export default function AdminTurmas() {
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
 
-    return turmas.filter((t) => {
-      const cursoNome = (t.cursoNome ?? "").toLowerCase();
-      const coordNome = (t.coordenadorNome ?? "").toLowerCase();
+    return (turmas || []).filter((t) => {
+      const nome = safeStr(t.nome).toLowerCase();
+      const cursoNome = safeStr(t.cursoNome).toLowerCase();
+      const coordNome = safeStr(t.coordenadorNome).toLowerCase();
+      const local = safeStr(t.local).toLowerCase();
+      const id = safeStr(t.id);
 
       const matchesSearch =
         !s ||
-        (t.nome || "").toLowerCase().includes(s) ||
+        nome.includes(s) ||
         cursoNome.includes(s) ||
         coordNome.includes(s) ||
-        (t.local || "").toLowerCase().includes(s) ||
-        String(t.id ?? "").includes(s);
+        local.includes(s) ||
+        id.includes(s);
 
-      const matchesEstado = estadoFilter === "Todos" ? true : t.estado === estadoFilter;
+      const matchesEstado = estadoFilter === "Todos" ? true : safeStr(t.estado) === estadoFilter;
 
       return matchesSearch && matchesEstado;
     });
   }, [turmas, search, estadoFilter]);
 
-  // reset page when filters/pageSize change
-  useEffect(() => {
-    setPage(1);
-  }, [search, estadoFilter, pageSize]);
+  // reset page when filters change
+  useEffect(() => setPage(1), [search, estadoFilter]);
 
-  // clamp page if filtered shrinks
   const totalPages = useMemo(() => Math.max(1, Math.ceil(filtered.length / pageSize)), [filtered.length, pageSize]);
 
   useEffect(() => {
@@ -348,11 +332,12 @@ export default function AdminTurmas() {
       estado: "Planeada",
     });
     setError("");
+    setInfo("");
     setShowForm(true);
   }
 
-  function closeForm(force = false) {
-    if (!force && saving) return;
+  function closeForm() {
+    if (saving) return;
     setShowForm(false);
   }
 
@@ -364,13 +349,14 @@ export default function AdminTurmas() {
   async function saveTurma(e) {
     e.preventDefault();
     setError("");
+    setInfo("");
 
-    const nome = (form.nome ?? "").trim();
+    const nome = safeStr(form.nome).trim();
     const cursoIdNum = Number(form.cursoId);
-    const local = (form.local ?? "").trim();
-    const estado = (form.estado ?? "").trim();
+    const local = safeStr(form.local).trim();
+    const estado = safeStr(form.estado).trim();
 
-    const coordRaw = String(form.coordenadorId ?? "").trim();
+    const coordRaw = safeStr(form.coordenadorId).trim();
     const coordenadorIdNum = coordRaw ? Number(coordRaw) : null;
 
     if (!nome) return alert("O nome é obrigatório.");
@@ -378,17 +364,13 @@ export default function AdminTurmas() {
     if (!form.dataInicio) return alert("Data de início é obrigatória.");
     if (!form.dataFim) return alert("Data de fim é obrigatória.");
     if (!ESTADOS.includes(estado)) return alert("Estado inválido.");
-    if (coordRaw && (!Number.isFinite(coordenadorIdNum) || coordenadorIdNum <= 0)) {
-      return alert("Coordenador inválido.");
-    }
+    if (coordRaw && (!Number.isFinite(coordenadorIdNum) || coordenadorIdNum <= 0)) return alert("Coordenador inválido.");
 
     const dataInicioIso = toIsoUtcAtMidnight(form.dataInicio);
     const dataFimIso = toIsoUtcAtMidnight(form.dataFim);
 
     if (!dataInicioIso || !dataFimIso) return alert("Datas inválidas.");
-    if (new Date(dataFimIso) < new Date(dataInicioIso)) {
-      return alert("A data de fim não pode ser anterior à data de início.");
-    }
+    if (new Date(dataFimIso) < new Date(dataInicioIso)) return alert("A data de fim não pode ser anterior à data de início.");
 
     const payload = {
       Nome: nome,
@@ -403,14 +385,11 @@ export default function AdminTurmas() {
     setSaving(true);
     try {
       await api.post("/Turmas", payload);
-      closeForm(true);
+      setShowForm(false);
+      setInfo("Turma criada.");
       await loadAll();
+      setTimeout(() => setInfo(""), 1200);
     } catch (err) {
-      console.log("POST /Turmas FAIL", {
-        status: err.response?.status,
-        data: err.response?.data,
-        payloadSent: payload,
-      });
       setError(extractError(err, "Erro ao criar turma."));
     } finally {
       setSaving(false);
@@ -421,9 +400,12 @@ export default function AdminTurmas() {
     if (!window.confirm("Tens a certeza que queres apagar esta turma?")) return;
 
     setError("");
+    setInfo("");
     try {
       await api.delete(`/Turmas/${id}`);
       setTurmas((prev) => prev.filter((t) => t.id !== id));
+      setInfo("Turma apagada.");
+      setTimeout(() => setInfo(""), 1200);
     } catch (err) {
       setError(extractError(err, "Erro ao apagar turma."));
     }
@@ -440,8 +422,10 @@ export default function AdminTurmas() {
     setAssocForm({ moduloId: "", formadorId: "", sequencia: 1 });
 
     try {
-      const [mRes, aRes] = await Promise.all([api.get("/Modulos"), api.get(`/Turmas/${turma.id}/modulos`)]);
-
+      const [mRes, aRes] = await Promise.all([
+        api.get("/Modulos"),
+        api.get(`/Turmas/${turma.id}/modulos`),
+      ]);
       setModulosDisponiveis(Array.isArray(mRes.data) ? mRes.data : []);
       setAssociados(Array.isArray(aRes.data) ? aRes.data : []);
     } catch (err) {
@@ -451,8 +435,8 @@ export default function AdminTurmas() {
     }
   }
 
-  function closeModulosModal(force = false) {
-    if (!force && modSaving) return;
+  function closeModulosModal() {
+    if (modSaving) return;
     setShowModulos(false);
     setSelectedTurma(null);
     setModError("");
@@ -481,12 +465,7 @@ export default function AdminTurmas() {
     const jaExiste = (associados || []).some((x) => Number(x.moduloId) === moduloId);
     if (jaExiste) return alert("Este módulo já está associado a esta turma.");
 
-    const payload = {
-      TurmaId: turmaId,
-      ModuloId: moduloId,
-      FormadorId: formadorId,
-      Sequencia: sequencia,
-    };
+    const payload = { TurmaId: turmaId, ModuloId: moduloId, FormadorId: formadorId, Sequencia: sequencia };
 
     setModSaving(true);
     try {
@@ -494,11 +473,6 @@ export default function AdminTurmas() {
       await refreshAssociados(turmaId);
       setAssocForm((p) => ({ ...p, moduloId: "" }));
     } catch (err) {
-      console.log("POST /Turmas/modulo FAIL", {
-        status: err.response?.status,
-        data: err.response?.data,
-        payloadSent: payload,
-      });
       setModError(extractError(err, "Erro ao associar módulo."));
     } finally {
       setModSaving(false);
@@ -538,66 +512,68 @@ export default function AdminTurmas() {
   }, [associados]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 dark:border-gray-800 shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <HeaderIcon />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
-                Gestão de Turmas
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Administre turmas e associe módulos com formadores
-              </p>
+              <h1 className="text-xl font-black text-gray-900 dark:text-gray-100">Turmas</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Gestão de turmas e associação de módulos.</p>
             </div>
+          </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 
-                           hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 font-medium"
-              >
-                ← Voltar
-              </button>
-
-              <button
-                onClick={openCreate}
-                className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white 
-                           hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-lg shadow-blue-500/30"
-              >
-                + Nova Turma
-              </button>
-            </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <PrimaryBtn tone="blue" onClick={openCreate} disabled={loading}>
+              + Nova Turma
+            </PrimaryBtn>
+            <Btn onClick={loadAll} disabled={loading}>
+              Atualizar
+            </Btn>
+            <Btn onClick={() => navigate("/dashboard")}>← Voltar</Btn>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-6 py-8">
-        {/* Toolbar */}
-        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
-            <div className="flex-1">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="🔍 Pesquisar por nome, curso, coordenador, local ou ID..."
-                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5
-                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-            </div>
+      <div className="container mx-auto px-4 py-6">
+        {(error || info) && (
+          <div className="mb-6 space-y-3">
+            {error && (
+              <div className="bg-red-50 border border-red-200 dark:bg-red-950/25 dark:border-red-900/40 rounded-xl p-4 text-sm text-red-700 dark:text-red-200">
+                {error}
+              </div>
+            )}
+            {info && (
+              <div className="bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/40 rounded-xl p-4 text-sm text-emerald-800 dark:text-emerald-200">
+                {info}
+              </div>
+            )}
+          </div>
+        )}
 
-            <div className="flex items-center gap-4">
+        {/* Toolbar */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:justify-between">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Pesquisar por id, nome, curso, coordenador, local..."
+              className="w-full lg:max-w-2xl px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-800
+                         bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
+                         focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            />
+
+            <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Estado:</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Estado</span>
                 <select
                   value={estadoFilter}
                   onChange={(e) => setEstadoFilter(e.target.value)}
-                  className="border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5
-                             bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                             focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-gray-900
+                             text-gray-900 dark:text-gray-100 text-sm
+                             focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                 >
                   <option value="Todos">Todos</option>
                   {ESTADOS.map((x) => (
@@ -608,194 +584,154 @@ export default function AdminTurmas() {
                 </select>
               </div>
 
-              <div
-                className="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 
-                              rounded-lg border border-blue-200 dark:border-blue-800"
-              >
-                <span className="text-sm font-semibold text-blue-900 dark:text-blue-300">
-                  {filtered.length} {filtered.length === 1 ? "turma" : "turmas"}
+              <div className="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50">
+                <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                  {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
                 </span>
               </div>
+
+              {/* (opcional) se quiseres o "Atualizar" aqui como no print, descomenta e podes remover do header */}
+              {/* <Btn onClick={loadAll} disabled={loading}>
+                Atualizar
+              </Btn> */}
             </div>
+          </div>
+
+          {/* ✅ Paginação compacta (como na imagem) */}
+          <div className="mt-4">
+            <PaginationCompact
+              total={filtered.length}
+              page={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              disabled={loading}
+            />
           </div>
         </div>
 
-        {error && (
-          <div
-            className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 
-                          px-5 py-4 rounded-xl mb-6 text-sm shadow-sm"
-          >
-            {error}
-          </div>
-        )}
-
         {/* Table */}
-        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden">
-          {/* Pagination TOP */}
-          <PaginationBar
-            total={filtered.length}
-            page={page}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onPageSizeChange={(n) => {
-              setPageSize(n);
-              setPage(1);
-            }}
-            disabled={loading}
-            position="top"
-          />
-
-          <div className="overflow-auto">
-            <table className="min-w-full">
-              <thead className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
-                <tr>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    ID
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Nome
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Curso
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Coordenador
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Início
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Fim
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Local
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Estado
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-4 px-6">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                {loading ? (
-                  <tr>
-                    <td colSpan="9" className="py-16 px-6 text-center">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      <p className="mt-3 text-gray-500 dark:text-gray-400">A carregar turmas...</p>
-                    </td>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
+          {loading ? (
+            <div className="p-10 flex items-center justify-center">
+              <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <span className="ml-3 text-gray-600 dark:text-gray-300">A carregar...</span>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-10 text-center text-gray-600 dark:text-gray-400">Sem turmas.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-950/30">
+                  <tr className="text-left">
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200">ID</th>
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200">Nome</th>
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200">Curso</th>
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200">Coordenador</th>
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200">Início</th>
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200">Fim</th>
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200">Local</th>
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200">Estado</th>
+                    <th className="px-4 py-3 text-xs font-black text-gray-700 dark:text-gray-200 text-right">Ações</th>
                   </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan="9" className="py-16 px-6 text-center text-gray-500 dark:text-gray-400">
-                      <div className="text-4xl mb-2">📚</div>
-                      Nenhuma turma encontrada
-                    </td>
-                  </tr>
-                ) : (
-                  paged.map((t) => (
-                    <tr
-                      key={t.id}
-                      className="hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150"
-                    >
-                      <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400 font-mono">#{t.id}</td>
-                      <td className="py-4 px-6 text-sm text-gray-900 dark:text-gray-100 font-semibold">{t.nome}</td>
-                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
-                        {t.cursoNome || `#${t.cursoId}`}
+                </thead>
+
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {paged.map((t) => (
+                    <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40">
+                      <td className="px-4 py-3 text-gray-900 dark:text-gray-100 font-semibold whitespace-nowrap">
+                        {t.id}
                       </td>
-                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
-                        {t.coordenadorNome || (t.coordenadorId ? `#${t.coordenadorId}` : "Sem Coordenador")}
+
+                      <td className="px-4 py-3 text-gray-900 dark:text-gray-100 font-bold">{t.nome}</td>
+
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        {t.cursoNome || (t.cursoId ? `#${t.cursoId}` : "—")}
                       </td>
-                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        {t.coordenadorNome || (t.coordenadorId ? `#${t.coordenadorId}` : "Sem coordenador")}
+                      </td>
+
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                         {toDateInputValue(t.dataInicio) || "—"}
                       </td>
-                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
+
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                         {toDateInputValue(t.dataFim) || "—"}
                       </td>
-                      <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">{t.local || "—"}</td>
-                      <td className="py-4 px-6">
+
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{t.local || "—"}</td>
+
+                      <td className="px-4 py-3">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
                             estadoColors[t.estado] || estadoColors.Planeada
                           }`}
                         >
                           {t.estado || "Planeada"}
                         </span>
                       </td>
-                      <td className="py-4 px-6">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => openModulosModal(t)}
-                            className="px-4 py-2 rounded-lg text-sm font-medium text-blue-700 dark:text-blue-400 
-                                       bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 
-                                       transition-all duration-200"
-                          >
-                            📘 Módulos
-                          </button>
 
-                          <button
-                            onClick={() => deleteTurma(t.id)}
-                            className="px-4 py-2 rounded-lg text-sm font-medium text-red-700 dark:text-red-400 
-                                       bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 
-                                       transition-all duration-200"
-                          >
-                            🗑️ Apagar
-                          </button>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2 flex-wrap">
+                          <Btn tone="blue" onClick={() => openModulosModal(t)}>
+                            Módulos
+                          </Btn>
+                          <Btn tone="red" onClick={() => deleteTurma(t.id)}>
+                            Apagar
+                          </Btn>
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-          {/* Pagination BOTTOM */}
-          <PaginationBar
-            total={filtered.length}
-            page={page}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onPageSizeChange={(n) => {
-              setPageSize(n);
-              setPage(1);
-            }}
-            disabled={loading}
-            position="bottom"
-          />
+          {/* ✅ Paginação também no fundo (se não quiseres, apaga este bloco) */}
+          {!loading && filtered.length > 0 && (
+            <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4 bg-white dark:bg-gray-900">
+              <PaginationCompact
+                total={filtered.length}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                disabled={loading}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       {/* Modal Create */}
       {showForm && (
-        <Modal title="✨ Nova Turma" onClose={() => closeForm(false)} disableClose={saving}>
-          <form onSubmit={saveTurma} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <Modal title="Nova Turma" onClose={closeForm} disabled={saving}>
+          <form onSubmit={saveTurma} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Nome da Turma</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Nome</label>
               <input
                 name="nome"
                 value={form.nome}
                 onChange={onChange}
-                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
-                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="Ex: TPSI 0525"
                 disabled={saving}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                           bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
+                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                placeholder="Ex: TPSI 0525"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Curso</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Curso</label>
               <select
                 name="cursoId"
                 value={form.cursoId}
                 onChange={onChange}
-                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
-                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={saving}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                           bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100
+                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               >
                 <option value="">Seleciona um curso...</option>
                 {cursos.map((c) => (
@@ -807,19 +743,19 @@ export default function AdminTurmas() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
                 Coordenador (Formador)
               </label>
               <select
                 name="coordenadorId"
                 value={form.coordenadorId}
                 onChange={onChange}
-                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
-                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={saving}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                           bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100
+                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               >
-                <option value="">Sem Coordenador</option>
+                <option value="">Sem coordenador</option>
                 {formadores.map((f) => (
                   <option key={getFormadorId(f)} value={getFormadorId(f)}>
                     {getFormadorDisplay(f)}
@@ -829,57 +765,57 @@ export default function AdminTurmas() {
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Data de Início</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Data início</label>
               <input
                 type="date"
                 name="dataInicio"
                 value={form.dataInicio}
                 onChange={onChange}
-                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
-                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={saving}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                           bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100
+                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               />
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Data de Fim</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Data fim</label>
               <input
                 type="date"
                 name="dataFim"
                 value={form.dataFim}
                 onChange={onChange}
-                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
-                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={saving}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                           bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100
+                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               />
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Local</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Local</label>
               <input
                 name="local"
                 value={form.local}
                 onChange={onChange}
-                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
-                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="Ex: ATEC"
                 disabled={saving}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                           bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder:text-gray-400
+                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                placeholder="Ex: ATEC"
               />
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Estado</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Estado</label>
               <select
                 name="estado"
                 value={form.estado}
                 onChange={onChange}
-                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3
-                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={saving}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                           bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100
+                           focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               >
                 {ESTADOS.map((x) => (
                   <option key={x} value={x}>
@@ -889,35 +825,13 @@ export default function AdminTurmas() {
               </select>
             </div>
 
-            {error && (
-              <div
-                className="md:col-span-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 
-                              text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm"
-              >
-                {error}
-              </div>
-            )}
-
-            <div className="md:col-span-2 flex justify-end gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => closeForm(false)}
-                className="px-6 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 
-                           hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-all duration-200 font-medium"
-                disabled={saving}
-              >
+            <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2">
+              <Btn onClick={closeForm} disabled={saving}>
                 Cancelar
-              </button>
-
-              <button
-                type="submit"
-                className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white 
-                           hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-200 font-medium
-                           shadow-lg shadow-blue-500/30"
-                disabled={saving}
-              >
-                {saving ? "A guardar..." : "Guardar Turma"}
-              </button>
+              </Btn>
+              <PrimaryBtn tone="blue" type="submit" disabled={saving}>
+                {saving ? "A guardar..." : "Guardar"}
+              </PrimaryBtn>
             </div>
           </form>
         </Modal>
@@ -925,39 +839,32 @@ export default function AdminTurmas() {
 
       {/* Modal Turma -> Módulos */}
       {showModulos && selectedTurma && (
-        <Modal
-          title={`📚 Módulos — ${selectedTurma.nome}`}
-          onClose={() => closeModulosModal(false)}
-          disableClose={modSaving}
-        >
+        <Modal title={`Módulos — ${selectedTurma.nome}`} onClose={closeModulosModal} disabled={modSaving}>
           {modError && (
-            <div
-              className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 
-                            px-4 py-3 rounded-lg mb-5 text-sm"
-            >
+            <div className="mb-4 bg-red-50 border border-red-200 dark:bg-red-950/25 dark:border-red-900/40 rounded-xl p-4 text-sm text-red-700 dark:text-red-200">
               {modError}
             </div>
           )}
 
           {modLoading ? (
-            <div className="py-16 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="mt-3 text-gray-500 dark:text-gray-400">A carregar módulos...</p>
+            <div className="py-14 flex items-center justify-center">
+              <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <span className="ml-3 text-gray-600 dark:text-gray-300">A carregar...</span>
             </div>
           ) : (
             <>
               <form
                 onSubmit={associarModulo}
-                className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-blue-200 dark:border-gray-700"
+                className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-5 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/15"
               >
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Módulo</label>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Módulo</label>
                   <select
                     value={assocForm.moduloId}
                     onChange={(e) => setAssocForm((p) => ({ ...p, moduloId: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2
-                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm
-                               focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                               bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm
+                               focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                     disabled={modSaving}
                   >
                     <option value="">Seleciona...</option>
@@ -973,13 +880,13 @@ export default function AdminTurmas() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Formador</label>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Formador</label>
                   <select
                     value={assocForm.formadorId}
                     onChange={(e) => setAssocForm((p) => ({ ...p, formadorId: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2
-                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm
-                               focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                               bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 text-sm
+                               focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                     disabled={modSaving}
                   >
                     <option value="">Seleciona...</option>
@@ -991,85 +898,62 @@ export default function AdminTurmas() {
                   </select>
                 </div>
 
-                <div className="flex flex-col">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 block">Sequência</label>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Sequência</label>
                   <input
                     type="number"
                     min="1"
                     value={assocForm.sequencia}
                     onChange={(e) => setAssocForm((p) => ({ ...p, sequencia: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2
-                               bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                               focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800
+                               bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100
+                               focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                     disabled={modSaving}
                   />
 
-                  <button
-                    type="submit"
-                    className="mt-3 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white 
-                               hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-200 
-                               font-medium text-sm shadow-lg shadow-blue-500/30"
-                    disabled={modSaving}
-                  >
+                  <PrimaryBtn type="submit" className="mt-3 w-full" disabled={modSaving}>
                     {modSaving ? "A associar..." : "+ Associar"}
-                  </button>
+                  </PrimaryBtn>
                 </div>
               </form>
 
               <div className="bg-white dark:bg-gray-950/40 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-                <div className="px-5 py-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
-                  <div className="font-bold text-gray-900 dark:text-gray-100">
+                <div className="px-5 py-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+                  <div className="font-black text-gray-900 dark:text-gray-100">
                     Módulos Associados ({associadosOrdenados.length})
                   </div>
                 </div>
 
                 {associadosOrdenados.length === 0 ? (
-                  <div className="px-5 py-12 text-center text-gray-500 dark:text-gray-400">
-                    <div className="text-4xl mb-2">📝</div>
-                    Nenhum módulo associado ainda
-                  </div>
+                  <div className="px-5 py-12 text-center text-gray-500 dark:text-gray-400">Nenhum módulo associado.</div>
                 ) : (
                   <div className="overflow-auto">
-                    <table className="min-w-full">
+                    <table className="min-w-full text-sm">
                       <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-                        <tr>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">
-                            Seq
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">
-                            Módulo
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">
-                            Formador
-                          </th>
-                          <th className="text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 py-3 px-5">
-                            Ações
-                          </th>
+                        <tr className="text-left">
+                          <th className="py-3 px-5 text-xs font-black text-gray-700 dark:text-gray-200">Seq</th>
+                          <th className="py-3 px-5 text-xs font-black text-gray-700 dark:text-gray-200">Módulo</th>
+                          <th className="py-3 px-5 text-xs font-black text-gray-700 dark:text-gray-200">Formador</th>
+                          <th className="py-3 px-5 text-xs font-black text-gray-700 dark:text-gray-200">Ações</th>
                         </tr>
                       </thead>
 
-                      <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                         {associadosOrdenados.map((tm) => (
-                          <tr key={tm.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
-                            <td className="py-3 px-5 text-sm text-gray-600 dark:text-gray-400 font-mono">
+                          <tr key={tm.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40">
+                            <td className="py-3 px-5 text-gray-600 dark:text-gray-400 font-mono">
                               #{tm.sequencia ?? "—"}
                             </td>
-                            <td className="py-3 px-5 text-sm text-gray-900 dark:text-gray-100 font-semibold">
+                            <td className="py-3 px-5 text-gray-900 dark:text-gray-100 font-semibold">
                               {tm.moduloNome || `#${tm.moduloId}`}
                             </td>
-                            <td className="py-3 px-5 text-sm text-gray-700 dark:text-gray-300">
+                            <td className="py-3 px-5 text-gray-700 dark:text-gray-300">
                               {tm.formadorNome || `#${tm.formadorId}`}
                             </td>
                             <td className="py-3 px-5">
-                              <button
-                                onClick={() => removerAssociacao(tm.id)}
-                                className="px-3 py-1.5 rounded-lg text-sm font-medium text-red-700 dark:text-red-400 
-                                           bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 
-                                           transition-all duration-200"
-                                disabled={modSaving}
-                              >
-                                🗑️ Remover
-                              </button>
+                              <Btn tone="red" onClick={() => removerAssociacao(tm.id)} disabled={modSaving}>
+                                Remover
+                              </Btn>
                             </td>
                           </tr>
                         ))}
