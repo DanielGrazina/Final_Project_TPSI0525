@@ -148,9 +148,21 @@ namespace SecManagement_API.Services
 
         public async Task<string> ActivateAccountAsync(string email, string token)
         {
+            email = (email ?? "").Trim();
+            token = (token ?? "").Trim();
+
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
-            if (user == null || user.ActivationToken != token)
+            if (user == null)
+                throw new Exception("Email não encontrado.");
+
+            if (user.IsActive)
+                return "Conta já está ativa.";
+
+            if (string.IsNullOrWhiteSpace(user.ActivationToken))
+                throw new Exception("Token de ativação expirado ou já utilizado.");
+
+            if (!string.Equals(user.ActivationToken.Trim(), token, StringComparison.OrdinalIgnoreCase))
                 throw new Exception("Token de ativação inválido.");
 
             user.IsActive = true;
@@ -159,6 +171,7 @@ namespace SecManagement_API.Services
             await _context.SaveChangesAsync();
             return "Conta ativada com sucesso!";
         }
+
 
         public async Task<string> ForgotPasswordAsync(string email)
         {

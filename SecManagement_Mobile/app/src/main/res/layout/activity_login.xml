@@ -64,17 +64,17 @@
                             android:textStyle="bold" />
                     </FrameLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginTop="16dp"
-                        android:text="ATEC Gestão"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="28sp"
-                        android:textStyle="bold" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="16dp"
+                    android:text="ATEC Gestão"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="28sp"
+                    android:textStyle="bold" />
 
-                    <TextView
+                <TextView
                         android:id="@+id/txtSubtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -229,7 +229,8 @@
                     app:cornerRadius="14dp"
                     app:strokeColor="@color/strokeDark"
                     app:strokeWidth="1dp"
-                    android:backgroundTint="@color/inputDark"/>
+                    android:backgroundTint="@color/inputDark"
+                    android:visibility="gone" />
 
 
                 <com.google.android.material.progressindicator.CircularProgressIndicator
