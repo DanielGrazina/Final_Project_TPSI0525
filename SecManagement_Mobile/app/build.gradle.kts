@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.secmanagementmobile"
+    namespace = "pt.danielgrazina.secmanagementmobile"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.example.secmanagementmobile"
+        applicationId = "pt.danielgrazina.secmanagementmobile"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -27,6 +27,9 @@ android {
                 "proguard-rules.pro"
             )
         }
+    }
+    buildFeatures {
+        viewBinding = true
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -58,5 +61,6 @@ dependencies {
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
 }
 
