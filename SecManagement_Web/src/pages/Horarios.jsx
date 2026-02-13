@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { getToken, getUserRoleFromToken } from "../utils/auth";
+import BurgerMenu from "../components/BurgerMenu";
 
 /* ---------------- helpers ---------------- */
 
@@ -139,7 +140,7 @@ function normalizeSessao(raw) {
   const id = raw.Id || raw.id || `temp-${start.getTime()}`;
 
   // --- 3. CAMPOS DE TEXTO (Aqui estava o problema provável) ---
-  
+
   // TURMA
   let turma = "—";
   if (raw.TurmaNome || raw.turmaNome) turma = raw.TurmaNome || raw.turmaNome;
@@ -248,46 +249,46 @@ export default function Horarios() {
   }
 
   async function resolveMyIds() {
-  if (!token) throw new Error("Sem token. Faz login novamente.");
-  if (!myUserId) throw new Error("Não consegui ler o teu UserId do token.");
+    if (!token) throw new Error("Sem token. Faz login novamente.");
+    if (!myUserId) throw new Error("Não consegui ler o teu UserId do token.");
 
-  // --- LÓGICA FORMADOR ---
-  if (isFormador) {
-    const r = await api.get(`/Profiles/formador/${myUserId}`);
-    const fid = r?.data?.id || r?.data?.Id; 
-    if (Number.isFinite(Number(fid))) {
-       setFormadorId(Number(fid));
-       return { formadorId: Number(fid) };
+    // --- LÓGICA FORMADOR ---
+    if (isFormador) {
+      const r = await api.get(`/Profiles/formador/${myUserId}`);
+      const fid = r?.data?.id || r?.data?.Id;
+      if (Number.isFinite(Number(fid))) {
+        setFormadorId(Number(fid));
+        return { formadorId: Number(fid) };
+      }
     }
-  }
 
-  // --- LÓGICA FORMANDO (AQUI ESTÁ O PROBLEMA) ---
-  if (isFormando) {
-    const r = await api.get(`/Profiles/formando/${myUserId}`);
+    // --- LÓGICA FORMANDO (AQUI ESTÁ O PROBLEMA) ---
+    if (isFormando) {
+      const r = await api.get(`/Profiles/formando/${myUserId}`);
 
-    // Tentar ler ID do Formando
-    const foid = r?.data?.id || r?.data?.Id;
-    
-    // Tentar ler ID da Turma (Várias hipoteses de nome)
-    const tid = r?.data?.turmaId || r?.data?.TurmaId || r?.data?.turmaAtualId;
+      // Tentar ler ID do Formando
+      const foid = r?.data?.id || r?.data?.Id;
 
-    if (Number.isFinite(Number(foid))) setFormandoId(Number(foid));
-    
-    if (Number.isFinite(Number(tid))) {
+      // Tentar ler ID da Turma (Várias hipoteses de nome)
+      const tid = r?.data?.turmaId || r?.data?.TurmaId || r?.data?.turmaAtualId;
+
+      if (Number.isFinite(Number(foid))) setFormandoId(Number(foid));
+
+      if (Number.isFinite(Number(tid))) {
         setTurmaId(Number(tid));
         console.log("TURMA ID ENCONTRADO:", tid);
-    } else {
+      } else {
         console.warn("AVISO: Este aluno não tem 'turmaId' no perfil. Está inscrito numa turma?");
+      }
+
+      return {
+        formandoId: Number.isFinite(Number(foid)) ? Number(foid) : null,
+        turmaId: Number.isFinite(Number(tid)) ? Number(tid) : null,
+      };
     }
 
-    return {
-      formandoId: Number.isFinite(Number(foid)) ? Number(foid) : null,
-      turmaId: Number.isFinite(Number(tid)) ? Number(tid) : null,
-    };
+    return {};
   }
-
-  return {};
-}
 
   // --- FUNÇÃO CORRIGIDA: Usa /Sessoes e query string ---
   async function fetchSessionsForMe(ids, start, end) {
@@ -378,11 +379,14 @@ export default function Horarios() {
       {/* Header */}
       <div className="sticky top-0 z-10 border-b border-white/10 bg-gray-950/80 backdrop-blur-xl">
         <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold">Horários</h1>
-            <p className="text-sm text-gray-300">
-              {isFormador ? "O teu horário de sessões." : "O teu horário de aulas."}
-            </p>
+          <div className="flex items-center gap-3">
+            <BurgerMenu />
+            <div>
+              <h1 className="text-xl font-bold">Horários</h1>
+              <p className="text-sm text-gray-300">
+                {isFormador ? "O teu horário de sessões." : "O teu horário de aulas."}
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">

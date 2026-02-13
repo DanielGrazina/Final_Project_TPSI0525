@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { getToken, getUserRoleFromToken, decodeJwt } from "../../utils/auth";
+import BurgerMenu from "../../components/BurgerMenu";
 
 function extractError(err, fallback) {
   const data = err?.response?.data;
@@ -590,13 +591,16 @@ export default function Recruit() {
       <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
         <div className="container mx-auto px-6 py-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">Inscrições</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {isStaff
-                  ? "Gere candidaturas pendentes e consulta inscritos por turma"
-                  : "Candidata-te a cursos e acompanha o estado"}
-              </p>
+            <div className="flex items-center gap-3">
+              <BurgerMenu />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">Inscrições</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {isStaff
+                    ? "Gere candidaturas pendentes e consulta inscritos por turma"
+                    : "Candidata-te a cursos e acompanha o estado"}
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-3">
@@ -613,11 +617,10 @@ export default function Recruit() {
                 <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
                   <button
                     onClick={() => setTab("pendentes")}
-                    className={`px-4 py-2.5 text-sm font-medium transition-all ${
-                      tab === "pendentes"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    }`}
+                    className={`px-4 py-2.5 text-sm font-medium transition-all ${tab === "pendentes"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
                     type="button"
                   >
                     Candidaturas
@@ -629,11 +632,10 @@ export default function Recruit() {
                   </button>
                   <button
                     onClick={() => setTab("staff")}
-                    className={`px-4 py-2.5 text-sm font-medium transition-all ${
-                      tab === "staff"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    }`}
+                    className={`px-4 py-2.5 text-sm font-medium transition-all ${tab === "staff"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
                     type="button"
                   >
                     Por Turma
@@ -643,22 +645,20 @@ export default function Recruit() {
                 <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
                   <button
                     onClick={() => setTab("cursos")}
-                    className={`px-4 py-2.5 text-sm font-medium transition-all ${
-                      tab === "cursos"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    }`}
+                    className={`px-4 py-2.5 text-sm font-medium transition-all ${tab === "cursos"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
                     type="button"
                   >
                     Cursos
                   </button>
                   <button
                     onClick={() => setTab("minhas")}
-                    className={`px-4 py-2.5 text-sm font-medium transition-all ${
-                      tab === "minhas"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    }`}
+                    className={`px-4 py-2.5 text-sm font-medium transition-all ${tab === "minhas"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
                     type="button"
                   >
                     As minhas
@@ -855,9 +855,8 @@ export default function Recruit() {
                       pendentesPaged.map((p) => (
                         <tr
                           key={p.id}
-                          className={`hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150 ${
-                            selectedPendentes.has(p.id) ? "bg-blue-50/30 dark:bg-blue-900/10" : ""
-                          }`}
+                          className={`hover:bg-blue-50/50 dark:hover:bg-gray-800/60 transition-colors duration-150 ${selectedPendentes.has(p.id) ? "bg-blue-50/30 dark:bg-blue-900/10" : ""
+                            }`}
                         >
                           <td className="py-4 px-6">
                             <input

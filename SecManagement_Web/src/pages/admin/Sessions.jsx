@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { getToken } from "../../utils/auth";
+import BurgerMenu from "../../components/BurgerMenu";
 
 /* ------------------------ Helpers ------------------------ */
 
@@ -393,8 +394,8 @@ export default function AdminSessions() {
         done
           ? "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-900/50"
           : active
-          ? "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-900/50"
-          : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
+            ? "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-900/50"
+            : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
       ].join(" ")}
     >
       <span
@@ -403,8 +404,8 @@ export default function AdminSessions() {
           done
             ? "bg-emerald-600 text-white"
             : active
-            ? "bg-blue-600 text-white"
-            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
         ].join(" ")}
       >
         {n}
@@ -502,8 +503,8 @@ export default function AdminSessions() {
                         !isAvailable
                           ? "opacity-70 cursor-not-allowed border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20"
                           : isSelected
-                          ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20"
-                          : "border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800",
+                            ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20"
+                            : "border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800",
                       ].join(" ")}
                     >
                       <div className="flex items-center gap-4 min-w-0">
@@ -513,8 +514,8 @@ export default function AdminSessions() {
                             !isAvailable
                               ? "bg-red-500/10 text-red-600 border-red-200 dark:text-red-300 dark:border-red-900/40"
                               : isSelected
-                              ? "bg-emerald-600 text-white border-emerald-600"
-                              : "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-900/50",
+                                ? "bg-emerald-600 text-white border-emerald-600"
+                                : "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-900/50",
                           ].join(" ")}
                         >
                           {f.avatar ? (
@@ -645,16 +646,20 @@ export default function AdminSessions() {
       <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
         <div className="container mx-auto px-6 py-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
-                Sessões & Horários
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Turma: <span className="font-semibold text-gray-900 dark:text-gray-100">{selectedTurmaName}</span>{" "}
-                <span className="mx-2 text-gray-300 dark:text-gray-700">•</span>
-                Semana: <span className="font-semibold text-gray-900 dark:text-gray-100">{weekLabel}</span>
-              </p>
+            <div className="flex items-center gap-3">
+              <BurgerMenu />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
+                  Sessões & Horários
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Turma: <span className="font-semibold text-gray-900 dark:text-gray-100">{selectedTurmaName}</span>{" "}
+                  <span className="mx-2 text-gray-300 dark:text-gray-700">•</span>
+                  Semana: <span className="font-semibold text-gray-900 dark:text-gray-100">{weekLabel}</span>
+                </p>
+              </div>
             </div>
+
 
             <div className="flex flex-wrap items-center gap-3">
               {/* Turma */}

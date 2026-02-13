@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { getToken, getUserRoleFromToken, decodeJwt } from "../../utils/auth";
+import BurgerMenu from "../../components/BurgerMenu";
 
 /*
   ✅ REGRAS IMPLEMENTADAS
@@ -664,37 +665,44 @@ export default function Evaluations() {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 border-b dark:border-gray-800 shadow-sm">
         <div className="container mx-auto px-4 py-4">
+          {/* ✅ tudo numa linha: esquerda (título) | direita (ações) */}
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Avaliações</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {isAluno
-                      ? "Consulta apenas as tuas avaliações"
-                      : isFormador
+            {/* LEFT */}
+            <div className="flex items-center gap-3">
+              <BurgerMenu />
+
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                  />
+                </svg>
+              </div>
+
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Avaliações</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {isAluno
+                    ? "Consulta apenas as tuas avaliações"
+                    : isFormador
                       ? "Gerir avaliações apenas das tuas turmas"
                       : "Gestão global de avaliações"}
-                  </p>
-                </div>
+                </p>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            {/* RIGHT */}
+            <div className="flex items-center gap-2">
+              {/* ✅ Voltar com estilo consistente (bom em dark) */}
               <button
                 onClick={() => navigate("/dashboard")}
-                className="px-4 py-2 rounded-lg border hover:bg-gray-100 transition-colors
-                           dark:border-gray-700 dark:hover:bg-gray-800"
+                className="px-5 py-2.5 rounded-xl border transition-all font-semibold
+                          border-white/10 text-gray-900 hover:bg-gray-50
+                          dark:text-white dark:hover:bg-white/10 dark:bg-white/5 dark:border-white/10
+                          active:scale-[0.98]"
                 type="button"
               >
                 ← Voltar
@@ -703,10 +711,10 @@ export default function Evaluations() {
               {canManage && (
                 <button
                   onClick={openCreate}
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium
-                             hover:from-purple-700 hover:to-pink-700 transition-all
-                             shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40
-                             active:scale-95"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold
+                            hover:from-purple-700 hover:to-pink-700 transition-all
+                            shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40
+                            active:scale-[0.98]"
                   type="button"
                 >
                   + Nova Avaliação
@@ -716,6 +724,7 @@ export default function Evaluations() {
           </div>
         </div>
       </div>
+
 
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
@@ -957,144 +966,146 @@ export default function Evaluations() {
       </div>
 
       {/* Modal Create/Edit */}
-      {showForm && (
-        <Modal title={editing ? "Editar Avaliação" : "Nova Avaliação"} onClose={closeForm} disabled={saving}>
-          <form onSubmit={saveEvaluation} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Turma</label>
-                <select
-                  name="turmaId"
-                  value={form.turmaId}
-                  onChange={onChange}
+      {
+        showForm && (
+          <Modal title={editing ? "Editar Avaliação" : "Nova Avaliação"} onClose={closeForm} disabled={saving}>
+            <form onSubmit={saveEvaluation} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Turma</label>
+                  <select
+                    name="turmaId"
+                    value={form.turmaId}
+                    onChange={onChange}
+                    disabled={saving}
+                    className="w-full border rounded-lg px-4 py-3
+                             bg-white dark:bg-gray-950 dark:border-gray-800
+                             text-gray-900 dark:text-gray-100 disabled:opacity-60
+                             focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  >
+                    <option value="">Selecionar turma...</option>
+                    {turmasParaSelect.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nome} (ID {t.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Aluno / Inscrição</label>
+                  <select
+                    name="inscricaoId"
+                    value={form.inscricaoId}
+                    onChange={onChange}
+                    disabled={saving || !form.turmaId}
+                    className="w-full border rounded-lg px-4 py-3
+                             bg-white dark:bg-gray-950 dark:border-gray-800
+                             text-gray-900 dark:text-gray-100 disabled:opacity-60
+                             focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  >
+                    <option value="">{form.turmaId ? "Selecionar inscrição..." : "Seleciona primeiro uma turma"}</option>
+                    {inscricoes.map((i) => (
+                      <option key={i.id ?? i.inscricaoId} value={i.id ?? i.inscricaoId}>
+                        {getInscricaoLabel(i)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Módulo da Turma</label>
+                  <select
+                    name="turmaModuloId"
+                    value={form.turmaModuloId}
+                    onChange={onChange}
+                    disabled={saving || !form.turmaId}
+                    className="w-full border rounded-lg px-4 py-3
+                             bg-white dark:bg-gray-950 dark:border-gray-800
+                             text-gray-900 dark:text-gray-100 disabled:opacity-60
+                             focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  >
+                    <option value="">{form.turmaId ? "Selecionar módulo..." : "Seleciona primeiro uma turma"}</option>
+                    {turmaModulos.map((tm) => (
+                      <option key={tm.id} value={tm.id}>
+                        {getTurmaModuloLabel(tm)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avaliação (0-20)</label>
+                  <input
+                    name="avaliacao"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="20"
+                    value={form.avaliacao}
+                    onChange={onChange}
+                    disabled={saving}
+                    className="w-full border rounded-lg px-4 py-3
+                             bg-white dark:bg-gray-950 dark:border-gray-800
+                             text-gray-900 dark:text-gray-100 disabled:opacity-60
+                             focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                    placeholder="Ex: 16"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Aceita decimais (ex: 14.5). Deixa vazio para null.
+                  </p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Observações</label>
+                  <textarea
+                    name="observacoes"
+                    value={form.observacoes}
+                    onChange={onChange}
+                    disabled={saving}
+                    className="w-full border rounded-lg px-4 py-3 min-h-[100px]
+                             bg-white dark:bg-gray-950 dark:border-gray-800
+                             text-gray-900 dark:text-gray-100 disabled:opacity-60
+                             focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                    placeholder="Notas internas sobre a avaliação..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-800">
+                <button
+                  type="button"
+                  onClick={closeForm}
                   disabled={saving}
-                  className="w-full border rounded-lg px-4 py-3
-                             bg-white dark:bg-gray-950 dark:border-gray-800
-                             text-gray-900 dark:text-gray-100 disabled:opacity-60
-                             focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                >
-                  <option value="">Selecionar turma...</option>
-                  {turmasParaSelect.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.nome} (ID {t.id})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Aluno / Inscrição</label>
-                <select
-                  name="inscricaoId"
-                  value={form.inscricaoId}
-                  onChange={onChange}
-                  disabled={saving || !form.turmaId}
-                  className="w-full border rounded-lg px-4 py-3
-                             bg-white dark:bg-gray-950 dark:border-gray-800
-                             text-gray-900 dark:text-gray-100 disabled:opacity-60
-                             focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                >
-                  <option value="">{form.turmaId ? "Selecionar inscrição..." : "Seleciona primeiro uma turma"}</option>
-                  {inscricoes.map((i) => (
-                    <option key={i.id ?? i.inscricaoId} value={i.id ?? i.inscricaoId}>
-                      {getInscricaoLabel(i)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Módulo da Turma</label>
-                <select
-                  name="turmaModuloId"
-                  value={form.turmaModuloId}
-                  onChange={onChange}
-                  disabled={saving || !form.turmaId}
-                  className="w-full border rounded-lg px-4 py-3
-                             bg-white dark:bg-gray-950 dark:border-gray-800
-                             text-gray-900 dark:text-gray-100 disabled:opacity-60
-                             focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                >
-                  <option value="">{form.turmaId ? "Selecionar módulo..." : "Seleciona primeiro uma turma"}</option>
-                  {turmaModulos.map((tm) => (
-                    <option key={tm.id} value={tm.id}>
-                      {getTurmaModuloLabel(tm)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Avaliação (0-20)</label>
-                <input
-                  name="avaliacao"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="20"
-                  value={form.avaliacao}
-                  onChange={onChange}
-                  disabled={saving}
-                  className="w-full border rounded-lg px-4 py-3
-                             bg-white dark:bg-gray-950 dark:border-gray-800
-                             text-gray-900 dark:text-gray-100 disabled:opacity-60
-                             focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                  placeholder="Ex: 16"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Aceita decimais (ex: 14.5). Deixa vazio para null.
-                </p>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Observações</label>
-                <textarea
-                  name="observacoes"
-                  value={form.observacoes}
-                  onChange={onChange}
-                  disabled={saving}
-                  className="w-full border rounded-lg px-4 py-3 min-h-[100px]
-                             bg-white dark:bg-gray-950 dark:border-gray-800
-                             text-gray-900 dark:text-gray-100 disabled:opacity-60
-                             focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                  placeholder="Notas internas sobre a avaliação..."
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-800">
-              <button
-                type="button"
-                onClick={closeForm}
-                disabled={saving}
-                className="px-5 py-2.5 rounded-lg border hover:bg-gray-100 transition-colors
+                  className="px-5 py-2.5 rounded-lg border hover:bg-gray-100 transition-colors
                            dark:border-gray-700 dark:hover:bg-gray-800
                            disabled:opacity-60"
-              >
-                Cancelar
-              </button>
+                >
+                  Cancelar
+                </button>
 
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium
                            hover:from-purple-700 hover:to-pink-700 transition-all
                            shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40
                            disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
-              >
-                {saving ? (
-                  <span className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    A guardar...
-                  </span>
-                ) : (
-                  "Guardar"
-                )}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-    </div>
+                >
+                  {saving ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      A guardar...
+                    </span>
+                  ) : (
+                    "Guardar"
+                  )}
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )
+      }
+    </div >
   );
 }

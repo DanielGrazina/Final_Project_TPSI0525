@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import BurgerMenu from "../../components/BurgerMenu";
 
 /* ---------------- helpers ---------------- */
 
@@ -289,11 +290,14 @@ export default function AdminSalas() {
       <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
         <div className="container mx-auto px-6 py-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
-                Gestão de Salas
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Administre as salas disponíveis na instituição</p>
+            <div className="flex items-center gap-3">
+              <BurgerMenu />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
+                  Gestão de Salas
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Administre as salas disponíveis na instituição</p>
+              </div>
             </div>
 
             <div className="flex gap-3">
@@ -419,9 +423,8 @@ export default function AdminSalas() {
 
                       <td className="py-4 px-6">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                            tipoColors[r.tipo] || tipoColors.Teorica
-                          }`}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${tipoColors[r.tipo] || tipoColors.Teorica
+                            }`}
                         >
                           <span>{tipoIcons[r.tipo] || "📍"}</span>
                           {r.tipo}

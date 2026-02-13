@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { getToken, getUserRoleFromToken } from "../utils/auth";
+import BurgerMenu from "../components/BurgerMenu";
 
 /* ---------------- helpers ---------------- */
 
@@ -222,7 +223,7 @@ function readEmail(raw) {
   return (
     safeStr(
       pick(raw, ["email", "Email", "userEmail", "UserEmail"]) ??
-        pickPath(raw, ["user.email", "user.Email", "User.Email", "User.email"])
+      pickPath(raw, ["user.email", "user.Email", "User.Email", "User.email"])
     ) || ""
   );
 }
@@ -364,7 +365,7 @@ function normFormador(raw) {
   const areaEspecializacao =
     safeStr(
       pick(raw, ["areaEspecializacao", "AreaEspecializacao", "area", "Area", "especializacao", "Especializacao"]) ??
-        pickPath(raw, ["user.areaEspecializacao", "User.AreaEspecializacao"])
+      pickPath(raw, ["user.areaEspecializacao", "User.AreaEspecializacao"])
     ) || "";
 
   const corCalendario =
@@ -996,6 +997,7 @@ export default function Profiles() {
       <div className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 dark:border-gray-800 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
+            <BurgerMenu />
             <HeaderIcon icon="profile" />
             <div>
               <h1 className="text-xl font-black text-gray-900 dark:text-gray-100">Profiles</h1>
@@ -1114,11 +1116,11 @@ export default function Profiles() {
 
                 const sub = isFormando
                   ? `UserId: ${item.userId} • Nº: ${safeStr(item.numeroAluno || "—")} • Email: ${safeStr(
-                      item.email || "—"
-                    )} • Turma: ${safeStr(item.turmaNome || item.turmaId || "—")}`
+                    item.email || "—"
+                  )} • Turma: ${safeStr(item.turmaNome || item.turmaId || "—")}`
                   : `UserId: ${item.userId} • Área: ${safeStr(item.areaEspecializacao || "—")} • Email: ${safeStr(
-                      item.email || "—"
-                    )}`;
+                    item.email || "—"
+                  )}`;
 
                 return (
                   <button

@@ -36,6 +36,13 @@ namespace SecManagement_API.Controllers
             return Ok(turma);
         }
 
+        [HttpGet("formador/{formadorId}")]
+        public async Task<ActionResult<IEnumerable<TurmaDto>>> GetTurmasByFormador(int formadorId)
+        {
+            var turmas = await _turmaService.GetTurmasByFormadorAsync(formadorId);
+            return Ok(turmas);
+        }
+
         [HttpPost]
         [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<TurmaDto>> CreateTurma(CreateTurmaDto dto)

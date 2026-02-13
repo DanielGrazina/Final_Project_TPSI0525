@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { getToken, getUserRoleFromToken, isTokenExpired } from "../../utils/auth";
+import BurgerMenu from "../../components/BurgerMenu";
 
 /* ---------------- UI bits ---------------- */
 
@@ -575,9 +576,12 @@ export default function Users() {
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 border-b border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-black text-gray-900 dark:text-gray-100">Utilizadores</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Roles: {ROLES_ALL.join(", ")}</p>
+            <div className="flex items-center gap-3">
+              <BurgerMenu />
+              <div>
+                <h1 className="text-xl font-black text-gray-900 dark:text-gray-100">Utilizadores</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Roles: {ROLES_ALL.join(", ")}</p>
+              </div>
             </div>
 
             <div className="flex gap-2">
@@ -768,11 +772,10 @@ export default function Users() {
                             </label>
                           ) : (
                             <span
-                              className={`text-sm font-semibold ${
-                                u.isActive
-                                  ? "text-emerald-700 dark:text-emerald-300"
-                                  : "text-gray-500 dark:text-gray-400"
-                              }`}
+                              className={`text-sm font-semibold ${u.isActive
+                                ? "text-emerald-700 dark:text-emerald-300"
+                                : "text-gray-500 dark:text-gray-400"
+                                }`}
                             >
                               {u.isActive ? "Ativo" : "Inativo"}
                             </span>
@@ -821,8 +824,8 @@ export default function Users() {
                                     targetIsSuperAdmin
                                       ? "SuperAdmin não pode ser alterado."
                                       : !perms.canEdit
-                                      ? "Sem permissão."
-                                      : ""
+                                        ? "Sem permissão."
+                                        : ""
                                   }
                                 />
 
@@ -835,8 +838,8 @@ export default function Users() {
                                     targetIsSuperAdmin
                                       ? "Não podes apagar um SuperAdmin."
                                       : !perms.canDelete
-                                      ? "Sem permissão."
-                                      : ""
+                                        ? "Sem permissão."
+                                        : ""
                                   }
                                 />
                               </>

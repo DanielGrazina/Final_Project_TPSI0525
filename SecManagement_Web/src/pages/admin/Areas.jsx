@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { getToken, getUserRoleFromToken } from "../../utils/auth";
+import BurgerMenu from "../../components/BurgerMenu";
 
 /* ---------------- helpers ---------------- */
 
@@ -378,6 +379,7 @@ export default function Areas() {
       <div className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 dark:border-gray-800 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
+            <BurgerMenu />
             <HeaderIcon icon="areas" />
             <div>
               <h1 className="text-xl font-black text-gray-900 dark:text-gray-100">Áreas</h1>

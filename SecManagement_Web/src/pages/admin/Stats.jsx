@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import BurgerMenu from "../../components/BurgerMenu";
 
 function StatCard({ label, value, tone = "blue", icon }) {
   const tones = {
@@ -86,8 +87,9 @@ export default function AdminStats() {
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 border-b dark:border-gray-800 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
+              <BurgerMenu />
+              <div>
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
                   <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3a1 1 0 011 1v16a1 1 0 11-2 0V4a1 1 0 011-1zm8 6a1 1 0 011 1v10a1 1 0 11-2 0V10a1 1 0 011-1zM5 13a1 1 0 011 1v6a1 1 0 11-2 0v-6a1 1 0 011-1z" />
@@ -109,9 +111,9 @@ export default function AdminStats() {
                 className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 font-semibold
                             hover:bg-gray-50 transition active:scale-95
                             dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
-                >
+              >
                 ← Voltar
-                </button>
+              </button>
 
               <button
                 onClick={load}

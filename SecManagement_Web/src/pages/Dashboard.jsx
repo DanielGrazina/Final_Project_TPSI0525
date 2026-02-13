@@ -7,6 +7,7 @@ import { getToken, getUserRoleFromToken } from "../utils/auth";
 import TawkToWidget from "../components/TawkToWidget";
 import { QRCodeCanvas } from "qrcode.react";
 import api from "../api/axios";
+import BurgerMenu from "../components/BurgerMenu";
 
 /* ---------------- UI helpers ---------------- */
 
@@ -530,19 +531,22 @@ export default function Dashboard() {
         {/* Header */}
         <div className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 dark:border-gray-800 shadow-sm">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
-            <button
-              type="button"
-              className="flex items-center gap-3 group"
-              onClick={() => navigate("/dashboard")}
-            >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center text-base font-bold shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-shadow">
-                AM
-              </div>
-              <div className="leading-tight text-left">
-                <div className="font-bold text-gray-900 dark:text-gray-100">ATEC Management</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Portal de Gestão</div>
-              </div>
-            </button>
+            <div className="flex items-center gap-3">
+              <BurgerMenu />
+              <button
+                type="button"
+                className="flex items-center gap-3 group"
+                onClick={() => navigate("/dashboard")}
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center text-base font-bold shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-shadow">
+                  AM
+                </div>
+                <div className="leading-tight text-left">
+                  <div className="font-bold text-gray-900 dark:text-gray-100">ATEC Management</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Portal de Gestão</div>
+                </div>
+              </button>
+            </div>
 
             <div className="flex items-center gap-2">
               <ThemeToggle theme={theme} onToggle={toggleTheme} />
@@ -965,18 +969,18 @@ export default function Dashboard() {
                       perms.isAdmin || perms.isSuperAdmin
                         ? "Admin"
                         : perms.isSecretaria
-                        ? "Secretaria"
-                        : perms.isFormando
-                        ? "Formando"
-                        : "User",
+                          ? "Secretaria"
+                          : perms.isFormando
+                            ? "Formando"
+                            : "User",
                     tone:
                       perms.isAdmin || perms.isSuperAdmin
                         ? "green"
                         : perms.isSecretaria
-                        ? "blue"
-                        : perms.isFormando
-                        ? "amber"
-                        : "neutral",
+                          ? "blue"
+                          : perms.isFormando
+                            ? "amber"
+                            : "neutral",
                   }}
                 />
               )}

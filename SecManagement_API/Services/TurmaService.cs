@@ -89,6 +89,34 @@ namespace SecManagement_API.Services
             return true;
         }
 
+        public async Task<IEnumerable<TurmaDto>> GetTurmasByFormadorAsync(int formadorId)
+        {
+            // Buscar turmas onde o formador é coordenador OU leciona módulos
+            var turmasIds = await _context.TurmaModulos
+                .Where(tm => tm.FormadorId == formadorId)
+                .Select(tm => tm.TurmaId)
+                .Distinct()
+                .ToListAsync();
+
+            // Incluir também turmas onde é coordenador
+            var turmasCoordenador = await _context.Turmas
+                .Where(t => t.CoordenadorId == formadorId)
+                .Select(t => t.Id)
+                .ToListAsync();
+
+            // Combinar ambos os IDs
+            var allTurmaIds = turmasIds.Union(turmasCoordenador).Distinct().ToList();
+
+            // Buscar as turmas completas
+            var turmas = await _context.Turmas
+                .Where(t => allTurmaIds.Contains(t.Id))
+                .Include(t => t.Curso)
+                .Include(t => t.Coordenador).ThenInclude(f => f.User)
+                .ToListAsync();
+
+            return turmas.Select(MapToDto);
+        }
+
         // --- DISTRIBUIÇÃO (Turma Modulos) ---
 
         public async Task<TurmaModuloDto> AddModuloAsync(CreateTurmaModuloDto dto)

@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import BurgerMenu from "../../components/BurgerMenu";
 
 /* ---------------- helpers ---------------- */
 
@@ -517,6 +518,7 @@ export default function AdminTurmas() {
       <div className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 dark:border-gray-800 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
+            <BurgerMenu />
             <HeaderIcon />
             <div>
               <h1 className="text-xl font-black text-gray-900 dark:text-gray-100">Turmas</h1>
@@ -664,9 +666,8 @@ export default function AdminTurmas() {
 
                       <td className="px-4 py-3">
                         <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                            estadoColors[t.estado] || estadoColors.Planeada
-                          }`}
+                          className={`px-2.5 py-1 rounded-full text-xs font-semibold ${estadoColors[t.estado] || estadoColors.Planeada
+                            }`}
                         >
                           {t.estado || "Planeada"}
                         </span>
