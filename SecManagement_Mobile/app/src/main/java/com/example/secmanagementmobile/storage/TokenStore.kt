@@ -2,22 +2,24 @@ package com.example.secmanagementmobile.storage
 
 import android.content.Context
 
-class TokenStore(context: Context) {
-    private val prefs = context.getSharedPreferences("sec_mgmt", Context.MODE_PRIVATE)
+object TokenStore {
+    private const val PREF = "auth"
+    private const val KEY = "token"
 
-    fun saveToken(token: String) {
-        prefs.edit().putString("token", token).apply()
+    fun get(ctx: Context): String? =
+        ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE).getString(KEY, null)
+
+    fun save(ctx: Context, token: String) {
+        ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY, token)
+            .apply()
     }
 
-    fun getToken(): String? = prefs.getString("token", null)
-
-    fun saveRole(role: String) {
-        prefs.edit().putString("role", role).apply()
-    }
-
-    fun getRole(): String? = prefs.getString("role", null)
-
-    fun clear() {
-        prefs.edit().clear().apply()
+    fun clear(ctx: Context) {
+        ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .apply()
     }
 }

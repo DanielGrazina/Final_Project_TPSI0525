@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/strokeDark"
+    app:cardBackgroundColor="@color/cardDark">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="14dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/txtSalaNome"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sala A09"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/textPrimary" />
+
+        <TextView
+            android:id="@+id/txtSalaSub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ID: 0"
+            android:textSize="12sp"
+            android:textColor="@color/textSecondary"
+            android:layout_marginTop="6dp" />
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -15,6 +15,45 @@
         android:theme="@style/Theme.SecManagementMobile"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".ResetPasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ForgotPasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProfilesListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HorarioSalaActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SalasActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TurmasActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HorarioFormandoActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TurmasSelectActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HorarioFormadorActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HorarioFormadorMenuActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HorarioFormandoRedirectActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HorarioHubActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SessaoDetailActivity"
+            android:exported="false" />
+        <activity
             android:name=".HorarioTurmaActivity"
             android:exported="false" />
         <activity
@@ -43,6 +82,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

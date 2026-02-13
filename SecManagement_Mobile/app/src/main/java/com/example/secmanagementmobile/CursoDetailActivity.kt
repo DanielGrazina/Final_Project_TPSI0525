@@ -52,11 +52,6 @@ class CursoDetailActivity : AppCompatActivity() {
             )
         }
 
-
-        findViewById<Button>(R.id.btnVerModulos).setOnClickListener {
-            // TODO: abrir lista de módulos do curso (se endpoint existir)
-        }
-
         if (cursoId <= 0) {
             showError("Curso inválido.")
             return

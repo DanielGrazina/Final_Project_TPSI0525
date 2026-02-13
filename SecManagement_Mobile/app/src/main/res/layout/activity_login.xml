@@ -170,17 +170,17 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- forgot password (optional) -->
-                    <TextView
-                        android:id="@+id/txtForgot"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="end"
-                        android:layout_marginTop="8dp"
-                        android:text="Esqueci-me da password"
-                        android:textColor="#93C5FD"
-                        android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/txtForgot"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="Esqueci-me da password"
+                    android:textColor="@color/textSecondary"
+                    android:padding="6dp" />
 
-                    <!-- 2FA -->
+
+                <!-- 2FA -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/til2fa"
                         android:layout_width="match_parent"
@@ -218,7 +218,21 @@
                         android:textColor="@android:color/white"
                         android:textStyle="bold" />
 
-                    <com.google.android.material.progressindicator.CircularProgressIndicator
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGoogle"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:layout_marginTop="10dp"
+                    android:text="Continuar com Google"
+                    android:textColor="@color/textPrimary"
+                    app:cornerRadius="14dp"
+                    app:strokeColor="@color/strokeDark"
+                    app:strokeWidth="1dp"
+                    android:backgroundTint="@color/inputDark"/>
+
+
+                <com.google.android.material.progressindicator.CircularProgressIndicator
                         android:id="@+id/progress"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
