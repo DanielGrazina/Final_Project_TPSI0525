@@ -1,0 +1,206 @@
+package pt.danielgrazina.secmanagementmobile
+
+import android.app.DatePickerDialog
+import android.os.Bundle
+import android.view.View
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.*
+import pt.danielgrazina.secmanagementmobile.models.*
+import pt.danielgrazina.secmanagementmobile.network.*
+import pt.danielgrazina.secmanagementmobile.storage.*
+import pt.danielgrazina.secmanagementmobile.ui.*
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+class HorarioActivity : AppCompatActivity() {
+
+    private val scope = CoroutineScope(Dispatchers.Main + Job())
+
+    private lateinit var spTipo: Spinner
+    private lateinit var spEntidade: Spinner
+    private lateinit var btnStart: Button
+    private lateinit var btnEnd: Button
+    private lateinit var btnCarregar: Button
+    private lateinit var txtRange: TextView
+    private lateinit var txtError: TextView
+    private lateinit var progress: ProgressBar
+    private lateinit var adapter: SessoesAdapter
+
+    private var startDate: LocalDate = LocalDate.now()
+    private var endDate: LocalDate = LocalDate.now().plusDays(7)
+    private val fmtDate = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+    private var selectedId: Int? = null
+
+    private var turmas: List<TurmaDto> = emptyList()
+    private var salas: List<SalaDto> = emptyList()
+    private var formadores: List<FormadorDto> = emptyList()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_horario)
+
+        spTipo = findViewById(R.id.spTipo)
+        spEntidade = findViewById(R.id.spEntidade)
+        btnStart = findViewById(R.id.btnStart)
+        btnEnd = findViewById(R.id.btnEnd)
+        btnCarregar = findViewById(R.id.btnCarregar)
+        txtRange = findViewById(R.id.txtRange)
+        txtError = findViewById(R.id.txtError)
+        progress = findViewById(R.id.progress)
+
+        val rv = findViewById<RecyclerView>(R.id.rvSessoes)
+        adapter = SessoesAdapter(emptyList())
+        rv.layoutManager = LinearLayoutManager(this)
+        rv.adapter = adapter
+
+        val tipos = listOf("Turma", "Formador", "Sala")
+        spTipo.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, tipos)
+
+        atualizarTextoIntervalo()
+
+        btnStart.setOnClickListener { escolherData(isStart = true) }
+        btnEnd.setOnClickListener { escolherData(isStart = false) }
+        btnCarregar.setOnClickListener { carregarHorario() }
+
+        spTipo.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                val tipo = spTipo.selectedItem.toString()
+                carregarEntidades(tipo)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+
+        carregarEntidades("Turma")
+    }
+
+    private fun atualizarTextoIntervalo() {
+        txtRange.text = "Intervalo: ${startDate.format(fmtDate)} → ${endDate.format(fmtDate)}"
+    }
+
+    private fun escolherData(isStart: Boolean) {
+        val base = if (isStart) startDate else endDate
+        DatePickerDialog(
+            this,
+            { _, year, month, day ->
+                val picked = LocalDate.of(year, month + 1, day)
+                if (isStart) startDate = picked else endDate = picked
+                atualizarTextoIntervalo()
+            },
+            base.year, base.monthValue - 1, base.dayOfMonth
+        ).show()
+    }
+
+    private fun setEntidadeSpinner(nomes: List<String>, ids: List<Int>) {
+        spEntidade.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, nomes)
+
+        selectedId = if (ids.isNotEmpty()) ids[0] else null
+
+        spEntidade.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                selectedId = ids.getOrNull(position)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+    }
+
+    private fun carregarEntidades(tipo: String) {
+        txtError.text = ""
+        adapter.update(emptyList())
+
+        scope.launch {
+            progress.visibility = View.VISIBLE
+            try {
+                when (tipo) {
+                    "Turma" -> {
+                        turmas = withContext(Dispatchers.IO) { ApiClient.api.getTurmas() }
+                        setEntidadeSpinner(turmas.map { it.nome }, turmas.map { it.id })
+                    }
+                    "Sala" -> {
+                        salas = withContext(Dispatchers.IO) { ApiClient.api.getSalas() }
+                        setEntidadeSpinner(salas.map { it.nome }, salas.map { it.id })
+                    }
+                    "Formador" -> {
+                        val token = TokenStore.get(this@HorarioActivity)
+                        if (token.isNullOrEmpty()) {
+                            txtError.text = "Precisas de login para ver formadores."
+                            setEntidadeSpinner(emptyList(), emptyList())
+                            return@launch
+                        }
+
+                        formadores = withContext(Dispatchers.IO) {
+                            ApiClient.api.getFormadores("Bearer $token")
+                        }
+                        setEntidadeSpinner(formadores.map { it.nome }, formadores.map { it.id })
+                    }
+                }
+
+                if (selectedId == null) {
+                    txtError.text = "Não há dados para listar neste tipo."
+                }
+            } catch (e: Exception) {
+                txtError.text = "Erro a carregar lista: ${e.message}"
+                setEntidadeSpinner(emptyList(), emptyList())
+            } finally {
+                progress.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun carregarHorario() {
+        txtError.text = ""
+
+        val id = selectedId
+        if (id == null) {
+            txtError.text = "Seleciona uma entidade primeiro."
+            return
+        }
+
+        if (endDate.isBefore(startDate)) {
+            txtError.text = "A data fim tem de ser depois da data início."
+            return
+        }
+
+        val startStr = startDate.toString()
+        val endStr = endDate.toString()
+        val tipo = spTipo.selectedItem.toString()
+
+        scope.launch {
+            progress.visibility = View.VISIBLE
+            try {
+                val token = TokenStore.get(this@HorarioActivity)
+                if (token.isNullOrEmpty()) {
+                    txtError.text = "Precisas de login para ver horários."
+                    return@launch
+                }
+                val auth = "Bearer $token"
+
+                val sessoes = withContext(Dispatchers.IO) {
+                    when (tipo) {
+                        "Turma" -> ApiClient.api.getHorarioTurma(auth, id, startStr, endStr)
+                        "Formador" -> ApiClient.api.getHorarioFormador(auth, id, startStr, endStr)
+                        else -> ApiClient.api.getHorarioSala(auth, id, startStr, endStr)
+                    }
+                }
+
+                adapter.update(sessoes)
+
+                if (sessoes.isEmpty()) {
+                    txtError.text = "Sem sessões nesse intervalo."
+                }
+            } catch (e: Exception) {
+                txtError.text = "Erro a carregar horário: ${e.message}"
+            } finally {
+                progress.visibility = View.GONE
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        scope.cancel()
+    }
+}
