@@ -64,9 +64,8 @@ namespace SecManagement_API.Services
 
                 await transaction.CommitAsync();
 
-                // Se quiseres email real, mete aqui (tu já tinhas isso noutra versão)
-                // string link = $"http://localhost:5173/activate?email={dto.Email}&token={activationToken}";
-                // await _emailService.SendEmailAsync(dto.Email, "Ativar Conta", $"Clica: {link}");
+                string link = $"http://localhost:5173/activate?email={dto.Email}&token={activationToken}";
+                await _emailService.SendEmailAsync(dto.Email, "Ativar Conta", $"Clica: {link}");
 
                 return "Registo efetuado! Verifica o email para ativar (ou ativa via link).";
             }
@@ -171,12 +170,20 @@ namespace SecManagement_API.Services
 
             await _context.SaveChangesAsync();
 
-            // Se usares email real:
-            // string link = $"http://localhost:5173/reset-password?token={user.ResetToken}";
-            // await _emailService.SendEmailAsync(email, "Recuperação de Password", $"Clica: {link}");
+            var subject = "Recuperação de Password";
+            var body = $@"
+        <h2>Recuperação de Password</h2>
+        <p>Recebemos um pedido para alterar a tua password.</p>
+        <p><b>Código/Token:</b> <code>{user.ResetToken}</code></p>
+        <p>Este token expira em 30 minutos.</p>
+        <p>Se não foste tu, ignora este email.</p>";
+
+            await _emailService.SendEmailAsync(email, subject, body);
 
             return "Email de recuperação enviado com sucesso!";
         }
+
+
 
         public async Task<string> ResetPasswordAsync(ResetPasswordDto dto)
         {
@@ -192,6 +199,7 @@ namespace SecManagement_API.Services
             await _context.SaveChangesAsync();
             return "Password alterada com sucesso.";
         }
+
 
         public async Task<TwoFactorSetupDto> SetupTwoFactorAsync(int userId)
         {

@@ -135,15 +135,6 @@
                             android:backgroundTint="@color/inputDark"
                             android:text="Ver turmas deste curso"
                             android:textColor="@color/textPrimary" />
-
-                        <Button
-                            android:id="@+id/btnVerModulos"
-                            android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:layout_marginTop="10dp"
-                            android:backgroundTint="@color/inputDark"
-                            android:text="Ver módulos deste curso"
-                            android:textColor="@color/textPrimary" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

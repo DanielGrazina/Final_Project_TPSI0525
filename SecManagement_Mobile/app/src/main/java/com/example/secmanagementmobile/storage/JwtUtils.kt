@@ -4,43 +4,68 @@ import android.util.Base64
 import org.json.JSONObject
 
 object JwtUtils {
+    private fun payload(token: String): JSONObject? = try {
+        val parts = token.split(".")
+        val json = String(Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_WRAP))
+        JSONObject(json)
+    } catch (_: Exception) { null }
 
-    private fun payloadJson(token: String): JSONObject? {
-        return try {
-            val parts = token.split(".")
-            if (parts.size < 2) return null
+    private fun intClaim(p: org.json.JSONObject, key: String): Int? =
+        p.optString(key, "").toIntOrNull()
 
-            val payload = parts[1]
-                .replace('-', '+')
-                .replace('_', '/')
+    fun userId(token: String): Int? {
+        val p = payload(token) ?: return null
 
-            val decoded = String(Base64.decode(payload, Base64.DEFAULT))
-            JSONObject(decoded)
-        } catch (_: Exception) {
-            null
+        // ✅ .NET ClaimTypes.NameIdentifier vira esta key no JWT:
+        val candidates = listOf(
+            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
+            "nameid", "sub", "userId", "id"
+        )
+
+        for (k in candidates) {
+            val v = p.optString(k, "")
+            if (v.isNotBlank()) return v.toIntOrNull()
         }
+        return null
     }
 
-    fun getRole(token: String): String? {
-        val json = payloadJson(token) ?: return null
-        return when {
-            json.has("role") -> json.getString("role")
-            json.has("http://schemas.microsoft.com/ws/2008/06/identity/claims/role") ->
-                json.getString("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")
-            else -> null
-        }
+    fun formandoId(token: String): Int? {
+        val p = payload(token) ?: return null
+        return intClaim(p, "FormandoId")
     }
 
-    fun getUserId(token: String): Int? {
-        val json = payloadJson(token) ?: return null
-        val raw = when {
-            json.has("nameid") -> json.getString("nameid")
-            json.has("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier") ->
-                json.getString("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
-            json.has("sub") -> json.getString("sub")
-            else -> null
-        } ?: return null
+    fun formadorId(token: String): Int? {
+        val p = payload(token) ?: return null
+        return intClaim(p, "FormadorId")
+    }
 
-        return raw.toIntOrNull()
+    fun isFormandoFlag(token: String): Boolean {
+        val p = payload(token) ?: return false
+        return p.optString("IsFormando", "false").equals("true", ignoreCase = true)
+    }
+
+    fun isFormadorFlag(token: String): Boolean {
+        val p = payload(token) ?: return false
+        return p.optString("IsFormador", "false").equals("true", ignoreCase = true)
+    }
+
+
+    fun roles(token: String): List<String> {
+        val p = payload(token) ?: return emptyList()
+
+        // normalmente: "role" ou claim MS
+        val keys = listOf("role", "roles", "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")
+        for (k in keys) {
+            if (!p.has(k)) continue
+            val v = p.get(k)
+            return when (v) {
+                is String -> listOf(v)
+                else -> {
+                    val arr = p.optJSONArray(k) ?: return emptyList()
+                    (0 until arr.length()).mapNotNull { arr.optString(it) }
+                }
+            }
+        }
+        return emptyList()
     }
 }

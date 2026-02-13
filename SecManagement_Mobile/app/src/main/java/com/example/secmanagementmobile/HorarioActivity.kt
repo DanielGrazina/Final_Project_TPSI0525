@@ -136,7 +136,7 @@ class HorarioActivity : AppCompatActivity() {
                         )
                     }
                     "Formador" -> {
-                        val token = TokenStore(this@HorarioActivity).getToken()
+                        val token = TokenStore.get(this@HorarioActivity)
                         if (token.isNullOrEmpty()) {
                             txtError.text = "Precisas de login para ver formadores."
                             setEntidadeSpinner(emptyList(), emptyList())
@@ -180,19 +180,42 @@ class HorarioActivity : AppCompatActivity() {
         }
 
         // ISO UTC
-        val startIso = startDate.atStartOfDay().atOffset(ZoneOffset.UTC).toString()
-        val endIso = endDate.atTime(23, 59, 59).atOffset(ZoneOffset.UTC).toString()
+        // ISO UTC
+        val startStr = startDate.toString() // "yyyy-MM-dd"
+        val endStr = endDate.toString()
 
         val tipo = spTipo.selectedItem.toString()
 
         scope.launch {
             progress.visibility = View.VISIBLE
             try {
+                val token = TokenStore.get(this@HorarioActivity)
+                if (token.isNullOrEmpty()) {
+                    txtError.text = "Precisas de login para ver horários."
+                    return@launch
+                }
+                val auth = "Bearer $token"
+
                 val sessoes = withContext(Dispatchers.IO) {
                     when (tipo) {
-                        "Turma" -> ApiClient.api.getHorarioTurma(id, startIso, endIso)
-                        "Formador" -> ApiClient.api.getHorarioFormador(id, startIso, endIso)
-                        else -> ApiClient.api.getHorarioSala(id, startIso, endIso)
+                        "Turma" -> ApiClient.api.getHorarioTurma(
+                            bearer = auth,
+                            turmaId = id,
+                            start = startStr,
+                            end = endStr
+                        )
+                        "Formador" -> ApiClient.api.getHorarioFormador(
+                            bearer = auth,
+                            id = id,
+                            start = startStr,
+                            end = endStr
+                        )
+                        else -> ApiClient.api.getHorarioSala(
+                            bearer = auth,
+                            salaId = id,
+                            start = startStr,
+                            end = endStr
+                        )
                     }
                 }
 
@@ -207,6 +230,7 @@ class HorarioActivity : AppCompatActivity() {
                 progress.visibility = View.GONE
             }
         }
+
     }
 
     override fun onDestroy() {

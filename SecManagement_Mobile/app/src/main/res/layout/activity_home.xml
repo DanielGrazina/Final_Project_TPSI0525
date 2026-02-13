@@ -76,7 +76,7 @@
                     android:paddingRight="16dp"/>
             </LinearLayout>
 
-            <!-- Card “Resumo” -->
+            <!-- Card “Atalhos” -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -107,6 +107,7 @@
 
                     <!-- Grid de atalhos (2 colunas) -->
                     <GridLayout
+                        android:id="@+id/gridAtalhos"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
@@ -273,7 +274,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- (Opcional) Próximas sessões -->
+            <!-- Próximas sessões -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -294,14 +295,30 @@
                         android:textSize="16sp"
                         android:textColor="@color/textPrimary"/>
 
-                    <TextView
-                        android:id="@+id/txtNextHint"
+                    <ProgressBar
+                        android:id="@+id/progressProximas"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="(vamos ligar isto ao horário a seguir)"
+                        android:visibility="gone"
+                        android:layout_marginTop="10dp" />
+
+                    <TextView
+                        android:id="@+id/txtProximasEmpty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Sem sessões a mostrar."
                         android:textSize="13sp"
-                        android:textColor="@color/textSecondary"
-                        android:layout_marginTop="4dp"/>
+                        android:visibility="gone"
+                        android:layout_marginTop="10dp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvProximas"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp" />
+
+
+                    <!-- Se já tens o recycler/empty/progress aqui no teu projeto, mantém o teu -->
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
