@@ -9,6 +9,8 @@ namespace SecManagement_API.Models
         [Required]
         public string Nome { get; set; } = string.Empty;
 
+        public string NomeNormalized { get; set; } = string.Empty;
+
         public int CargaHoraria { get; set; }
         public string Nivel { get; set; } = string.Empty;
 

@@ -8,6 +8,8 @@ namespace SecManagement_API.Models
 
         [Required]
         public string Nome { get; set; } = string.Empty; // Ex: TESP Programação
+        public string NomeNormalized { get; set; } = string.Empty;
+
 
         public string NivelCurso { get; set; } = string.Empty; // Ex: 5, 4
 

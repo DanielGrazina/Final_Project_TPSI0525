@@ -49,9 +49,19 @@ namespace SecManagement_API.Services
                 throw new ArgumentException($"Tipo de sala inválido: {dto.Tipo}. Aceites: Teorica, Informatica, Oficina, Reuniao");
             }
 
+            var nome = (dto.Nome ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(nome))
+                throw new ArgumentException("O nome da sala é obrigatório.");
+
+            var nomeNorm = nome.ToLowerInvariant();
+            bool nomeExiste = await _context.Salas.AnyAsync(s => s.NomeNormalized == nomeNorm);
+            if (nomeExiste)
+                throw new Exception("Já existe uma sala com esse nome.");
+
             var sala = new Sala
             {
-                Nome = dto.Nome,
+                Nome = nome,
+                NomeNormalized = nomeNorm,
                 Capacidade = dto.Capacidade,
                 Tipo = tipoEnum
             };
@@ -78,7 +88,18 @@ namespace SecManagement_API.Services
                 throw new ArgumentException($"Tipo de sala inválido: {dto.Tipo}");
             }
 
-            sala.Nome = dto.Nome;
+
+            var nome = (dto.Nome ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(nome))
+                throw new ArgumentException("O nome da sala é obrigatório.");
+
+            var nomeNorm = nome.ToLowerInvariant();
+            bool nomeExiste = await _context.Salas.AnyAsync(s => s.Id != id && s.NomeNormalized == nomeNorm);
+            if (nomeExiste)
+                throw new Exception("Já existe uma sala com esse nome.");
+
+            sala.Nome = nome;
+            sala.NomeNormalized = nomeNorm;
             sala.Capacidade = dto.Capacidade;
             sala.Tipo = tipoEnum;
 

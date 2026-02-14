@@ -687,6 +687,13 @@ export default function Profiles() {
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({ nome: "", telefone: "", nif: "", morada: "", cc: "" });
 
+  // Definir password (útil para contas criadas via OAuth, para conseguirem entrar na app mobile)
+  const [pwdNew, setPwdNew] = useState("");
+  const [pwdConfirm, setPwdConfirm] = useState("");
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [pwdError, setPwdError] = useState("");
+  const [pwdInfo, setPwdInfo] = useState("");
+
   const [uploading, setUploading] = useState(false);
   const [fileToUpload, setFileToUpload] = useState(null);
 
@@ -807,6 +814,52 @@ export default function Profiles() {
 
     setFileToUpload(null);
     setAvatarFile(null);
+
+    // reset UI da password quando muda o perfil selecionado
+    setPwdNew("");
+    setPwdConfirm("");
+    setPwdError("");
+    setPwdInfo("");
+  }
+
+  async function setMyPassword(e) {
+    e.preventDefault();
+
+    setPwdError("");
+    setPwdInfo("");
+
+    const isSelf = Number(selected?.data?.userId) === Number(myUserId);
+    if (!isSelf) {
+      setPwdError("Só podes definir a tua própria password.");
+      return;
+    }
+
+    const a = (pwdNew ?? "").trim();
+    const b = (pwdConfirm ?? "").trim();
+
+    if (a.length < 6) {
+      setPwdError("A password deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    if (a !== b) {
+      setPwdError("As passwords não coincidem.");
+      return;
+    }
+
+    setPwdSaving(true);
+    try {
+      const res = await api.post("/Auth/set-password", {
+        newPassword: a,
+        confirmPassword: b,
+      });
+      setPwdInfo(res?.data?.message || "Password definida com sucesso.");
+      setPwdNew("");
+      setPwdConfirm("");
+    } catch (err) {
+      setPwdError(extractError(err, "Falha ao definir password."));
+    } finally {
+      setPwdSaving(false);
+    }
   }
 
   async function refreshSelected() {
@@ -1431,6 +1484,64 @@ export default function Profiles() {
                   )}
                 </form>
               </div>
+
+              {Number(selected?.data?.userId) === Number(myUserId) && (
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                  <div className="text-sm font-black text-gray-900 dark:text-gray-100">Definir password</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    Se a tua conta foi criada com Google/Facebook, define uma password para poderes entrar com email/password (ex: app mobile).
+                  </div>
+
+                  {pwdError && (
+                    <div className="mt-3 rounded-lg border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-xs font-semibold dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+                      {pwdError}
+                    </div>
+                  )}
+                  {pwdInfo && (
+                    <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 px-3 py-2 text-xs font-semibold dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-200">
+                      {pwdInfo}
+                    </div>
+                  )}
+
+                  <form onSubmit={setMyPassword} className="mt-4 space-y-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Nova password</label>
+                      <input
+                        type="password"
+                        value={pwdNew}
+                        onChange={(e) => setPwdNew(e.target.value)}
+                        disabled={pwdSaving}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-60"
+                        placeholder="Mínimo 8 caracteres"
+                        minLength={8}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Confirmar password</label>
+                      <input
+                        type="password"
+                        value={pwdConfirm}
+                        onChange={(e) => setPwdConfirm(e.target.value)}
+                        disabled={pwdSaving}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-60"
+                        placeholder="Repetir password"
+                        minLength={8}
+                        required
+                      />
+                    </div>
+
+                    <PrimaryBtn tone="blue" type="submit" disabled={pwdSaving} className="w-full">
+                      {pwdSaving ? "A guardar..." : "Guardar password"}
+                    </PrimaryBtn>
+
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                      Nota: se já tens password definida, usa "Esqueci-me da password" para alterar.
+                    </div>
+                  </form>
+                </div>
+              )}
 
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
                 <div className="text-sm font-black text-gray-900 dark:text-gray-100">PDF</div>

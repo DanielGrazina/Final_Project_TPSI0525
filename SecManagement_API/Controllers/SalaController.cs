@@ -38,8 +38,15 @@ namespace SecManagement_API.Controllers
         [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<SalaDto>> PostSala(CreateSalaDto dto)
         {
-            var novaSala = await _salaService.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetSala), new { id = novaSala.Id }, novaSala);
+            try
+            {
+                var novaSala = await _salaService.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetSala), new { id = novaSala.Id }, novaSala);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // PUT: api/Salas/5
@@ -47,9 +54,16 @@ namespace SecManagement_API.Controllers
         [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<IActionResult> PutSala(int id, CreateSalaDto dto)
         {
-            var sucesso = await _salaService.UpdateAsync(id, dto);
-            if (!sucesso) return NotFound();
-            return NoContent();
+            try
+            {
+                var sucesso = await _salaService.UpdateAsync(id, dto);
+                if (!sucesso) return NotFound();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // DELETE: api/Salas/5

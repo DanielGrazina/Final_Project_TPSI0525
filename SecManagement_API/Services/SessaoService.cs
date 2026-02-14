@@ -17,8 +17,12 @@ namespace SecManagement_API.Services
 
         public async Task<SessaoDto> AgendarSessaoAsync(CreateSessaoDto dto)
         {
+            // Normalizar horários para UTC (consistência)
+            var inicioUtc = dto.HorarioInicio.ToUniversalTime();
+            var fimUtc = dto.HorarioFim.ToUniversalTime();
+
             // Validações Básicas de Data
-            if (dto.HorarioFim <= dto.HorarioInicio)
+            if (fimUtc <= inicioUtc)
                 throw new Exception("A hora de fim tem de ser superior à de início.");
 
             // Carregar dados do Módulo/Turma para saber quem é o Formador
@@ -31,7 +35,7 @@ namespace SecManagement_API.Services
             if (turmaModulo == null) throw new Exception("Módulo da turma não encontrado.");
             if (turmaModulo.Modulo == null) throw new Exception("Erro de integridade: Módulo não existe.");
 
-            double horasNovaSessao = (dto.HorarioFim - dto.HorarioInicio).TotalHours;
+            double horasNovaSessao = (fimUtc - inicioUtc).TotalHours;
 
             var sessoesExistentes = await _context.Sessoes
                 .Where(s => s.TurmaModuloId == dto.TurmaModuloId)
@@ -47,33 +51,55 @@ namespace SecManagement_API.Services
 
             int formadorId = turmaModulo.FormadorId;
 
-            // VERIFICAR CONFLITO DE SALA
+            // 1) CONFLITOS DE INDISPONIBILIDADE (bloqueios manuais)
             bool salaBloqueada = await _context.Disponibilidades
-                    .AnyAsync(d => d.SalaId == dto.SalaId
+                .AnyAsync(d => d.SalaId == dto.SalaId
                     && d.Disponivel == false
-                    && d.DataInicio < dto.HorarioFim
-                    && d.DataFim > dto.HorarioInicio);
+                    && d.DataInicio < fimUtc
+                    && d.DataFim > inicioUtc);
 
             if (salaBloqueada)
                 throw new Exception("A Sala está marcada como indisponível (Manutenção/Outro) neste horário.");
 
-            // VERIFICAR CONFLITO DE FORMADOR
             bool formadorBloqueado = await _context.Disponibilidades
-                    .AnyAsync(d => d.FormadorId == formadorId
+                .AnyAsync(d => d.FormadorId == formadorId
                     && d.Disponivel == false
-                    && d.DataInicio < dto.HorarioFim
-                    && d.DataFim > dto.HorarioInicio);
+                    && d.DataInicio < fimUtc
+                    && d.DataFim > inicioUtc);
 
             if (formadorBloqueado)
                 throw new Exception($"O formador {turmaModulo.Formador?.User?.Nome} está indisponível (Férias/Ausência) neste horário.");
+
+            // 2) CONFLITOS DE OVERLAP COM OUTRAS SESSÕES (isto é o bug!)
+            bool salaOcupada = await _context.Sessoes.AnyAsync(s =>
+                s.SalaId == dto.SalaId &&
+                s.HorarioInicio < fimUtc &&
+                s.HorarioFim > inicioUtc
+            );
+
+            if (salaOcupada)
+                throw new Exception("Não é possível agendar: a sala já tem uma sessão marcada nesse horário.");
+
+            // Como Sessao não tem FormadorId direto, vamos buscar pelo TurmaModulo
+            bool formadorOcupado = await (
+                from s in _context.Sessoes
+                join tm in _context.TurmaModulos on s.TurmaModuloId equals tm.Id
+                where tm.FormadorId == formadorId
+                      && s.HorarioInicio < fimUtc
+                      && s.HorarioFim > inicioUtc
+                select s.Id
+            ).AnyAsync();
+
+            if (formadorOcupado)
+                throw new Exception($"Não é possível agendar: o formador {turmaModulo.Formador?.User?.Nome} já tem sessão nesse horário.");
 
             // Criar Sessão
             var sessao = new Sessao
             {
                 TurmaModuloId = dto.TurmaModuloId,
                 SalaId = dto.SalaId,
-                HorarioInicio = dto.HorarioInicio.ToUniversalTime(),
-                HorarioFim = dto.HorarioFim.ToUniversalTime()
+                HorarioInicio = inicioUtc,
+                HorarioFim = fimUtc
             };
 
             _context.Sessoes.Add(sessao);
@@ -86,13 +112,19 @@ namespace SecManagement_API.Services
 
         public async Task<IEnumerable<SessaoDto>> GetHorarioTurmaAsync(int turmaId, DateTime start, DateTime end)
         {
+            var startUtc = start.ToUniversalTime();
+            var endUtc = end.ToUniversalTime();
+
             var sessoes = await _context.Sessoes
                 .Include(s => s.Sala)
                 .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Modulo)
-                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Formador).ThenInclude(f => f.User)
                 .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Turma)
-                .Where(s => s.TurmaModulo.TurmaId == turmaId &&
-                            s.HorarioInicio >= start && s.HorarioInicio <= end)
+                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Formador).ThenInclude(f => f.User)
+                .Where(s =>
+                    s.TurmaModulo.TurmaId == turmaId &&
+                    s.HorarioInicio < endUtc &&
+                    s.HorarioFim > startUtc
+                )
                 .OrderBy(s => s.HorarioInicio)
                 .ToListAsync();
 
@@ -101,13 +133,19 @@ namespace SecManagement_API.Services
 
         public async Task<IEnumerable<SessaoDto>> GetHorarioFormadorAsync(int formadorId, DateTime start, DateTime end)
         {
+            var startUtc = start.ToUniversalTime();
+            var endUtc = end.ToUniversalTime();
+
             var sessoes = await _context.Sessoes
                 .Include(s => s.Sala)
                 .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Modulo)
-                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Formador).ThenInclude(f => f.User)
                 .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Turma)
-                .Where(s => s.TurmaModulo.FormadorId == formadorId &&
-                            s.HorarioInicio >= start && s.HorarioInicio <= end)
+                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Formador).ThenInclude(f => f.User)
+                .Where(s =>
+                    s.TurmaModulo.FormadorId == formadorId &&
+                    s.HorarioInicio < endUtc &&
+                    s.HorarioFim > startUtc
+                )
                 .OrderBy(s => s.HorarioInicio)
                 .ToListAsync();
 
@@ -258,17 +296,25 @@ namespace SecManagement_API.Services
 
         public async Task<IEnumerable<SessaoDto>> GetHorarioSalaAsync(int salaId, DateTime start, DateTime end)
         {
+            var startUtc = start.ToUniversalTime();
+            var endUtc = end.ToUniversalTime();
+
             var sessoes = await _context.Sessoes
                 .Include(s => s.Sala)
                 .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Modulo)
-                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Formador).ThenInclude(f => f.User)
                 .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Turma)
-                .Where(s => s.SalaId == salaId &&
-                            s.HorarioInicio >= start && s.HorarioInicio <= end)
+                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Formador).ThenInclude(f => f.User)
+                .Where(s =>
+                    s.SalaId == salaId &&
+                    s.HorarioInicio < endUtc &&
+                    s.HorarioFim > startUtc
+                )
                 .OrderBy(s => s.HorarioInicio)
                 .ToListAsync();
 
             return sessoes.Select(s => MapToDto(s, s.TurmaModulo, s.Sala));
         }
+
+
     }
 }

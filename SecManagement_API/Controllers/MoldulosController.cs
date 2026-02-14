@@ -38,8 +38,15 @@ namespace SecManagement_API.Controllers
         [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<ModuloDto>> PostModulo(CreateModuloDto dto)
         {
-            var novoModulo = await _service.CreateModuloAsync(dto);
-            return CreatedAtAction(nameof(GetModulo), new { id = novoModulo.Id }, novoModulo);
+            try
+            {
+                var novoModulo = await _service.CreateModuloAsync(dto);
+                return CreatedAtAction(nameof(GetModulo), new { id = novoModulo.Id }, novoModulo);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // PUT: api/Modulos/5

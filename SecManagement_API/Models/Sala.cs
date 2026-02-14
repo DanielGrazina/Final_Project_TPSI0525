@@ -7,6 +7,8 @@ namespace SecManagement_API.Models
         public int Id { get; set; }
         public string Nome { get; set; } = string.Empty;
 
+        public string NomeNormalized { get; set; } = string.Empty;
+
         public TipoSala Tipo { get; set; }
 
         public int Capacidade { get; set; }

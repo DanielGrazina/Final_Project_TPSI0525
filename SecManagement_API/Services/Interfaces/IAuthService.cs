@@ -15,6 +15,10 @@ namespace SecManagement_API.Services.Interfaces
         Task<TwoFactorRecoveryDto> ConfirmTwoFactorAsync(int userId, string code);
         Task<string> ActivateAccountAsync(string email, string token);
 
+        // Contas criadas por OAuth (Google/Facebook) não têm password.
+        // Este método permite definir uma password para entrar com email/password (ex: app mobile).
+        Task<string> SetPasswordAsync(int userId, SetPasswordDto dto);
+
 
 
         Task<AuthResponseDto> SocialLoginAsync(

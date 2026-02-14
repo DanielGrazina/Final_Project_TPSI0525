@@ -66,27 +66,34 @@ CREATE TABLE "Formandos" (
 
 CREATE TABLE "Areas" (
     "Id" SERIAL PRIMARY KEY,
-    "Nome" VARCHAR(100) NOT NULL
+    "Nome" VARCHAR(100) NOT NULL,
+    "NomeNormalized" VARCHAR(100) NOT NULL,
+    UNIQUE("NomeNormalized")
 );
-
 CREATE TABLE "Cursos" (
     "Id" SERIAL PRIMARY KEY,
     "Nome" VARCHAR(150) NOT NULL,
+    "NomeNormalized" VARCHAR(150) NOT NULL,
+    UNIQUE("NomeNormalized"),
+
     "AreaId" INT REFERENCES "Areas"("Id"),
-    "NivelCurso" VARCHAR(50),
-    "Local" VARCHAR(100)
+    "NivelCurso" VARCHAR(50)
 );
+
 
 CREATE TABLE "Modulos" (
     "Id" SERIAL PRIMARY KEY,
     "Nome" VARCHAR(150) NOT NULL,
+    "NomeNormalized" VARCHAR(150) NOT NULL,
     "CargaHoraria" INT NOT NULL,
-    "Nivel" VARCHAR(50)
+    "Nivel" VARCHAR(50),
+    UNIQUE("NomeNormalized")
 );
-
 CREATE TABLE "Turmas" (
     "Id" SERIAL PRIMARY KEY,
     "Nome" VARCHAR(100) NOT NULL,
+    "NomeNormalized" VARCHAR(100) NOT NULL,
+    UNIQUE("NomeNormalized"),
     "CursoId" INT REFERENCES "Cursos"("Id"),
     "CoordenadorId" INT REFERENCES "Formadores"("Id") ON DELETE SET NULL,
     "DataInicio" TIMESTAMP,
@@ -132,7 +139,9 @@ CREATE TABLE "Avaliacoes" (
 
 CREATE TABLE "Salas" (
     "Id" SERIAL PRIMARY KEY,
-    "Nome" VARCHAR(50),
+    "Nome" VARCHAR(50) NOT NULL,
+    "NomeNormalized" VARCHAR(50) NOT NULL,
+    UNIQUE("NomeNormalized"),
     
     "Tipo" VARCHAR(50)
     CHECK ("Tipo" IN ('Teorica', 'Informatica', 'Oficina', 'Reuniao')),
