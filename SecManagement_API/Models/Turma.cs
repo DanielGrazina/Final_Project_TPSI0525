@@ -10,6 +10,8 @@ namespace SecManagement_API.Models
         [Required]
         public string Nome { get; set; } = string.Empty; // Ex: "TPSI-PL-1025"
 
+        public string NomeNormalized { get; set; } = string.Empty;
+
         public DateTime DataInicio { get; set; }
         public DateTime DataFim { get; set; }
         public string Local { get; set; } = string.Empty; // Ex: "Edifício A"

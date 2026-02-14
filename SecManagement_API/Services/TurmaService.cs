@@ -53,9 +53,20 @@ namespace SecManagement_API.Services
                     throw new Exception("Coordenador (Formador) não encontrado.");
             }
 
+
+            var nome = (dto.Nome ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(nome))
+                throw new Exception("O nome da turma é obrigatório.");
+
+            var nomeNorm = nome.ToLowerInvariant();
+            bool existe = await _context.Turmas.AnyAsync(t => t.NomeNormalized == nomeNorm);
+            if (existe)
+                throw new Exception("Já existe uma turma com esse nome.");
+
             var turma = new Turma
             {
-                Nome = dto.Nome,
+                Nome = nome,
+                NomeNormalized = nomeNorm,
                 CursoId = dto.CursoId,
                 CoordenadorId = dto.CoordenadorId, // Novo campo
                 DataInicio = dto.DataInicio,

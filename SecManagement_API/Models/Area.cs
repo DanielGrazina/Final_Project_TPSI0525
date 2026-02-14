@@ -9,6 +9,8 @@ namespace SecManagement_API.Models
         [Required]
         public string Nome { get; set; } = string.Empty; // Ex: Informática, Mecatrónica
 
+        public string NomeNormalized { get; set; } = string.Empty;
+
         public ICollection<Curso> Cursos { get; set; } = new List<Curso>();
     }
 }

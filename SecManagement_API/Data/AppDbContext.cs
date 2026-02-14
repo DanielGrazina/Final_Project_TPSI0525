@@ -52,6 +52,14 @@ namespace SecManagement_API.Data
             modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
             modelBuilder.Entity<Formando>().HasIndex(f => f.NumeroAluno).IsUnique();
 
+            // Unicidade (case-insensitive) para nomes base
+            modelBuilder.Entity<Area>().HasIndex(a => a.NomeNormalized).IsUnique();
+            modelBuilder.Entity<Sala>().HasIndex(s => s.NomeNormalized).IsUnique();
+            modelBuilder.Entity<Turma>().HasIndex(t => t.NomeNormalized).IsUnique();
+            modelBuilder.Entity<Modulo>().HasIndex(m => m.NomeNormalized).IsUnique();
+            modelBuilder.Entity<Curso>().HasIndex(c => c.NomeNormalized).IsUnique();
+
+
             modelBuilder.Entity<Formador>()
                 .HasOne(f => f.User)
                 .WithOne(u => u.FormadorProfile)

@@ -81,6 +81,25 @@ namespace SecManagement_API.Controllers
             }
         }
 
+        // POST: api/Auth/set-password
+        // Permite a contas OAuth (Google/Facebook) definirem uma password para conseguir
+        // entrar com email/password (ex: app mobile).
+        [Authorize]
+        [HttpPost("set-password")]
+        public async Task<IActionResult> SetPassword([FromBody] SetPasswordDto request)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var result = await _authService.SetPasswordAsync(userId, request);
+                return Ok(new { message = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         // POST: api/Auth/activate
         [HttpPost("activate")]
         public async Task<IActionResult> Activate([FromBody] ActivateDto request)

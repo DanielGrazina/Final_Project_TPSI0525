@@ -58,7 +58,7 @@ namespace SecManagement_API.Data
 
                     u = new User
                     {
-                        Nome = nome,
+                        Nome = nome.Trim(),
                         Email = email,
                         PasswordHash = passwordHash,
                         Role = role,
@@ -66,10 +66,12 @@ namespace SecManagement_API.Data
                         IsTwoFactorEnabled = false,
                         CreatedAt = DateTime.UtcNow
                     };
+
                     context.Users.Add(u);
                     context.SaveChanges();
                     return u;
                 }
+
 
                 Formador EnsureFormador(User user, string areaEsp, string corHex)
                 {
@@ -105,39 +107,50 @@ namespace SecManagement_API.Data
 
                 Area EnsureArea(string nome)
                 {
-                    var a = context.Areas.FirstOrDefault(x => x.Nome == nome);
+                    var nomeTrim = (nome ?? string.Empty).Trim();
+                    var nomeNorm = nomeTrim.ToLowerInvariant();
+                    var a = context.Areas.FirstOrDefault(x => x.NomeNormalized == nomeNorm);
                     if (a != null) return a;
 
-                    a = new Area { Nome = nome };
+                    a = new Area { Nome = nomeTrim, NomeNormalized = nomeNorm };
                     context.Areas.Add(a);
                     context.SaveChanges();
                     return a;
                 }
 
-                Curso EnsureCurso(string nome, string nivel, Area area)
+                Curso EnsureCurso(string nome, string nivelCurso, int areaId)
                 {
-                    var c = context.Cursos.FirstOrDefault(x => x.Nome == nome);
+                    var nomeTrim = (nome ?? "").Trim();
+                    var nomeNorm = nomeTrim.ToLowerInvariant();
+
+                    var c = context.Cursos.FirstOrDefault(x => x.NomeNormalized == nomeNorm);
                     if (c != null) return c;
 
                     c = new Curso
                     {
-                        Nome = nome,
-                        NivelCurso = nivel,
-                        AreaId = area.Id
+                        Nome = nomeTrim,
+                        NomeNormalized = nomeNorm,
+                        NivelCurso = nivelCurso,
+                        AreaId = areaId
                     };
+
                     context.Cursos.Add(c);
                     context.SaveChanges();
                     return c;
                 }
 
+
                 Modulo EnsureModulo(string nome, int ch, string nivel)
                 {
-                    var m = context.Modulos.FirstOrDefault(x => x.Nome == nome);
+                    var nomeTrim = (nome ?? string.Empty).Trim();
+                    var nomeNorm = nomeTrim.ToLowerInvariant();
+                    var m = context.Modulos.FirstOrDefault(x => x.NomeNormalized == nomeNorm);
                     if (m != null) return m;
 
                     m = new Modulo
                     {
-                        Nome = nome,
+                        Nome = nomeTrim,
+                        NomeNormalized = nomeNorm,
                         CargaHoraria = ch,
                         Nivel = nivel
                     };
@@ -148,12 +161,15 @@ namespace SecManagement_API.Data
 
                 Sala EnsureSala(string nome, TipoSala tipo, int capacidade)
                 {
-                    var s = context.Salas.FirstOrDefault(x => x.Nome == nome);
+                    var nomeTrim = (nome ?? string.Empty).Trim();
+                    var nomeNorm = nomeTrim.ToLowerInvariant();
+                    var s = context.Salas.FirstOrDefault(x => x.NomeNormalized == nomeNorm);
                     if (s != null) return s;
 
                     s = new Sala
                     {
-                        Nome = nome,
+                        Nome = nomeTrim,
+                        NomeNormalized = nomeNorm,
                         Tipo = tipo,
                         Capacidade = capacidade
                     };
@@ -172,12 +188,16 @@ namespace SecManagement_API.Data
                     string estado
                 )
                 {
-                    var t = context.Turmas.FirstOrDefault(x => x.Nome == nome);
+                    var nomeTrim = (nome ?? string.Empty).Trim();
+
+                    var nomeNorm = nomeTrim.ToLowerInvariant();
+                    var t = context.Turmas.FirstOrDefault(x => x.NomeNormalized == nomeNorm);
                     if (t != null) return t;
 
                     t = new Turma
                     {
-                        Nome = nome,
+                        Nome = nomeTrim,
+                        NomeNormalized = nomeNorm,
                         CursoId = curso.Id,
                         CoordenadorId = coordenador?.Id,
                         DataInicio = Utc(dataInicioUtc),
@@ -387,7 +407,7 @@ namespace SecManagement_API.Data
                     for (int i = 0; i < lista.Length; i++)
                     {
                         var nivel = niveis[(i + rng.Next(0, 2)) % 2];
-                        cursos.Add(EnsureCurso(lista[i], nivel, area));
+                        cursos.Add(EnsureCurso(lista[i], nivel, area.Id));
                     }
                 }
 

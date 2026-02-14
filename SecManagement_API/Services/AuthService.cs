@@ -91,6 +91,10 @@ namespace SecManagement_API.Services
                 throw new Exception("Conta inativa. Verifique o seu email.");
 
             // 2. Verificar Password
+            // Se o user foi criado por OAuth (Google/Facebook), pode não ter password definida.
+            if (string.IsNullOrWhiteSpace(user.PasswordHash))
+                throw new Exception("Esta conta foi criada via Google/Facebook e ainda não tem password. Defina uma password no website para entrar na app mobile.");
+
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 throw new Exception("Password incorreta.");
 
@@ -360,6 +364,30 @@ namespace SecManagement_API.Services
 
             string token = CreateToken(user);
             return new AuthResponseDto { Token = token, Message = "Login Social Efetuado" };
+        }
+
+        public async Task<string> SetPasswordAsync(int userId, SetPasswordDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) throw new Exception("Utilizador não encontrado.");
+
+            // Por segurança: se já existe password, usa o fluxo de 'forgot-password' / 'reset-password'.
+            if (!string.IsNullOrWhiteSpace(user.PasswordHash))
+                throw new Exception("Este utilizador já tem password definida. Use a recuperação de password se precisar de alterar.");
+
+            var pwd = (dto.NewPassword ?? string.Empty).Trim();
+            var confirm = (dto.ConfirmPassword ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(pwd) || pwd.Length < 6)
+                throw new Exception("A password deve ter pelo menos 6 caracteres.");
+
+            if (pwd != confirm)
+                throw new Exception("As passwords não coincidem.");
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(pwd);
+            await _context.SaveChangesAsync();
+
+            return "Password definida com sucesso.";
         }
 
         private string CreateToken(User user)

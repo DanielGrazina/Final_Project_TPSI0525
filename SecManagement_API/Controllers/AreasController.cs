@@ -27,8 +27,15 @@ namespace SecManagement_API.Controllers
         [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<AreaDto>> PostArea(CreateAreaDto dto)
         {
-            var area = await _service.CreateAreaAsync(dto);
-            return Ok(area);
+            try
+            {
+                var area = await _service.CreateAreaAsync(dto);
+                return Ok(area);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]

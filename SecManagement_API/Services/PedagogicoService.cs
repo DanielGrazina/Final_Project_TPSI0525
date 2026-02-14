@@ -25,7 +25,16 @@ namespace SecManagement_API.Services
 
         public async Task<AreaDto> CreateAreaAsync(CreateAreaDto dto)
         {
-            var area = new Area { Nome = dto.Nome };
+            var nome = (dto.Nome ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(nome))
+                throw new Exception("O nome da área é obrigatório.");
+
+            var nomeNorm = nome.ToLowerInvariant();
+            bool existe = await _context.Areas.AnyAsync(a => a.NomeNormalized == nomeNorm);
+            if (existe)
+                throw new Exception("Já existe uma área com esse nome.");
+
+            var area = new Area { Nome = nome, NomeNormalized = nomeNorm };
             _context.Areas.Add(area);
             await _context.SaveChangesAsync();
 
@@ -45,7 +54,17 @@ namespace SecManagement_API.Services
             var area = await _context.Areas.FindAsync(id);
             if (area == null) throw new Exception("Área não encontrada.");
 
-            area.Nome = dto.Nome;
+            var nome = (dto.Nome ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(nome))
+                throw new Exception("O nome da área é obrigatório.");
+
+            var nomeNorm = nome.ToLowerInvariant();
+            bool existe = await _context.Areas.AnyAsync(a => a.Id != id && a.NomeNormalized == nomeNorm);
+            if (existe)
+                throw new Exception("Já existe uma área com esse nome.");
+
+            area.Nome = nome;
+            area.NomeNormalized = nomeNorm;
             await _context.SaveChangesAsync();
 
             return new AreaDto { Id = area.Id, Nome = area.Nome };
@@ -104,9 +123,19 @@ namespace SecManagement_API.Services
             if (!await _context.Areas.AnyAsync(a => a.Id == dto.AreaId))
                 throw new Exception("A Área indicada não existe.");
 
+            var nome = (dto.Nome ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(nome))
+                throw new Exception("O nome do curso é obrigatório.");
+
+            var nomeNorm = nome.ToLowerInvariant();
+            bool existe = await _context.Cursos.AnyAsync(c => c.NomeNormalized == nomeNorm);
+            if (existe)
+                throw new Exception("Já existe um curso com esse nome.");
+
             var curso = new Curso
             {
-                Nome = dto.Nome,
+                Nome = nome,
+                NomeNormalized = nomeNorm,
                 NivelCurso = dto.NivelCurso,
                 AreaId = dto.AreaId
             };
@@ -126,6 +155,7 @@ namespace SecManagement_API.Services
             };
         }
 
+
         public async Task<CursoDto> UpdateCursoAsync(int id, CreateCursoDto dto)
         {
             var curso = await _context.Cursos.Include(c => c.Area).FirstOrDefaultAsync(c => c.Id == id);
@@ -134,7 +164,17 @@ namespace SecManagement_API.Services
             if (!await _context.Areas.AnyAsync(a => a.Id == dto.AreaId))
                 throw new Exception("A Área indicada não existe.");
 
-            curso.Nome = dto.Nome;
+            var nome = (dto.Nome ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(nome))
+                throw new Exception("O nome do curso é obrigatório.");
+
+            var nomeNorm = nome.ToLowerInvariant();
+            bool existe = await _context.Cursos.AnyAsync(c => c.Id != id && c.NomeNormalized == nomeNorm);
+            if (existe)
+                throw new Exception("Já existe um curso com esse nome.");
+
+            curso.Nome = nome;
+            curso.NomeNormalized = nomeNorm;
             curso.NivelCurso = dto.NivelCurso;
             curso.AreaId = dto.AreaId;
 
@@ -151,6 +191,7 @@ namespace SecManagement_API.Services
                 AreaNome = area?.Nome ?? ""
             };
         }
+
 
         public async Task<bool> DeleteCursoAsync(int id)
         {
@@ -198,9 +239,19 @@ namespace SecManagement_API.Services
         {
             var nivel = string.IsNullOrWhiteSpace(dto.Nivel) ? "1" : dto.Nivel.Trim();
 
+            var nome = (dto.Nome ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(nome))
+                throw new Exception("O nome do módulo é obrigatório.");
+
+            var nomeNorm = nome.ToLowerInvariant();
+            bool existe = await _context.Modulos.AnyAsync(m => m.NomeNormalized == nomeNorm);
+            if (existe)
+                throw new Exception("Já existe um módulo com esse nome.");
+
             var modulo = new Modulo
             {
-                Nome = dto.Nome,
+                Nome = nome,
+                NomeNormalized = nomeNorm,
                 CargaHoraria = dto.CargaHoraria,
                 Nivel = nivel
             };
@@ -222,7 +273,17 @@ namespace SecManagement_API.Services
             var modulo = await _context.Modulos.FindAsync(id);
             if (modulo == null) throw new Exception("Módulo não encontrado.");
 
-            modulo.Nome = dto.Nome;
+            var nome = (dto.Nome ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(nome))
+                throw new Exception("O nome do módulo é obrigatório.");
+
+            var nomeNorm = nome.ToLowerInvariant();
+            bool existe = await _context.Modulos.AnyAsync(m => m.Id != id && m.NomeNormalized == nomeNorm);
+            if (existe)
+                throw new Exception("Já existe um módulo com esse nome.");
+
+            modulo.Nome = nome;
+            modulo.NomeNormalized = nomeNorm;
             modulo.CargaHoraria = dto.CargaHoraria;
 
             // só altera o nível se vier preenchido (para não “apagar” sem querer)
