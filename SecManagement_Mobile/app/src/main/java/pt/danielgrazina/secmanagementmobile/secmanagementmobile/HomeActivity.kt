@@ -83,6 +83,11 @@ class HomeActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        findViewById<MaterialCardView>(R.id.cardAvaliacoes).setOnClickListener {
+            startActivity(Intent(this, AvaliacoesActivity::class.java))
+        }
+
+
 
         applyRoleUI()
     }
@@ -116,6 +121,7 @@ class HomeActivity : AppCompatActivity() {
         val cardSalas = findViewById<MaterialCardView>(R.id.cardSalas)
         val cardHorario = findViewById<MaterialCardView>(R.id.cardHorario)
         val cardPerfil = findViewById<MaterialCardView>(R.id.cardPerfil)
+        val cardAvaliacoes = findViewById<MaterialCardView>(R.id.cardAvaliacoes)
 
         // default: tudo visível
         cardCursos.visibility = View.VISIBLE
@@ -126,23 +132,27 @@ class HomeActivity : AppCompatActivity() {
 
         when {
             isStaff -> {
-                // vê tudo
+                // staff não deve ver avaliações
+                cardAvaliacoes.visibility = View.GONE
             }
 
             isFormando -> {
-                // só horário + perfil
+                // formando pode ver avaliações + horário + perfil
                 cardCursos.visibility = View.GONE
                 cardTurmas.visibility = View.GONE
                 cardSalas.visibility = View.GONE
+                // avaliações fica visível
             }
 
             isFormador -> {
-                // horário + perfil (tudo menos salas/turmas/cursos)
+                // formador não vê avaliações
                 cardCursos.visibility = View.GONE
                 cardTurmas.visibility = View.GONE
                 cardSalas.visibility = View.GONE
+                cardAvaliacoes.visibility = View.GONE
             }
         }
+
 
         // ✅ re-organiza o GridLayout para não ficar torto com GONE
         reflowAtalhosGrid()

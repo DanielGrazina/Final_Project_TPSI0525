@@ -15,6 +15,9 @@
         android:theme="@style/Theme.SecManagementMobile"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".AvaliacoesActivity"
+            android:exported="false" />
+        <activity
             android:name=".ResetPasswordActivity"
             android:exported="false" />
         <activity

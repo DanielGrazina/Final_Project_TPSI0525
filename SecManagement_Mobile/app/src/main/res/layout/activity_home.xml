@@ -267,6 +267,40 @@
                                     android:textSize="12sp"
                                     android:layout_marginTop="4dp"/>
                             </LinearLayout>
+
+                        </com.google.android.material.card.MaterialCardView>
+
+
+                        <!-- Avaliações (apenas Formando) -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardAvaliacoes"
+                            style="@style/AtecItemCard"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="14dp"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Avaliações"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/textPrimary"/>
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="As tuas avaliações"
+                                    android:textColor="@color/textSecondary"
+                                    android:textSize="12sp"
+                                    android:layout_marginTop="4dp"/>
+                            </LinearLayout>
+
                         </com.google.android.material.card.MaterialCardView>
 
                     </GridLayout>

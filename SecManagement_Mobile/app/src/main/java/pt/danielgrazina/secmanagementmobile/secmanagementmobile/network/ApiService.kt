@@ -143,5 +143,13 @@ interface ApiService {
     @POST("api/Auth/reset-password")
     suspend fun resetPassword(@Body body: ResetPasswordRequest)
 
+    // ---------- AVALIACOES / NOTAS ----------
+    @GET("api/Avaliacoes/aluno/{formandoId}")
+    suspend fun getNotasAluno(
+        @Header("Authorization") bearer: String,
+        @Path("formandoId") formandoId: Int
+    ): List<AvaliacaoDto>
+
+
 
 }
