@@ -92,5 +92,13 @@ namespace SecManagement_API.Controllers
             var result = await _service.CheckDisponibilidadeFormadoresAsync(turmaId, start, end);
             return Ok(result);
         }
+
+        // GET: api/Sessoes/date/2026-02-15 (Ver ocupação salas)
+        [HttpGet("date/{date}")]
+        public async Task<ActionResult<IEnumerable<SessaoDto>>> GetSessoesByDate(DateTime date)
+        {
+            date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+            return Ok(await _service.GetSessoesByDateAsync(date));
+        }
     }
 }

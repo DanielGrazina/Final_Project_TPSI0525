@@ -254,6 +254,45 @@ namespace SecManagement_API.Services
             return await GetFormandoProfileAsync(dto.UserId);
         }
 
+        public async Task<IEnumerable<FormandoSearchDto>> SearchFormandosAsync(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return new List<FormandoSearchDto>();
+
+            query = query.ToLower().Trim();
+
+            // 1) Busca Formandos + User a filtrar por nome
+            // (Sem navegação inversa Inscricoes, fazemos join manual se necessário, ou usamos a referencia direta)
+            var formandosRaw = await _context.Formandos
+                .Include(f => f.User)
+                .Where(f => f.User.Nome.ToLower().Contains(query))
+                .Take(20)
+                .ToListAsync();
+
+            if (!formandosRaw.Any()) return new List<FormandoSearchDto>();
+
+            var ids = formandosRaw.Select(f => f.Id).ToList();
+
+            // 2) Busca Inscrição Ativa para estes formandos
+            var inscricoes = await _context.Inscricoes
+                .Include(i => i.Turma).ThenInclude(t => t.Curso)
+                .Where(i => ids.Contains(i.FormandoId) && i.Estado == "Ativo")
+                .ToListAsync();
+
+            // 3) Combina em memória
+            return formandosRaw.Select(f =>
+            {
+                var ins = inscricoes.FirstOrDefault(i => i.FormandoId == f.Id);
+                return new FormandoSearchDto
+                {
+                    UserId = f.UserId,
+                    Nome = f.User?.Nome ?? "—",
+                    NumeroAluno = f.NumeroAluno,
+                    TurmaNome = ins?.Turma?.Nome ?? "Sem Turma",
+                    CursoNome = ins?.Turma?.Curso?.Nome ?? ""
+                };
+            }).ToList();
+        }
+
         public async Task<FormandoProfileDto> UpdateNumeroAlunoAsync(int userId, string novoNumero)
         {
             var formando = await _context.Formandos

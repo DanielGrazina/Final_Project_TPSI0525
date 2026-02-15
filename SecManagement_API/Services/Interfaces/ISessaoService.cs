@@ -10,5 +10,6 @@ namespace SecManagement_API.Services.Interfaces
         Task<IEnumerable<SessaoDto>> GetHorarioSalaAsync(int salaId, DateTime start, DateTime end);
         Task<List<FormadorDisponibilidadeDto>> CheckDisponibilidadeFormadoresAsync(int turmaId, DateTime start, DateTime end);
         Task<double> DeleteSessaoAsync(int id);
+        Task<IEnumerable<SessaoDto>> GetSessoesByDateAsync(DateTime date); // Para ver ocupação de salas
     }
 }

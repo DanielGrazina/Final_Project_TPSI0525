@@ -11,6 +11,7 @@ namespace SecManagement_API.Services.Interfaces
 
         Task<FormandoProfileDto> GetFormandoProfileAsync(int userId);
         Task<FormandoProfileDto> CreateFormandoProfileAsync(CreateFormandoProfileDto dto);
+        Task<IEnumerable<FormandoSearchDto>> SearchFormandosAsync(string query); // Pesquisa pública (limitada)
         
         // --- GESTÃO DE FICHEIROS ---
         Task<UserFicheiroDto> UploadFileAsync(int userId, IFormFile file);

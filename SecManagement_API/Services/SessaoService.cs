@@ -175,6 +175,38 @@ namespace SecManagement_API.Services
 
             return cargaTotal - horasUsadas; // Retorna as horas livres atuais
         }
+
+        public async Task<IEnumerable<SessaoDto>> GetSessoesByDateAsync(DateTime date)
+        {
+            var targetDate = date.Date;
+
+            var sessoes = await _context.Sessoes
+                .Include(s => s.Sala)
+                .Include(s => s.TurmaModulo)
+                    .ThenInclude(tm => tm!.Turma)
+                .Include(s => s.TurmaModulo)
+                    .ThenInclude(tm => tm!.Modulo)
+                .Include(s => s.TurmaModulo)
+                    .ThenInclude(tm => tm!.Formador)
+                        .ThenInclude(f => f!.User)
+                .Where(s => s.HorarioInicio.Date == targetDate)
+                .OrderBy(s => s.HorarioInicio)
+                .ToListAsync();
+
+            return sessoes.Select(s => new SessaoDto
+            {
+                Id = s.Id,
+                TurmaModuloId = s.TurmaModuloId,
+                SalaId = s.SalaId,
+                SalaNome = s.Sala?.Nome ?? "Sem Sala",
+                TurmaNome = s.TurmaModulo?.Turma?.Nome ?? "Sem Turma",
+                ModuloNome = s.TurmaModulo?.Modulo?.Nome ?? "Sem Módulo",
+                FormadorNome = s.TurmaModulo?.Formador?.User?.Nome ?? "Sem Formador",
+                HorarioInicio = s.HorarioInicio,
+                HorarioFim = s.HorarioFim
+            });
+        }
+
         public async Task<List<FormadorDisponibilidadeDto>> CheckDisponibilidadeFormadoresAsync(int turmaId, DateTime start, DateTime end)
         {
             // 1. Identificar formadores da turma

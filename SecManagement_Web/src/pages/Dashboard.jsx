@@ -8,6 +8,7 @@ import TawkToWidget from "../components/TawkToWidget";
 import { QRCodeCanvas } from "qrcode.react";
 import api from "../api/axios";
 import BurgerMenu from "../components/BurgerMenu";
+import DashboardSearch from "../components/DashboardSearch";
 
 /* ---------------- UI helpers ---------------- */
 
@@ -642,6 +643,11 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* ✅ Pesquisa Rápida (Cursos / Formandos) */}
+          <div className="mt-8">
+            <DashboardSearch perms={perms} />
           </div>
 
           {/* ✅ 2FA */}

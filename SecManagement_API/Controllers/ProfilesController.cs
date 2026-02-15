@@ -124,6 +124,23 @@ namespace SecManagement_API.Controllers
             }
         }
 
+        // GET: api/Profiles/formandos/search?q=nome
+        // Pesquisa de Formandos (RESTRITO: Admin, SuperAdmin, Secretaria)
+        [HttpGet("formandos/search")]
+        [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
+        public async Task<ActionResult<IEnumerable<FormandoSearchDto>>> SearchFormandos([FromQuery] string q = "")
+        {
+            try
+            {
+                var result = await _service.SearchFormandosAsync(q);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         // GET: api/Profiles/formando/5 (UserId)
         [HttpGet("formando/{userId}")]
         public async Task<ActionResult<FormandoProfileDto>> GetFormando(int userId)
