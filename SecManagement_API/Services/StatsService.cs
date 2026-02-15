@@ -55,6 +55,38 @@ namespace SecManagement_API.Services
                 .Take(10)
                 .ToListAsync();
 
+            // Requisito 1.j – Cursos/turmas a iniciar nos próximos 60 dias
+            // Npgsql exige DateTimes UTC para colunas timestamptz
+            var hoje = DateTime.UtcNow.Date;
+            var limite = hoje.AddDays(60);
+
+            // 1) Materializa da BD (só filtro + projeção simples)
+            var turmasProximas = await _context.Turmas
+                .Where(t => t.DataInicio >= hoje && t.DataInicio <= limite)
+                .OrderBy(t => t.DataInicio)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.Nome,
+                    CursoNome = t.Curso != null ? t.Curso.Nome : "",
+                    Area      = t.Curso != null && t.Curso.Area != null ? t.Curso.Area.Nome : "Sem Área",
+                    t.DataInicio
+                })
+                .ToListAsync();
+
+            // 2) Calcula DiasRestantes no C# (evita problemas de tradução SQL)
+            stats.CursosProximos60Dias = turmasProximas
+                .Select(t => new CursoProximoDto
+                {
+                    TurmaId       = t.Id,
+                    TurmaNome     = t.Nome,
+                    CursoNome     = t.CursoNome,
+                    Area          = t.Area,
+                    DataInicio    = t.DataInicio,
+                    DiasRestantes = (t.DataInicio.Date - hoje).Days
+                })
+                .ToList();
+
             return stats;
         }
     }
