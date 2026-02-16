@@ -11,16 +11,13 @@ namespace SecManagement_API.Controllers
     public class TurmasController : ControllerBase
     {
         private readonly ITurmaService _turmaService;
-        private readonly IInscricaoService _inscricaoService; // <--- NOVO SERVIÇO INJETADO
+        private readonly IInscricaoService _inscricaoService;
 
-        // Construtor aceita agora os dois serviços
         public TurmasController(ITurmaService turmaService, IInscricaoService inscricaoService)
         {
             _turmaService = turmaService;
             _inscricaoService = inscricaoService;
         }
-
-        // --- GESTÃO DE TURMAS ---
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TurmaDto>>> GetTurmas()
@@ -73,7 +70,6 @@ namespace SecManagement_API.Controllers
             }
         }
 
-        // --- ENDPOINTS RESTAURADOS (O Frontend agradece!) ---
 
         // GET: api/Turmas/5/modulos
         [HttpGet("{turmaId}/modulos")]
@@ -86,11 +82,9 @@ namespace SecManagement_API.Controllers
         [HttpGet("{turmaId}/alunos")]
         public async Task<ActionResult<IEnumerable<InscricaoDto>>> GetAlunos(int turmaId)
         {
-            // Delegamos a tarefa para o serviço correto
             return Ok(await _inscricaoService.GetAlunosByTurmaAsync(turmaId));
         }
 
-        // --- GESTÃO DE MÓDULOS (Add/Remove) ---
 
         [HttpPost("modulo")]
         public async Task<ActionResult<TurmaModuloDto>> AddModulo(CreateTurmaModuloDto dto)

@@ -61,7 +61,7 @@ namespace SecManagement_API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -78,8 +78,7 @@ namespace SecManagement_API.Controllers
             }
             catch (Exception ex)
             {
-                // Retorna 400
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

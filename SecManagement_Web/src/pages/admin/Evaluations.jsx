@@ -1,24 +1,9 @@
-// src/pages/admin/Evaluations.jsx  (ou AdminEvaluations.jsx)
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { getToken, getUserRoleFromToken, decodeJwt } from "../../utils/auth";
 import BurgerMenu from "../../components/BurgerMenu";
 
-/*
-  ✅ REGRAS IMPLEMENTADAS
-  - Formando (e User): só vê as SUAS avaliações.
-  - Formador: só vê / cria / edita / apaga avaliações de alunos das SUAS turmas.
-  - Admin/Secretaria/SuperAdmin: vê tudo.
-
-  ⚠️ IMPORTANTE (backend):
-  - Ideal é existirem endpoints server-side (melhor segurança):
-      GET  /Avaliacoes/aluno/{formandoId}
-      GET  /Avaliacoes/formador/{formadorId}   (ou por turmas)
-  - Como pode não existir, este ficheiro tem FALLBACK:
-      GET /Avaliacoes e filtra no front.
-    (Isto melhora UX, mas NÃO substitui segurança no backend.)
-*/
 
 function Modal({ title, children, onClose, disabled }) {
   return (
@@ -234,7 +219,6 @@ export default function Evaluations() {
   const [search, setSearch] = useState("");
   const [turmaFilter, setTurmaFilter] = useState("Todos");
 
-  // ✅ pagination (igual ao Turmas)
   const [page, setPage] = useState(1);
   const [pageSize] = useState(25);
 
@@ -285,7 +269,6 @@ export default function Evaluations() {
       setAllowedTurmaIds(ids);
     } catch (err) {
       setAllowedTurmaIds(new Set());
-      console.log("Turmas do formador endpoint não encontrado/erro:", err?.response?.status, err?.response?.data);
     }
   }
 
@@ -414,7 +397,6 @@ export default function Evaluations() {
       setInscricoes(Array.isArray(iRes.data) ? iRes.data : []);
       setTurmaModulos(Array.isArray(mRes.data) ? mRes.data : []);
     } catch (err) {
-      console.log("GET dependências FAIL", { turmaId, status: err.response?.status, data: err.response?.data });
       setError(extractError(err, "Falha a carregar alunos/módulos da turma."));
     }
   }
@@ -470,7 +452,6 @@ export default function Evaluations() {
     });
   }, [avaliacoes, turmas, search, turmaFilter]);
 
-  // ✅ reset page when filters change
   useEffect(() => setPage(1), [search, turmaFilter]);
 
   const totalPages = useMemo(
@@ -619,12 +600,6 @@ export default function Evaluations() {
       closeForm();
       await loadAll();
     } catch (err) {
-      console.log("SAVE avaliação FAIL", {
-        endpoint: editing ? `${BASE}/${editing.id}` : BASE,
-        status: err.response?.status,
-        data: err.response?.data,
-        payloadSent: payload,
-      });
       setError(extractError(err, "Falha ao guardar avaliação."));
     } finally {
       setSaving(false);
@@ -649,11 +624,6 @@ export default function Evaluations() {
       await api.delete(`${BASE}/${id}`);
       setAvaliacoes((prev) => prev.filter((x) => x.id !== id));
     } catch (err) {
-      console.log("DELETE avaliação FAIL", {
-        endpoint: `${BASE}/${id}`,
-        status: err.response?.status,
-        data: err.response?.data,
-      });
       setError(extractError(err, "Falha ao apagar avaliação."));
     }
   }
@@ -665,7 +635,7 @@ export default function Evaluations() {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-xl dark:bg-gray-900/90 border-b dark:border-gray-800 shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          {/* ✅ tudo numa linha: esquerda (título) | direita (ações) */}
+          {/* Header row: title | actions */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             {/* LEFT */}
             <div className="flex items-center gap-3">
@@ -696,7 +666,6 @@ export default function Evaluations() {
 
             {/* RIGHT */}
             <div className="flex items-center gap-2">
-              {/* ✅ Voltar com estilo consistente (bom em dark) */}
               <button
                 onClick={() => navigate("/dashboard")}
                 className="px-5 py-2.5 rounded-xl border transition-all font-semibold

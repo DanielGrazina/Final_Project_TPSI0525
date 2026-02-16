@@ -26,7 +26,7 @@ namespace SecManagement_API.Controllers
                 var result = await _service.CreateAsync(dto);
                 return Ok(result);
             }
-            catch (Exception ex) { return BadRequest(ex.Message); }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
         [HttpGet("formador/{id}")]

@@ -17,14 +17,12 @@
         public int TurmaId { get; set; }
     }
 
-    // NOVO: Usado pelo ADMIN para aprovar múltiplas candidaturas de uma vez
     public class AprovarLoteDto
     {
         public int TurmaId { get; set; }
         public List<int> InscricaoIds { get; set; } = new();
     }
 
-    // DTO de Leitura atualizado
     public class InscricaoDto
     {
         public int Id { get; set; }

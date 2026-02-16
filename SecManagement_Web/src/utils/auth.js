@@ -1,5 +1,3 @@
-// src/utils/auth.js
-
 export function getToken() {
   return localStorage.getItem("token");
 }
@@ -63,7 +61,6 @@ export function getUserIdFromToken(token) {
   const payload = decodeJwt(token);
   if (!payload) return null;
 
-  // o vosso backend usa ClaimTypes.NameIdentifier
   const id =
     payload.sub ||
     payload.nameid ||

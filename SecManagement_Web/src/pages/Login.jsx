@@ -120,8 +120,6 @@ export default function Login() {
       localStorage.setItem("token", token);
       navigate("/dashboard");
     } catch (err) {
-      console.log("GOOGLE STATUS:", err?.response?.status);
-      console.log("GOOGLE DATA:", err?.response?.data);
       setError(readApiMessage(err, "Erro no login Google."));
     } finally {
       setLoading(false);

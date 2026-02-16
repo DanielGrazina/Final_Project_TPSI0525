@@ -1,4 +1,3 @@
-// src/pages/Horarios.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
@@ -113,9 +112,7 @@ function formatDayLabel(d) {
   return wd.charAt(0).toUpperCase() + wd.slice(1);
 }
 
-/* ---------------- normalização de Sessões (ROBUSTA) ---------------- */
-
-/* ---------------- normalização de Sessões (CORRIGIDA) ---------------- */
+/* ---------------- normalização de Sessões ---------------- */
 
 function normalizeSessao(raw) {
   if (!raw) return null;
@@ -276,7 +273,6 @@ export default function Horarios() {
 
       if (Number.isFinite(Number(tid))) {
         setTurmaId(Number(tid));
-        console.log("TURMA ID ENCONTRADO:", tid);
       } else {
         console.warn("AVISO: Este aluno não tem 'turmaId' no perfil. Está inscrito numa turma?");
       }
