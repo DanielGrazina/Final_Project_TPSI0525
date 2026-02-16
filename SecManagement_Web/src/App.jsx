@@ -20,6 +20,7 @@ import Profiles from "./pages/Profiles.jsx";
 import Availability from "./pages/Availability.jsx";
 import Horarios from "./pages/Horarios.jsx";
 import Stats from "./pages/admin/Stats.jsx";
+import AutoSchedule from "./pages/admin/AutoSchedule.jsx";
 
 import RequireRole from "./components/RequireRole";
 
@@ -153,6 +154,16 @@ function App() {
           }
         />
 
+        {/* GERAÇÃO AUTOMÁTICA DE HORÁRIOS */}
+        <Route
+          path="/admin/auto-schedule"
+          element={
+            <RequireRole allow={["Admin", "SuperAdmin"]}>
+              <AutoSchedule />
+            </RequireRole>
+          }
+        />
+
         {/* SESSÕES
             - POST agendar: Admin, SuperAdmin, Formador
             - GET horários: autenticado
@@ -167,9 +178,9 @@ function App() {
         />
         <Route
           path="/horarios"
-          element={ <RequireRole allow={["Formando", "Formador", "Admin", "SuperAdmin", "Secretaria"]}>
-           <Horarios />
-            </RequireRole>
+          element={<RequireRole allow={["Formando", "Formador", "Admin", "SuperAdmin", "Secretaria"]}>
+            <Horarios />
+          </RequireRole>
           }
         />
 
