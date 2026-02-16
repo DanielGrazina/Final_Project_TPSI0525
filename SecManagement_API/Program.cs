@@ -32,6 +32,7 @@ builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IInscricaoService, InscricaoService>();
+builder.Services.AddScoped<IAutoScheduleService, AutoScheduleService>();
 
 // JWT Auth
 builder.Services.AddAuthentication(options =>
