@@ -44,25 +44,21 @@ namespace SecManagement_API.Controllers
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
-        // NOVO: GET: api/Inscricoes/pendentes
-        // Lista todas as candidaturas sem turma (estado "Candidatura")
+        // GET: api/Inscricoes/pendentes
         [HttpGet("pendentes")]
         public async Task<ActionResult<IEnumerable<InscricaoDto>>> GetPendentes()
         {
             return Ok(await _service.GetCandidaturasPendentesAsync());
         }
 
-        // NOVO: GET: api/Inscricoes/pendentes/curso/5
-        // Lista candidaturas pendentes de um curso específico
+        // GET: api/Inscricoes/pendentes/curso/{cursoId}
         [HttpGet("pendentes/curso/{cursoId}")]
         public async Task<ActionResult<IEnumerable<InscricaoDto>>> GetPendentesPorCurso(int cursoId)
         {
             return Ok(await _service.GetCandidaturasPendentesPorCursoAsync(cursoId));
         }
 
-        // NOVO: POST: api/Inscricoes/aprovar-lote
-        // Aprova múltiplas candidaturas de uma vez, colocando-as na mesma turma
-        // Body: { "turmaId": 10, "inscricaoIds": [1, 2, 3] }
+        // POST: api/Inscricoes/aprovar-lote
         [HttpPost("aprovar-lote")]
         [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<IEnumerable<InscricaoDto>>> AprovarLote(AprovarLoteDto dto)
@@ -75,8 +71,7 @@ namespace SecManagement_API.Controllers
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
-        // NOVO: PUT: api/Inscricoes/5/rejeitar
-        // Rejeita uma candidatura
+        // PUT: api/Inscricoes/{id}/rejeitar
         [HttpPut("{id}/rejeitar")]
         [Authorize(Roles = $"{Roles.Secretaria},{Roles.Admin},{Roles.SuperAdmin}")]
         public async Task<ActionResult<InscricaoDto>> Rejeitar(int id)

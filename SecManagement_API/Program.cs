@@ -15,7 +15,6 @@ QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ✅ NECESSÁRIO para o ProfileService construir URLs absolutas
 builder.Services.AddHttpContextAccessor();
 
 // Services

@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SecManagement_API.Data;
 using SecManagement_API.DTOs;
 using SecManagement_API.Helpers;
 using SecManagement_API.Services.Interfaces;
@@ -12,12 +11,10 @@ namespace SecManagement_API.Controllers
     public class SessoesController : ControllerBase
     {
         private readonly ISessaoService _service;
-        private readonly AppDbContext _context;
 
-        public SessoesController(ISessaoService service, AppDbContext context)
+        public SessoesController(ISessaoService service)
         {
             _service = service;
-            _context = context;
         }
 
         [HttpPost]
@@ -39,7 +36,6 @@ namespace SecManagement_API.Controllers
         [HttpGet("turma/{turmaId}")]
         public async Task<ActionResult<IEnumerable<SessaoDto>>> GetHorarioTurma(int turmaId, DateTime start, DateTime end)
         {
-            // FORÇAR UTC
             start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
             end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
 
@@ -49,7 +45,6 @@ namespace SecManagement_API.Controllers
         [HttpGet("formador/{formadorId}")]
         public async Task<ActionResult<IEnumerable<SessaoDto>>> GetHorarioFormador(int formadorId, DateTime start, DateTime end)
         {
-            // FORÇAR UTC
             start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
             end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
 
@@ -61,8 +56,7 @@ namespace SecManagement_API.Controllers
         {
             try
             {
-                // FORÇAR UTC
-                start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
+                    start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
                 end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
 
                 return Ok(await _service.GetHorarioSalaAsync(salaId, start, end));
@@ -85,7 +79,6 @@ namespace SecManagement_API.Controllers
         [HttpGet("check-availability/turma/{turmaId}")]
         public async Task<ActionResult<List<FormadorDisponibilidadeDto>>> CheckAvailability(int turmaId, DateTime start, DateTime end)
         {
-            // Forçar UTC para garantir consistência
             start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
             end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
 

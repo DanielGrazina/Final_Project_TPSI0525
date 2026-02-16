@@ -46,7 +46,7 @@ namespace SecManagement_API.Controllers
             {
                 return Ok(await _service.UpdateAreaAsync(id, dto));
             }
-            catch (Exception ex) { return BadRequest(ex.Message); }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
         [HttpDelete("{id}")]
@@ -58,7 +58,7 @@ namespace SecManagement_API.Controllers
                 if (await _service.DeleteAreaAsync(id)) return NoContent();
                 return NotFound();
             }
-            catch (Exception ex) { return BadRequest(ex.Message); }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
     }
 }

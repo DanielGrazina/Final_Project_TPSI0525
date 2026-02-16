@@ -1,4 +1,3 @@
-// src/components/BurgerMenu.jsx
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getToken, getUserRoleFromToken } from "../utils/auth";

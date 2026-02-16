@@ -40,13 +40,10 @@ namespace SecManagement_API.Controllers
             try
             {
                 var result = await _authService.LoginAsync(dto);
-
-                // Se pedir 2FA, retornamos 200 OK na mesma, mas o frontend vê o flag "RequiresTwoFactor"
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                // Aqui é gerado o erro 400 que vês no browser
                 return BadRequest(new { message = ex.Message });
             }
         }
@@ -124,7 +121,7 @@ namespace SecManagement_API.Controllers
             {
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
                 var result = await _authService.SetupTwoFactorAsync(userId);
-                return Ok(result); // Retorna { qrCodeUrl, manualEntryKey }
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -132,7 +129,7 @@ namespace SecManagement_API.Controllers
             }
         }
 
-        // PASSO 2: Confirmar (Recebe código e ativa)
+        // POST: api/Auth/2fa/confirm
         [Authorize]
         [HttpPost("2fa/confirm")]
         public async Task<IActionResult> Confirm2FA([FromBody] TwoFactorConfirmDto dto)
@@ -142,7 +139,6 @@ namespace SecManagement_API.Controllers
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
                 var result = await _authService.ConfirmTwoFactorAsync(userId, dto.Code);
 
-                // Retorna os códigos de backup para o user guardar
                 return Ok(result);
             }
             catch (Exception ex)
@@ -161,10 +157,8 @@ namespace SecManagement_API.Controllers
                 if (string.IsNullOrWhiteSpace(request.IdToken))
                     return BadRequest(new { message = "IdToken em falta." });
 
-                // ✅ Validar token do Google
                 var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
 
-                // ✅ 2FA: passa o TwoFactorCode (pode vir null/vazio)
                 var result = await _authService.SocialLoginAsync(
                     payload.Email,
                     "Google",
@@ -173,7 +167,6 @@ namespace SecManagement_API.Controllers
                     request.TwoFactorCode
                 );
 
-                // ✅ Se pedir 2FA, devolve 202 para o frontend mostrar input
                 if (result.RequiresTwoFactor)
                     return Accepted(result);
 
