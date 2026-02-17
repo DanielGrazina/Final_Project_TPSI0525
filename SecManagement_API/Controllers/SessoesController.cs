@@ -51,6 +51,15 @@ namespace SecManagement_API.Controllers
             return Ok(await _service.GetHorarioFormadorAsync(formadorId, start, end));
         }
 
+        [HttpGet("formando/{formandoId}")]
+        public async Task<ActionResult<IEnumerable<SessaoDto>>> GetHorarioFormando(int formandoId, DateTime start, DateTime end)
+        {
+            start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
+            end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
+
+            return Ok(await _service.GetHorarioFormandoAsync(formandoId, start, end));
+        }
+
         [HttpGet("sala/{salaId}")]
         public async Task<ActionResult<IEnumerable<SessaoDto>>> GetHorarioSala(int salaId, DateTime start, DateTime end)
         {

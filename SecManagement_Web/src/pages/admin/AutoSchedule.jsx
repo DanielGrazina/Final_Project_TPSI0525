@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
-import { getToken } from "../../utils/auth";
+import { getToken, getUserRoleFromToken } from "../../utils/auth";
 import BurgerMenu from "../../components/BurgerMenu";
+
+function decodeJwt(t) {
+    try {
+        const b = t.split(".")[1];
+        return JSON.parse(atob(b.replace(/-/g, "+").replace(/_/g, "/")));
+    } catch {
+        return null;
+    }
+}
 
 /* ---- helpers ---- */
 function extractError(err, fallback) {
@@ -33,6 +42,20 @@ export default function AutoSchedule() {
     const navigate = useNavigate();
     const token = getToken();
 
+    const role = useMemo(() => (token ? getUserRoleFromToken(token) : ""), [token]);
+    const roleLower = String(role || "").trim().toLowerCase();
+    const isFormador = roleLower === "formador";
+
+    const payload = useMemo(() => (token ? decodeJwt(token) : null), [token]);
+    const formadorId = useMemo(() => {
+        if (!payload) return null;
+        for (const k of ["FormadorId", "formadorId", "idFormador", "IdFormador"]) {
+            const v = payload[k];
+            if (v != null && Number.isFinite(Number(v))) return Number(v);
+        }
+        return null;
+    }, [payload]);
+
     /* ---- state ---- */
     const [turmas, setTurmas] = useState([]);
     const [selectedTurmaId, setSelectedTurmaId] = useState("");
@@ -59,8 +82,18 @@ export default function AutoSchedule() {
         (async () => {
             setLoading(true);
             try {
-                const res = await api.get("/Turmas");
-                const list = Array.isArray(res.data) ? res.data : [];
+                let list = [];
+                if (isFormador && formadorId) {
+                    // Coordenador: only show turmas where formador is the coordinator
+                    const all = await api.get("/Turmas");
+                    const allList = Array.isArray(all.data) ? all.data : [];
+                    list = allList.filter(
+                        (t) => Number(t.coordenadorId) === formadorId
+                    );
+                } else {
+                    const res = await api.get("/Turmas");
+                    list = Array.isArray(res.data) ? res.data : [];
+                }
                 setTurmas(list);
                 if (list.length > 0) setSelectedTurmaId(list[0].id);
             } catch (e) {
@@ -69,7 +102,7 @@ export default function AutoSchedule() {
                 setLoading(false);
             }
         })();
-    }, []);
+    }, [isFormador, formadorId]);
 
     /* ---- load modulos when turma changes ---- */
     useEffect(() => {

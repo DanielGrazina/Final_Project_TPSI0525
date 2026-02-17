@@ -7,18 +7,14 @@ services:
     ports:
       - "5000:8080"
     depends_on:
-      redis:
-        condition: service_healthy
       db:
         condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=SecManagement;Username=admin;Password=admin"
-      Redis__ConnectionString: "redis:6379"
     dns:
       - 8.8.8.8
       - 1.1.1.1
-
     networks:
       - backend
 
@@ -35,21 +31,6 @@ services:
     volumes:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
       - postgres-data:/var/lib/postgresql/data
-    networks:
-      - backend
-
-  redis:
-    container_name: redis-SecManagement
-    image: redis:latest
-    restart: always
-    ports:
-      - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes", "--protected-mode", "no"]
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
     networks:
       - backend
 

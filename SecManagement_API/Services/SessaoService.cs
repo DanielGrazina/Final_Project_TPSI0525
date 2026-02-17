@@ -152,6 +152,37 @@ namespace SecManagement_API.Services
             return sessoes.Select(s => MapToDto(s, s.TurmaModulo, s.Sala));
         }
 
+        public async Task<IEnumerable<SessaoDto>> GetHorarioFormandoAsync(int formandoId, DateTime start, DateTime end)
+        {
+            var startUtc = start.ToUniversalTime();
+            var endUtc = end.ToUniversalTime();
+
+            // Obter turmas onde o formando tem inscrição ativa
+            var turmaIds = await _context.Inscricoes
+                .Where(i => i.FormandoId == formandoId && i.TurmaId != null && i.Estado == "Ativo")
+                .Select(i => i.TurmaId!.Value)
+                .Distinct()
+                .ToListAsync();
+
+            if (!turmaIds.Any())
+                return Enumerable.Empty<SessaoDto>();
+
+            var sessoes = await _context.Sessoes
+                .Include(s => s.Sala)
+                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Modulo)
+                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Turma)
+                .Include(s => s.TurmaModulo).ThenInclude(tm => tm.Formador).ThenInclude(f => f.User)
+                .Where(s =>
+                    turmaIds.Contains(s.TurmaModulo.TurmaId) &&
+                    s.HorarioInicio < endUtc &&
+                    s.HorarioFim > startUtc
+                )
+                .OrderBy(s => s.HorarioInicio)
+                .ToListAsync();
+
+            return sessoes.Select(s => MapToDto(s, s.TurmaModulo, s.Sala));
+        }
+
         public async Task<double> DeleteSessaoAsync(int id)
         {
             var s = await _context.Sessoes

@@ -158,7 +158,7 @@ function App() {
         <Route
           path="/admin/auto-schedule"
           element={
-            <RequireRole allow={["Admin", "SuperAdmin"]}>
+            <RequireRole allow={["Formador", "Admin", "SuperAdmin"]}>
               <AutoSchedule />
             </RequireRole>
           }
