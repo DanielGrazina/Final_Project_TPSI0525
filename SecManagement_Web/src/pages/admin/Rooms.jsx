@@ -292,6 +292,11 @@ export default function AdminSalas() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <BurgerMenu />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
                   Gestão de Salas
@@ -351,7 +356,7 @@ export default function AdminSalas() {
             </div>
           </div>
 
-          {/* ✅ Paginação compacta (topo) */}
+          {/* Paginação compacta (topo) */}
           <div className="mt-4">
             <PaginationCompact
               total={filtered.length}
@@ -371,6 +376,9 @@ export default function AdminSalas() {
             {error}
           </div>
         )}
+
+        {/* Separator */}
+        <div className="my-6 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
 
         {/* Table */}
         <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden">

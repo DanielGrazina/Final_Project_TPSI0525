@@ -412,8 +412,30 @@ export default function Evaluations() {
       withGrades > 0
         ? (onlyWithGrade.reduce((sum, a) => sum + Number(a.avaliacao), 0) / withGrades).toFixed(1)
         : "—";
-    return { total, withGrades, avgGrade };
-  }, [avaliacoes]);
+
+    // Média por turma selecionada (para formador)
+    let avgLabel = "Média";
+    let avgValue = avgGrade;
+
+    if (isAluno) {
+      avgLabel = "A Minha Média";
+      // avgValue já está correto (dados filtrados por aluno no backend)
+    } else if (isFormador) {
+      if (turmaFilter !== "Todos") {
+        const turmaGrades = onlyWithGrade.filter((a) => Number(a.turmaId) === Number(turmaFilter));
+        avgValue = turmaGrades.length > 0
+          ? (turmaGrades.reduce((sum, a) => sum + Number(a.avaliacao), 0) / turmaGrades.length).toFixed(1)
+          : "—";
+        const turmaObj = turmas.find((t) => Number(t.id) === Number(turmaFilter));
+        avgLabel = turmaObj ? `Média (${turmaObj.nome})` : "Média (Turma)";
+      } else {
+        avgLabel = "Média (todas as turmas)";
+      }
+    }
+    // admin/secretaria: mantém "Média" global
+
+    return { total, withGrades, avgGrade: avgValue, avgLabel };
+  }, [avaliacoes, turmas, turmaFilter, isAluno, isFormador]);
 
   const turmasParaSelect = useMemo(() => {
     if (isFormador && allowedTurmaIds.size > 0) {
@@ -740,11 +762,14 @@ export default function Evaluations() {
           <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-5 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-green-600/5 dark:from-green-500/20 dark:to-green-600/10 opacity-50" />
             <div className="relative">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Média</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{stats.avgLabel}</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.avgGrade}</div>
             </div>
           </div>
         </div>
+
+        {/* Separator */}
+        <div className="my-6 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
 
         {/* Toolbar */}
         <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">

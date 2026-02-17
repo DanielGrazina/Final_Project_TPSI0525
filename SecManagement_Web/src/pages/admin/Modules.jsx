@@ -206,6 +206,7 @@ export default function AdminModules() {
     nome: "",
     cargaHoraria: "",
     nivel: "",
+    tipoSala: "Teorica",
   });
 
   async function loadModules() {
@@ -262,7 +263,7 @@ export default function AdminModules() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ nome: "", cargaHoraria: "", nivel: "" });
+    setForm({ nome: "", cargaHoraria: "", nivel: "", tipoSala: "Teorica" });
     setShowForm(true);
   }
 
@@ -272,6 +273,7 @@ export default function AdminModules() {
       nome: modulo.nome ?? "",
       cargaHoraria: String(modulo.cargaHoraria ?? ""),
       nivel: modulo.nivel ?? "",
+      tipoSala: modulo.tipoSala ?? "Teorica",
     });
     setShowForm(true);
   }
@@ -302,6 +304,7 @@ export default function AdminModules() {
       nome,
       cargaHoraria: carga,
       nivel: nivel || null,
+      tipoSala: form.tipoSala || "Teorica",
     };
 
     setSaving(true);
@@ -341,21 +344,19 @@ export default function AdminModules() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <BurgerMenu />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                  />
+                </svg>
+              </div>
               <div>
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Módulos</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Gestão do catálogo de módulos formativos</p>
-                </div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Módulos</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Gestão do catálogo de módulos formativos</p>
               </div>
             </div>
 
@@ -395,6 +396,9 @@ export default function AdminModules() {
             </div>
           </div>
         </div>
+
+        {/* Separator */}
+        <div className="my-6 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
 
         {/* Toolbar */}
         <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">
@@ -486,6 +490,9 @@ export default function AdminModules() {
                     Nível
                   </th>
                   <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">
+                    Tipo Sala
+                  </th>
+                  <th className="text-left text-xs font-bold text-gray-700 dark:text-gray-200 py-4 px-6 uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
@@ -494,7 +501,7 @@ export default function AdminModules() {
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {loading ? (
                   <tr>
-                    <td colSpan="5" className="py-16 px-6">
+                    <td colSpan="6" className="py-16 px-6">
                       <div className="flex flex-col items-center justify-center gap-3">
                         <div className="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin" />
                         <span className="text-gray-500 dark:text-gray-400">A carregar módulos...</span>
@@ -503,7 +510,7 @@ export default function AdminModules() {
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="py-16 px-6">
+                    <td colSpan="6" className="py-16 px-6">
                       <div className="flex flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
                         <svg className="w-16 h-16 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path
@@ -552,6 +559,18 @@ export default function AdminModules() {
 
                       <td className="py-4 px-6 text-sm text-gray-700 dark:text-gray-300">
                         {m.nivel ? m.nivel : <span className="text-gray-400">—</span>}
+                      </td>
+
+                      <td className="py-4 px-6">
+                        <span className={[
+                          "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border",
+                          m.tipoSala === "Informatica" ? "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800" :
+                            m.tipoSala === "Oficina" ? "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800" :
+                              m.tipoSala === "Reuniao" ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800" :
+                                "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
+                        ].join(" ")}>
+                          {m.tipoSala === "Informatica" ? "Informática" : m.tipoSala === "Reuniao" ? "Reunião" : m.tipoSala === "Teorica" ? "Teórica" : m.tipoSala || "—"}
+                        </span>
                       </td>
 
                       <td className="py-4 px-6">
@@ -653,6 +672,26 @@ export default function AdminModules() {
                   disabled={saving}
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Opcional</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Sala</label>
+                <select
+                  name="tipoSala"
+                  value={form.tipoSala}
+                  onChange={onChange}
+                  className="w-full border rounded-lg px-4 py-3
+                             bg-white dark:bg-gray-950 dark:border-gray-800
+                             text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                  disabled={saving}
+                >
+                  <option value="Teorica">Teórica</option>
+                  <option value="Informatica">Informática</option>
+                  <option value="Oficina">Oficina</option>
+                  <option value="Reuniao">Reunião</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Tipo de sala necessário para o agendamento automático</p>
               </div>
             </div>
 

@@ -5,6 +5,24 @@ import api from "../../api/axios";
 import { getToken } from "../../utils/auth";
 import BurgerMenu from "../../components/BurgerMenu";
 
+/* SegTabs toggle — same as Profiles */
+function SegTabs({ value, onChange, left, right }) {
+  const base = "px-4 py-2 text-sm font-semibold transition-colors border border-gray-200 dark:border-gray-700";
+  const active = "bg-blue-600 text-white border-blue-600";
+  const idle = "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800";
+
+  return (
+    <div className="inline-flex rounded-lg overflow-hidden">
+      <button type="button" onClick={() => onChange(left.value)} className={[base, value === left.value ? active : idle].join(" ")}>
+        {left.label}
+      </button>
+      <button type="button" onClick={() => onChange(right.value)} className={[base, value === right.value ? active : idle].join(" ")}>
+        {right.label}
+      </button>
+    </div>
+  );
+}
+
 /* ------------------------ Helpers ------------------------ */
 
 function Modal({ title, children, onClose, disableClose }) {
@@ -210,6 +228,7 @@ export default function AdminSessions() {
 
   // Calendário
   const [weekAnchor, setWeekAnchor] = useState(new Date());
+  const [viewTab, setViewTab] = useState("calendario");
   const weekStart = useMemo(() => startOfWeek(weekAnchor), [weekAnchor]);
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -444,7 +463,7 @@ export default function AdminSessions() {
       (s) =>
         new Date(s.horarioInicio) <= new Date(slotIso) &&
         new Date(s.horarioFim) >
-          new Date(new Date(slotIso).getTime() + 60000)
+        new Date(new Date(slotIso).getTime() + 60000)
     );
   }
 
@@ -468,8 +487,8 @@ export default function AdminSessions() {
         done
           ? "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-900/50"
           : active
-          ? "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-900/50"
-          : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
+            ? "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-900/50"
+            : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
       ].join(" ")}
     >
       <span
@@ -478,8 +497,8 @@ export default function AdminSessions() {
           done
             ? "bg-emerald-600 text-white"
             : active
-            ? "bg-blue-600 text-white"
-            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
         ].join(" ")}
       >
         {n}
@@ -608,8 +627,8 @@ export default function AdminSessions() {
                         !isAvailable
                           ? "opacity-70 cursor-not-allowed border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20"
                           : isSelected
-                          ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20"
-                          : "border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800",
+                            ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20"
+                            : "border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800",
                       ].join(" ")}
                     >
                       <div className="flex items-center gap-4 min-w-0">
@@ -619,8 +638,8 @@ export default function AdminSessions() {
                             !isAvailable
                               ? "bg-red-500/10 text-red-600 border-red-200 dark:text-red-300 dark:border-red-900/40"
                               : isSelected
-                              ? "bg-emerald-600 text-white border-emerald-600"
-                              : "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-900/50",
+                                ? "bg-emerald-600 text-white border-emerald-600"
+                                : "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-900/50",
                           ].join(" ")}
                         >
                           {f.avatar ? (
@@ -790,6 +809,11 @@ export default function AdminSessions() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <BurgerMenu />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">
                   Sessões & Horários
@@ -811,6 +835,13 @@ export default function AdminSessions() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              <SegTabs
+                value={viewTab}
+                onChange={setViewTab}
+                left={{ value: "calendario", label: "Calendário" }}
+                right={{ value: "lista", label: "Lista" }}
+              />
+
               {/* Turma */}
               <div className="relative">
                 <select
@@ -871,6 +902,17 @@ export default function AdminSessions() {
                 Recarregar
               </button>
 
+              {isAdminLike && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/admin/auto-schedule")}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold
+                             hover:from-emerald-700 hover:to-teal-700 transition shadow-lg shadow-emerald-500/30"
+                >
+                  ⚡ Auto Schedule
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => navigate("/dashboard")}
@@ -887,277 +929,281 @@ export default function AdminSessions() {
       {/* Content */}
       <div className="container mx-auto px-6 py-8 space-y-8">
         {/* Calendar Card */}
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/60 backdrop-blur shadow-sm overflow-hidden">
-          {/* Calendar header row */}
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                Calendário semanal
+        {viewTab === "calendario" && (
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/60 backdrop-blur shadow-sm overflow-hidden">
+            {/* Calendar header row */}
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                  Calendário semanal
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  Clica num “+” para criar sessão (verifica disponibilidade
+                  automaticamente).
+                </div>
               </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">
-                Clica num “+” para criar sessão (verifica disponibilidade
-                automaticamente).
+
+              <div className="flex items-center gap-2 text-xs">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  sessão
+                </span>
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                  disponível
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-xs">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                sessão
-              </span>
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                disponível
-              </span>
-            </div>
-          </div>
+            {/* Grid */}
+            <div className="overflow-x-auto">
+              <div className="min-w-[980px]">
+                {/* Days Header */}
+                <div className="grid grid-cols-8 border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
+                  <div className="p-4 text-xs font-black text-gray-600 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-800 flex items-center justify-center">
+                    Hora
+                  </div>
 
-          {/* Grid */}
-          <div className="overflow-x-auto">
-            <div className="min-w-[980px]">
-              {/* Days Header */}
-              <div className="grid grid-cols-8 border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50">
-                <div className="p-4 text-xs font-black text-gray-600 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-800 flex items-center justify-center">
-                  Hora
-                </div>
-
-                {weekDays.map((d, i) => {
-                  const isToday = toYmd(d) === toYmd(new Date());
-                  return (
-                    <div
-                      key={i}
-                      className={[
-                        "p-3 text-center border-r border-gray-200 dark:border-gray-800 last:border-none",
-                        isToday ? "bg-blue-500/10 dark:bg-blue-500/10" : "",
-                      ].join(" ")}
-                    >
+                  {weekDays.map((d, i) => {
+                    const isToday = toYmd(d) === toYmd(new Date());
+                    return (
                       <div
+                        key={i}
                         className={[
-                          "text-sm font-black",
-                          isToday
-                            ? "text-blue-700 dark:text-blue-300"
-                            : "text-gray-800 dark:text-gray-100",
+                          "p-3 text-center border-r border-gray-200 dark:border-gray-800 last:border-none",
+                          isToday ? "bg-blue-500/10 dark:bg-blue-500/10" : "",
                         ].join(" ")}
                       >
-                        {WEEK_DAYS[i]}
-                      </div>
-                      <div
-                        className={[
-                          "text-xs mt-1",
-                          isToday
-                            ? "text-blue-700/70 dark:text-blue-300/70"
-                            : "text-gray-600 dark:text-gray-400",
-                        ].join(" ")}
-                      >
-                        {d.getDate()}/{d.getMonth() + 1}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Slots */}
-              {loadingSessions ? (
-                <div className="p-16 flex flex-col items-center justify-center text-gray-600 dark:text-gray-400">
-                  <div className="w-10 h-10 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
-                  <p className="font-semibold">A carregar sessões...</p>
-                </div>
-              ) : (
-                slots.map((slot) => (
-                  <div
-                    key={slot.start}
-                    className="grid grid-cols-8 border-b border-gray-200 dark:border-gray-800/60"
-                  >
-                    {/* Time */}
-                    <div className="p-2 text-xs text-gray-600 dark:text-gray-400 border-r border-gray-200 dark:border-gray-800 flex items-center justify-center font-mono bg-gray-50/50 dark:bg-gray-800/30">
-                      {slot.start}
-                    </div>
-
-                    {/* Days */}
-                    {weekDays.map((d, i) => {
-                      const sess = getSessionInSlot(d, slot.start);
-                      const isSlotToday = toYmd(d) === toYmd(new Date());
-                      const c = sess ? getSessionColor(sess.id) : null;
-
-                      return (
                         <div
-                          key={i}
                           className={[
-                            "border-r border-gray-200 dark:border-gray-800/60 last:border-none relative p-1 min-h-[70px] transition-colors",
-                            isSlotToday
-                              ? "bg-blue-500/5 dark:bg-blue-500/5"
-                              : "bg-white/40 dark:bg-gray-900/40",
+                            "text-sm font-black",
+                            isToday
+                              ? "text-blue-700 dark:text-blue-300"
+                              : "text-gray-800 dark:text-gray-100",
                           ].join(" ")}
                         >
-                          {sess ? (
-                            <div
-                              className={`w-full h-full rounded-xl border ${c.chip} p-2 text-xs shadow-sm relative group overflow-hidden`}
-                            >
-                              <div
-                                className={`absolute left-0 top-0 bottom-0 w-1.5 ${c.bar}`}
-                              />
-                              <div className="pl-2">
-                                <div className="font-black truncate text-[11px] leading-tight mb-0.5">
-                                  {sess.moduloNome}
-                                </div>
-                                <div className="text-[10px] opacity-80 truncate mb-2">
-                                  {sess.formadorNome}
-                                </div>
+                          {WEEK_DAYS[i]}
+                        </div>
+                        <div
+                          className={[
+                            "text-xs mt-1",
+                            isToday
+                              ? "text-blue-700/70 dark:text-blue-300/70"
+                              : "text-gray-600 dark:text-gray-400",
+                          ].join(" ")}
+                        >
+                          {d.getDate()}/{d.getMonth() + 1}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
 
-                                <div className="flex items-center justify-between text-[10px] opacity-80 border-t border-black/5 dark:border-white/10 pt-1">
-                                  <span className="truncate">
-                                    {sess.salaNome}
-                                  </span>
-                                  <span className="font-mono">
-                                    {String(sess.horarioInicio || "").includes(
-                                      "T"
-                                    )
-                                      ? sess.horarioInicio
+                {/* Slots */}
+                {loadingSessions ? (
+                  <div className="p-16 flex flex-col items-center justify-center text-gray-600 dark:text-gray-400">
+                    <div className="w-10 h-10 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
+                    <p className="font-semibold">A carregar sessões...</p>
+                  </div>
+                ) : (
+                  slots.map((slot) => (
+                    <div
+                      key={slot.start}
+                      className="grid grid-cols-8 border-b border-gray-200 dark:border-gray-800/60"
+                    >
+                      {/* Time */}
+                      <div className="p-2 text-xs text-gray-600 dark:text-gray-400 border-r border-gray-200 dark:border-gray-800 flex items-center justify-center font-mono bg-gray-50/50 dark:bg-gray-800/30">
+                        {slot.start}
+                      </div>
+
+                      {/* Days */}
+                      {weekDays.map((d, i) => {
+                        const sess = getSessionInSlot(d, slot.start);
+                        const isSlotToday = toYmd(d) === toYmd(new Date());
+                        const c = sess ? getSessionColor(sess.id) : null;
+
+                        return (
+                          <div
+                            key={i}
+                            className={[
+                              "border-r border-gray-200 dark:border-gray-800/60 last:border-none relative p-1 min-h-[70px] transition-colors",
+                              isSlotToday
+                                ? "bg-blue-500/5 dark:bg-blue-500/5"
+                                : "bg-white/40 dark:bg-gray-900/40",
+                            ].join(" ")}
+                          >
+                            {sess ? (
+                              <div
+                                className={`w-full h-full rounded-xl border ${c.chip} p-2 text-xs shadow-sm relative group overflow-hidden`}
+                              >
+                                <div
+                                  className={`absolute left-0 top-0 bottom-0 w-1.5 ${c.bar}`}
+                                />
+                                <div className="pl-2">
+                                  <div className="font-black truncate text-[11px] leading-tight mb-0.5">
+                                    {sess.moduloNome}
+                                  </div>
+                                  <div className="text-[10px] opacity-80 truncate mb-2">
+                                    {sess.formadorNome}
+                                  </div>
+
+                                  <div className="flex items-center justify-between text-[10px] opacity-80 border-t border-black/5 dark:border-white/10 pt-1">
+                                    <span className="truncate">
+                                      {sess.salaNome}
+                                    </span>
+                                    <span className="font-mono">
+                                      {String(sess.horarioInicio || "").includes(
+                                        "T"
+                                      )
+                                        ? sess.horarioInicio
                                           .split("T")[1]
                                           .substring(0, 5)
-                                      : ""}
-                                  </span>
+                                        : ""}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
 
-                              {/* Delete */}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteSession(sess.id);
-                                }}
-                                className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition
+                                {/* Delete */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteSession(sess.id);
+                                  }}
+                                  className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition
                                            px-2 py-1 rounded-lg text-[11px] font-black
                                            bg-black/20 hover:bg-red-600 text-white"
-                                title="Eliminar sessão"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => openWizard(d, slot.start, slot.end)}
-                              className="w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition"
-                              title="Criar sessão"
-                            >
-                              <div className="w-9 h-9 rounded-full border border-blue-200 dark:border-blue-900/50 bg-blue-500/10 dark:bg-blue-500/15 text-blue-700 dark:text-blue-200 grid place-items-center font-black text-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition">
-                                +
+                                  title="Eliminar sessão"
+                                >
+                                  ✕
+                                </button>
                               </div>
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* List / Table */}
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/60 backdrop-blur shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3">
-            <div>
-              Seções desta semana
-              <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                Lista ordenada por data/hora (mais fácil para validar rapidamente).
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => openWizard(d, slot.start, slot.end)}
+                                className="w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition"
+                                title="Criar sessão"
+                              >
+                                <div className="w-9 h-9 rounded-full border border-blue-200 dark:border-blue-900/50 bg-blue-500/10 dark:bg-blue-500/15 text-blue-700 dark:text-blue-200 grid place-items-center font-black text-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition">
+                                  +
+                                </div>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">
-              Total:{" "}
-              <span className="font-black text-gray-900 dark:text-gray-100">
-                {sessionsList.length}
-              </span>
-            </div>
           </div>
+        )}
 
-          <div className="overflow-x-auto">
-            <table className="min-w-[900px] w-full">
-              <thead className="bg-gray-50/80 dark:bg-gray-800/50">
-                <tr className="text-left text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">
-                  <th className="px-6 py-3 font-black">Data</th>
-                  <th className="px-6 py-3 font-black">Hora</th>
-                  <th className="px-6 py-3 font-black">Módulo</th>
-                  <th className="px-6 py-3 font-black">Formador</th>
-                  <th className="px-6 py-3 font-black">Sala</th>
-                  <th className="px-6 py-3 font-black">Duração</th>
-                  <th className="px-6 py-3 font-black text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sessionsList.map((s) => {
-                  const c = getSessionColor(s.id);
-                  const d = new Date(s.horarioInicio);
-                  const ymd = isNaN(d)
-                    ? "--"
-                    : `${String(d.getDate()).padStart(2, "0")}/${String(
+        {/* List / Table */}
+        {viewTab === "lista" && (
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/60 backdrop-blur shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3">
+              <div>
+                Seções desta semana
+                <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  Lista ordenada por data/hora (mais fácil para validar rapidamente).
+                </div>
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                Total:{" "}
+                <span className="font-black text-gray-900 dark:text-gray-100">
+                  {sessionsList.length}
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-[900px] w-full">
+                <thead className="bg-gray-50/80 dark:bg-gray-800/50">
+                  <tr className="text-left text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                    <th className="px-6 py-3 font-black">Data</th>
+                    <th className="px-6 py-3 font-black">Hora</th>
+                    <th className="px-6 py-3 font-black">Módulo</th>
+                    <th className="px-6 py-3 font-black">Formador</th>
+                    <th className="px-6 py-3 font-black">Sala</th>
+                    <th className="px-6 py-3 font-black">Duração</th>
+                    <th className="px-6 py-3 font-black text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sessionsList.map((s) => {
+                    const c = getSessionColor(s.id);
+                    const d = new Date(s.horarioInicio);
+                    const ymd = isNaN(d)
+                      ? "--"
+                      : `${String(d.getDate()).padStart(2, "0")}/${String(
                         d.getMonth() + 1
                       ).padStart(2, "0")}`;
-                  const startT = String(s.horarioInicio || "").includes("T")
-                    ? s.horarioInicio.split("T")[1].substring(0, 5)
-                    : "--";
-                  const endT = String(s.horarioFim || "").includes("T")
-                    ? s.horarioFim.split("T")[1].substring(0, 5)
-                    : "--";
+                    const startT = String(s.horarioInicio || "").includes("T")
+                      ? s.horarioInicio.split("T")[1].substring(0, 5)
+                      : "--";
+                    const endT = String(s.horarioFim || "").includes("T")
+                      ? s.horarioFim.split("T")[1].substring(0, 5)
+                      : "--";
 
-                  return (
-                    <tr
-                      key={s.id}
-                      className="border-t border-gray-200 dark:border-gray-800/60"
-                    >
-                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100 font-semibold">
-                        {ymd}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 font-mono">
-                        {startT}–{endT}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-black ${c.chip}`}
-                        >
-                          <span className={`w-2.5 h-2.5 rounded-full ${c.bar}`} />
-                          {s.moduloNome}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        {s.formadorNome}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        {s.salaNome}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        {durationLabel(s.horarioInicio, s.horarioFim)}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => deleteSession(s.id)}
-                          className="px-3 py-2 rounded-lg text-xs font-black text-white bg-red-600 hover:bg-red-700 transition"
-                        >
-                          Eliminar
-                        </button>
+                    return (
+                      <tr
+                        key={s.id}
+                        className="border-t border-gray-200 dark:border-gray-800/60"
+                      >
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100 font-semibold">
+                          {ymd}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 font-mono">
+                          {startT}–{endT}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-black ${c.chip}`}
+                          >
+                            <span className={`w-2.5 h-2.5 rounded-full ${c.bar}`} />
+                            {s.moduloNome}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                          {s.formadorNome}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                          {s.salaNome}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                          {durationLabel(s.horarioInicio, s.horarioFim)}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => deleteSession(s.id)}
+                            className="px-3 py-2 rounded-lg text-xs font-black text-white bg-red-600 hover:bg-red-700 transition"
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {sessionsList.length === 0 && !loadingSessions && (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="px-6 py-10 text-center text-gray-600 dark:text-gray-400"
+                      >
+                        Sem sessões nesta semana.
                       </td>
                     </tr>
-                  );
-                })}
-
-                {sessionsList.length === 0 && !loadingSessions && (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-6 py-10 text-center text-gray-600 dark:text-gray-400"
-                    >
-                      Sem sessões nesta semana.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* WIZARD MODAL */}

@@ -71,6 +71,23 @@ namespace SecManagement_API.Controllers
         }
 
 
+        [HttpPatch("{id}/coordenador")]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+        public async Task<ActionResult<TurmaDto>> UpdateCoordenador(int id, UpdateTurmaCoordenadorDto dto)
+        {
+            try
+            {
+                var updated = await _turmaService.UpdateCoordenadorAsync(id, dto.CoordenadorId);
+                if (updated == null) return NotFound("Turma não encontrada.");
+                return Ok(updated);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+
         // GET: api/Turmas/5/modulos
         [HttpGet("{turmaId}/modulos")]
         public async Task<ActionResult<IEnumerable<TurmaModuloDto>>> GetModulos(int turmaId)

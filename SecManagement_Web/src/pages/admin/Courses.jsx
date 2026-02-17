@@ -235,7 +235,6 @@ export default function Courses() {
       const nome = safeStr(c?.nome).toLowerCase();
       const nivel = safeStr(c?.nivelCurso).toLowerCase();
 
-      // ✅ sem "local"
       const matchesQuery = !q || nome.includes(q) || nivel.includes(q);
       const matchesArea = areaFilter === "all" || String(c?.areaId) === String(areaFilter);
 
@@ -304,7 +303,6 @@ export default function Courses() {
     if (!nome) return alert("O nome é obrigatório.");
     if (!Number.isFinite(areaIdNum) || areaIdNum <= 0) return alert("A área é obrigatória.");
 
-    // ✅ sem local
     const payload = {
       nome,
       areaId: areaIdNum,
@@ -339,7 +337,7 @@ export default function Courses() {
     }
   }
 
-  // ✅ botão estilo antigo (pill) – para manter exatamente como estava
+  // Botão estilo antigo (pill)
   const actionBtnBase =
     "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed";
 
@@ -409,6 +407,9 @@ export default function Courses() {
             </div>
           </div>
         </div>
+
+        {/* Separator */}
+        <div className="my-6 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
 
         {/* Toolbar */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-5 mb-6">

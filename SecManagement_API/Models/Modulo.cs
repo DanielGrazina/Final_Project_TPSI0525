@@ -14,6 +14,8 @@ namespace SecManagement_API.Models
         public int CargaHoraria { get; set; }
         public string Nivel { get; set; } = string.Empty;
 
+        public TipoSala TipoSala { get; set; } = TipoSala.Teorica;
+
         public ICollection<TurmaModulo> TurmaModulos { get; set; } = new List<TurmaModulo>();
     }
 }

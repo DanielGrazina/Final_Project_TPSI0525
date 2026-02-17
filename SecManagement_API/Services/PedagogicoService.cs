@@ -19,7 +19,7 @@ namespace SecManagement_API.Services
         public async Task<IEnumerable<AreaDto>> GetAreasAsync()
         {
             return await _context.Areas
-                .Select(a => new AreaDto { Id = a.Id, Nome = a.Nome })
+                .Select(a => new AreaDto { Id = a.Id, Nome = a.Nome, Descricao = a.Descricao })
                 .ToListAsync();
         }
 
@@ -34,11 +34,11 @@ namespace SecManagement_API.Services
             if (existe)
                 throw new Exception("Já existe uma área com esse nome.");
 
-            var area = new Area { Nome = nome, NomeNormalized = nomeNorm };
+            var area = new Area { Nome = nome, NomeNormalized = nomeNorm, Descricao = (dto.Descricao ?? string.Empty).Trim() };
             _context.Areas.Add(area);
             await _context.SaveChangesAsync();
 
-            return new AreaDto { Id = area.Id, Nome = area.Nome };
+            return new AreaDto { Id = area.Id, Nome = area.Nome, Descricao = area.Descricao };
         }
 
         public async Task<AreaDto?> GetAreaByIdAsync(int id)
@@ -46,7 +46,7 @@ namespace SecManagement_API.Services
             var a = await _context.Areas.FindAsync(id);
             if (a == null) return null;
 
-            return new AreaDto { Id = a.Id, Nome = a.Nome };
+            return new AreaDto { Id = a.Id, Nome = a.Nome, Descricao = a.Descricao };
         }
 
         public async Task<AreaDto> UpdateAreaAsync(int id, CreateAreaDto dto)
@@ -65,9 +65,10 @@ namespace SecManagement_API.Services
 
             area.Nome = nome;
             area.NomeNormalized = nomeNorm;
+            area.Descricao = (dto.Descricao ?? string.Empty).Trim();
             await _context.SaveChangesAsync();
 
-            return new AreaDto { Id = area.Id, Nome = area.Nome };
+            return new AreaDto { Id = area.Id, Nome = area.Nome, Descricao = area.Descricao };
         }
 
         public async Task<bool> DeleteAreaAsync(int id)
@@ -216,7 +217,8 @@ namespace SecManagement_API.Services
                     Id = m.Id,
                     Nome = m.Nome,
                     CargaHoraria = m.CargaHoraria,
-                    Nivel = m.Nivel
+                    Nivel = m.Nivel,
+                    TipoSala = m.TipoSala.ToString()
                 })
                 .ToListAsync();
         }
@@ -231,7 +233,8 @@ namespace SecManagement_API.Services
                 Id = m.Id,
                 Nome = m.Nome,
                 CargaHoraria = m.CargaHoraria,
-                Nivel = m.Nivel
+                Nivel = m.Nivel,
+                TipoSala = m.TipoSala.ToString()
             };
         }
 
@@ -248,12 +251,16 @@ namespace SecManagement_API.Services
             if (existe)
                 throw new Exception("Já existe um módulo com esse nome.");
 
+            if (!Enum.TryParse<TipoSala>(dto.TipoSala, true, out var tipoSalaEnum))
+                tipoSalaEnum = TipoSala.Teorica;
+
             var modulo = new Modulo
             {
                 Nome = nome,
                 NomeNormalized = nomeNorm,
                 CargaHoraria = dto.CargaHoraria,
-                Nivel = nivel
+                Nivel = nivel,
+                TipoSala = tipoSalaEnum
             };
 
             _context.Modulos.Add(modulo);
@@ -264,7 +271,8 @@ namespace SecManagement_API.Services
                 Id = modulo.Id,
                 Nome = modulo.Nome,
                 CargaHoraria = modulo.CargaHoraria,
-                Nivel = modulo.Nivel
+                Nivel = modulo.Nivel,
+                TipoSala = modulo.TipoSala.ToString()
             };
         }
 
@@ -290,6 +298,9 @@ namespace SecManagement_API.Services
             if (!string.IsNullOrWhiteSpace(dto.Nivel))
                 modulo.Nivel = dto.Nivel.Trim();
 
+            if (!string.IsNullOrWhiteSpace(dto.TipoSala) && Enum.TryParse<TipoSala>(dto.TipoSala, true, out var tipoSalaEnum))
+                modulo.TipoSala = tipoSalaEnum;
+
             await _context.SaveChangesAsync();
 
             return new ModuloDto
@@ -297,7 +308,8 @@ namespace SecManagement_API.Services
                 Id = modulo.Id,
                 Nome = modulo.Nome,
                 CargaHoraria = modulo.CargaHoraria,
-                Nivel = modulo.Nivel
+                Nivel = modulo.Nivel,
+                TipoSala = modulo.TipoSala.ToString()
             };
         }
 

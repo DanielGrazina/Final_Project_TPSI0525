@@ -227,6 +227,8 @@ export default function AdminTurmas() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(25); // mantém fixo aqui (como no print). Se quiseres dropdown depois, digo-te.
 
+  const [editingCoordTurmaId, setEditingCoordTurmaId] = useState(null);
+
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     nome: "",
@@ -394,6 +396,24 @@ export default function AdminTurmas() {
       setError(extractError(err, "Erro ao criar turma."));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function updateCoordenador(turmaId, newCoordId) {
+    setError("");
+    setInfo("");
+    try {
+      const res = await api.patch(`/Turmas/${turmaId}/coordenador`, {
+        CoordenadorId: newCoordId || null,
+      });
+      setTurmas((prev) =>
+        prev.map((t) => (t.id === turmaId ? { ...t, ...res.data } : t))
+      );
+      setEditingCoordTurmaId(null);
+      setInfo("Coordenador atualizado.");
+      setTimeout(() => setInfo(""), 1200);
+    } catch (err) {
+      setError(extractError(err, "Erro ao alterar coordenador."));
     }
   }
 
@@ -599,7 +619,7 @@ export default function AdminTurmas() {
             </div>
           </div>
 
-          {/* ✅ Paginação compacta (como na imagem) */}
+          {/* Paginação compacta */}
           <div className="mt-4">
             <PaginationCompact
               total={filtered.length}
@@ -610,6 +630,9 @@ export default function AdminTurmas() {
             />
           </div>
         </div>
+
+        {/* Separator */}
+        <div className="my-6 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
 
         {/* Table */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
@@ -651,7 +674,48 @@ export default function AdminTurmas() {
                       </td>
 
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        {t.coordenadorNome || (t.coordenadorId ? `#${t.coordenadorId}` : "Sem coordenador")}
+                        {editingCoordTurmaId === t.id ? (
+                          <div className="flex items-center gap-2">
+                            <select
+                              autoFocus
+                              defaultValue={t.coordenadorId ?? ""}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                updateCoordenador(t.id, v ? Number(v) : null);
+                              }}
+                              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500/40 focus:outline-none min-w-[180px]"
+                            >
+                              <option value="">Sem coordenador</option>
+                              {formadores.map((f) => (
+                                <option key={getFormadorId(f)} value={getFormadorId(f)}>
+                                  {getFormadorDisplay(f)}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => setEditingCoordTurmaId(null)}
+                              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm font-bold"
+                              title="Cancelar"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 group">
+                            <span>{t.coordenadorNome || (t.coordenadorId ? `#${t.coordenadorId}` : "Sem coordenador")}</span>
+                            <button
+                              type="button"
+                              onClick={() => setEditingCoordTurmaId(t.id)}
+                              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                              title="Alterar coordenador"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
+                          </div>
+                        )}
                       </td>
 
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">

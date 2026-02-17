@@ -108,9 +108,9 @@ namespace SecManagement_API.Services
                             fimEfetivo = bloco.Inicio.AddHours(horasRestantes);
                         }
 
-                        // Tentar alocar sala
+                        // Tentar alocar sala (preferir sala do tipo correto)
                         int? salaIdEscolhida = await EncontrarSalaDisponivel(
-                            salas, bloco.Inicio, fimEfetivo);
+                            salas, bloco.Inicio, fimEfetivo, tm.Modulo.TipoSala);
 
                         if (salaIdEscolhida == null)
                         {
@@ -245,13 +245,29 @@ namespace SecManagement_API.Services
 
         /// <summary>
         /// Encontra a primeira sala sem conflitos no intervalo indicado.
+        /// Prioriza salas do tipo indicado; se nenhuma estiver livre, tenta qualquer sala.
         /// </summary>
         private async Task<int?> EncontrarSalaDisponivel(
+            List<Sala> salas, DateTime inicio, DateTime fim, TipoSala tipoPreferido)
+        {
+            // 1.ª passagem: apenas salas do tipo correto
+            int? salaCorreta = await TentarEncontrarSala(
+                salas.Where(s => s.Tipo == tipoPreferido).ToList(), inicio, fim);
+            if (salaCorreta != null) return salaCorreta;
+
+            // 2.ª passagem (fallback): qualquer sala livre
+            return await TentarEncontrarSala(
+                salas.Where(s => s.Tipo != tipoPreferido).ToList(), inicio, fim);
+        }
+
+        /// <summary>
+        /// Itera a lista de salas e devolve o ID da primeira livre no intervalo.
+        /// </summary>
+        private async Task<int?> TentarEncontrarSala(
             List<Sala> salas, DateTime inicio, DateTime fim)
         {
             foreach (var sala in salas)
             {
-                // Verificar bloqueios manuais (indisponibilidades)
                 bool salaBloqueada = await _context.Disponibilidades
                     .AnyAsync(d => d.SalaId == sala.Id
                         && d.Disponivel == false
@@ -260,7 +276,6 @@ namespace SecManagement_API.Services
 
                 if (salaBloqueada) continue;
 
-                // Verificar sessões existentes (overlap)
                 bool salaOcupada = await _context.Sessoes
                     .AnyAsync(s => s.SalaId == sala.Id
                         && s.HorarioInicio < fim
@@ -268,10 +283,10 @@ namespace SecManagement_API.Services
 
                 if (salaOcupada) continue;
 
-                return sala.Id; // Primeira sala livre
+                return sala.Id;
             }
 
-            return null; // Nenhuma sala disponível
+            return null;
         }
 
         /// <summary>

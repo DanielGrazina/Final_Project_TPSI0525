@@ -213,7 +213,7 @@ export default function Recruit() {
   const [colocarTurmaId, setColocarTurmaId] = useState("");
   const [placing, setPlacing] = useState(false);
 
-  // ✅ Pagination states (Turmas-style) for big lists
+  // Pagination states (Turmas-style) for big lists
   const [pageCursos, setPageCursos] = useState(1);
   const [pagePendentes, setPagePendentes] = useState(1);
   const [pageInscritos, setPageInscritos] = useState(1);
@@ -372,12 +372,12 @@ export default function Recruit() {
     });
   }, [pendentes, searchPendentes]);
 
-  // ✅ reset pagination when filters change / tab changes / turma changes
+  // Reset pagination when filters change / tab changes / turma changes
   useEffect(() => setPageCursos(1), [searchCursos]);
   useEffect(() => setPagePendentes(1), [searchPendentes, filtrarCursoId, tab]);
   useEffect(() => setPageInscritos(1), [searchInscritos, selectedTurmaId, tab]);
 
-  // ✅ ensure pages are within bounds
+  // Ensure pages are within bounds
   const totalPagesCursos = useMemo(
     () => Math.max(1, Math.ceil(cursosFiltrados.length / pageSize)),
     [cursosFiltrados.length]
@@ -403,7 +403,7 @@ export default function Recruit() {
     if (pageInscritos > totalPagesInscritos) setPageInscritos(totalPagesInscritos);
   }, [pageInscritos, totalPagesInscritos]);
 
-  // ✅ paged arrays
+  // Paged arrays
   const cursosPaged = useMemo(() => {
     const start = (pageCursos - 1) * pageSize;
     return cursosFiltrados.slice(start, start + pageSize);
@@ -593,6 +593,11 @@ export default function Recruit() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <BurgerMenu />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+              </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight mb-1">Inscrições</h1>
                 <p className="text-sm text-gray-600 dark:text-gray-400">

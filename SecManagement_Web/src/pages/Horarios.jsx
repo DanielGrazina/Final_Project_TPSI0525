@@ -449,6 +449,9 @@ export default function Horarios() {
           )}
         </div>
 
+        {/* Separator */}
+        <div className="my-6 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
+
         {/* Table/Grid */}
         <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
           {/* Top header row */}

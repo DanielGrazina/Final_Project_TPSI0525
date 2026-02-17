@@ -68,6 +68,7 @@ CREATE TABLE "Areas" (
     "Id" SERIAL PRIMARY KEY,
     "Nome" VARCHAR(100) NOT NULL,
     "NomeNormalized" VARCHAR(100) NOT NULL,
+    "Descricao" TEXT DEFAULT '',
     UNIQUE("NomeNormalized")
 );
 CREATE TABLE "Cursos" (
@@ -87,6 +88,8 @@ CREATE TABLE "Modulos" (
     "NomeNormalized" VARCHAR(150) NOT NULL,
     "CargaHoraria" INT NOT NULL,
     "Nivel" VARCHAR(50),
+    "TipoSala" VARCHAR(50) DEFAULT 'Teorica'
+    CHECK ("TipoSala" IN ('Teorica', 'Informatica', 'Oficina', 'Reuniao')),
     UNIQUE("NomeNormalized")
 );
 CREATE TABLE "Turmas" (
