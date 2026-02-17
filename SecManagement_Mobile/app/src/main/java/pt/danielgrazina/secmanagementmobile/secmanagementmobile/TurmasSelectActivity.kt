@@ -62,17 +62,14 @@ class TurmasSelectActivity : AppCompatActivity() {
         scope.launch {
             val turmas: List<TurmaDto> = withContext(Dispatchers.IO) { ApiClient.api.getTurmas() }
 
-            // ✅ se vier coordenadorId, filtra turmas coordenadas
-            val filtered = if (coordenadorId > 0) {
+            // Se vier coordenadorId, filtra apenas turmas coordenadas
+            val base = if (coordenadorId > 0) {
                 turmas.filter { it.coordenadorId == coordenadorId }
             } else turmas
 
-            adapter.update(filtered)
-
-            turmasAll = turmas // a lista original
+            turmasAll = base
             turmasFiltered = turmasAll
             adapter.update(turmasFiltered)
-
         }
     }
 

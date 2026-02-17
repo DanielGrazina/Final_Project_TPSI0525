@@ -438,11 +438,27 @@ export default function Evaluations() {
   }, [avaliacoes, turmas, turmaFilter, isAluno, isFormador]);
 
   const turmasParaSelect = useMemo(() => {
-    if (isFormador && allowedTurmaIds.size > 0) {
-      return turmas.filter((t) => allowedTurmaIds.has(Number(t.id)));
+    // Formando: only turmas they have evaluations in
+    if (isAluno) {
+      const turmaIdsComAvaliacoes = new Set(
+        avaliacoes.map((a) => Number(a.turmaId)).filter((x) => Number.isFinite(x))
+      );
+      return turmas.filter((t) => turmaIdsComAvaliacoes.has(Number(t.id)));
     }
+    // Formador: only turmas they teach
+    if (isFormador) {
+      if (allowedTurmaIds.size > 0) {
+        return turmas.filter((t) => allowedTurmaIds.has(Number(t.id)));
+      }
+      // fallback: only turmas that appear in their evaluation data
+      const turmaIdsComAvaliacoes = new Set(
+        avaliacoes.map((a) => Number(a.turmaId)).filter((x) => Number.isFinite(x))
+      );
+      return turmas.filter((t) => turmaIdsComAvaliacoes.has(Number(t.id)));
+    }
+    // Admin/Secretaria: all
     return turmas;
-  }, [turmas, isFormador, allowedTurmaIds]);
+  }, [turmas, avaliacoes, isAluno, isFormador, allowedTurmaIds]);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();

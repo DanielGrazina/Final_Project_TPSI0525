@@ -8,7 +8,7 @@ namespace SecManagement_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin},{Roles.Formador}")]
     public class AutoScheduleController : ControllerBase
     {
         private readonly IAutoScheduleService _service;

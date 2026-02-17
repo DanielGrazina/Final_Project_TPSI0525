@@ -35,7 +35,7 @@ class HorarioFormandoRedirectActivity : AppCompatActivity() {
 
                 // escolhe uma inscrição com turma
                 val atual = inscricoes
-                    .filter { it.turmaId != null }
+                    .filter { it.turmaId != null && it.estado.equals("Ativo", ignoreCase = true) }
                     .maxByOrNull { it.dataInscricao } // mais recente
 
                 val turmaId = atual?.turmaId

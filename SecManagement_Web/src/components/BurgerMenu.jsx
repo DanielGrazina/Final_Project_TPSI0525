@@ -26,6 +26,7 @@ export default function BurgerMenu() {
             canTurmas: isSuperAdmin || isAdmin,
             canRooms: isSuperAdmin || isAdmin,
             canStats: isSuperAdmin || isAdmin,
+            canAutoSchedule: isSuperAdmin || isAdmin || isFormador,
             canSessoes: isSuperAdmin || isAdmin || isFormador,
             canEvaluations: isSuperAdmin || isAdmin || isFormador || isFormando,
             canInscricoes: isUser || isFormando || isSecretaria || isSuperAdmin || isAdmin,
@@ -142,7 +143,7 @@ export default function BurgerMenu() {
             label: "Geração Horários",
             desc: "Geração automática",
             path: "/admin/auto-schedule",
-            show: perms.canStats, // Admin + SuperAdmin
+            show: perms.canAutoSchedule, // Admin + SuperAdmin + Formador (coordenador)
         },
         {
             key: "evaluations",
