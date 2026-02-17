@@ -140,7 +140,7 @@ namespace SecManagement_API.Data
                 }
 
 
-                Modulo EnsureModulo(string nome, int ch, string nivel)
+                Modulo EnsureModulo(string nome, int ch, string nivel, TipoSala tipoSala = TipoSala.Teorica)
                 {
                     var nomeTrim = (nome ?? string.Empty).Trim();
                     var nomeNorm = nomeTrim.ToLowerInvariant();
@@ -152,7 +152,8 @@ namespace SecManagement_API.Data
                         Nome = nomeTrim,
                         NomeNormalized = nomeNorm,
                         CargaHoraria = ch,
-                        Nivel = nivel
+                        Nivel = nivel,
+                        TipoSala = tipoSala
                     };
                     context.Modulos.Add(m);
                     context.SaveChanges();
@@ -414,22 +415,22 @@ namespace SecManagement_API.Data
                 // Módulos (gerados + alguns fixos)
                 var modulos = new List<Modulo>();
 
-                var modulosFixos = new (string nome, int ch, string nivel)[]
+                var modulosFixos = new (string nome, int ch, string nivel, TipoSala tipo)[]
                 {
-                    ("Algoritmos e Estruturas", 50, "1"),
-                    ("Base de Dados SQL", 40, "1"),
-                    ("Desenvolvimento Web", 60, "1"),
-                    ("ASP.NET Core Web API", 60, "2"),
-                    ("Segurança Informática", 30, "2"),
-                    ("Fundamentos de Redes", 45, "1"),
-                    ("Administração Linux", 45, "2"),
-                    ("Testes e Qualidade de Software", 30, "2"),
-                    ("UML e Modelação", 25, "1"),
-                    ("Git e Controlo de Versões", 20, "1"),
+                    ("Algoritmos e Estruturas", 50, "1", TipoSala.Informatica),
+                    ("Base de Dados SQL", 40, "1", TipoSala.Informatica),
+                    ("Desenvolvimento Web", 60, "1", TipoSala.Informatica),
+                    ("ASP.NET Core Web API", 60, "2", TipoSala.Informatica),
+                    ("Segurança Informática", 30, "2", TipoSala.Informatica),
+                    ("Fundamentos de Redes", 45, "1", TipoSala.Informatica),
+                    ("Administração Linux", 45, "2", TipoSala.Informatica),
+                    ("Testes e Qualidade de Software", 30, "2", TipoSala.Teorica),
+                    ("UML e Modelação", 25, "1", TipoSala.Teorica),
+                    ("Git e Controlo de Versões", 20, "1", TipoSala.Informatica),
                 };
 
                 foreach (var m in modulosFixos)
-                    modulos.Add(EnsureModulo(m.nome, m.ch, m.nivel));
+                    modulos.Add(EnsureModulo(m.nome, m.ch, m.nivel, m.tipo));
 
                 // Completar até MODULOS_TOTAL com nomes variados
                 string[] temas = {
@@ -440,13 +441,23 @@ namespace SecManagement_API.Data
                     "IoT", "Sensores", "Robótica", "Qualidade", "Lean", "ISO 27001"
                 };
 
+                // Temas de informática que precisam sala de tipo Informatica
+                var temasInformatica = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "POO", "Design Patterns", "Docker", "Kubernetes", "CI/CD",
+                    "React", "Angular", "Node.js", "Python", "Java", "C#",
+                    "Cloud", "Azure", "AWS", "Redes", "Firewall",
+                    "Virtualização", "Linux", "Windows Server", "IoT", "Sensores"
+                };
+
                 while (context.Modulos.Count() < MODULOS_TOTAL)
                 {
                     var tema = temas[rng.Next(temas.Length)];
                     var nome = $"{tema} - {rng.Next(1, 4)}";
                     var ch = rng.Next(20, 61);           // 20..60
                     var nivel = rng.Next(1, 4).ToString(); // 1..3
-                    modulos.Add(EnsureModulo(nome, ch, nivel));
+                    var tipoSalaModulo = temasInformatica.Contains(tema) ? TipoSala.Informatica : TipoSala.Teorica;
+                    modulos.Add(EnsureModulo(nome, ch, nivel, tipoSalaModulo));
                 }
 
                 // Refresh lista completa de módulos

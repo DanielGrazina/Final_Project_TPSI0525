@@ -11,6 +11,8 @@ namespace SecManagement_API.Models
 
         public string NomeNormalized { get; set; } = string.Empty;
 
+        public string Descricao { get; set; } = string.Empty;
+
         public ICollection<Curso> Cursos { get; set; } = new List<Curso>();
     }
 }

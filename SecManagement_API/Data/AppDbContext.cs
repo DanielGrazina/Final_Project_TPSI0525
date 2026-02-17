@@ -38,6 +38,10 @@ namespace SecManagement_API.Data
                 .Property(s => s.Tipo)
                 .HasConversion<string>();
 
+            modelBuilder.Entity<Modulo>()
+                .Property(m => m.TipoSala)
+                .HasConversion<string>();
+
             modelBuilder.Entity<Turma>()
                 .Property(t => t.Estado)
                 .HasConversion<string>();

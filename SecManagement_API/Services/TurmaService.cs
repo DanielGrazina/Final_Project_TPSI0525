@@ -100,6 +100,23 @@ namespace SecManagement_API.Services
             return true;
         }
 
+        public async Task<TurmaDto?> UpdateCoordenadorAsync(int id, int? coordenadorId)
+        {
+            var turma = await _context.Turmas.FindAsync(id);
+            if (turma == null) return null;
+
+            if (coordenadorId.HasValue)
+            {
+                if (!await _context.Formadores.AnyAsync(f => f.Id == coordenadorId.Value))
+                    throw new Exception("Coordenador (Formador) não encontrado.");
+            }
+
+            turma.CoordenadorId = coordenadorId;
+            await _context.SaveChangesAsync();
+
+            return await GetByIdAsync(id);
+        }
+
         public async Task<IEnumerable<TurmaDto>> GetTurmasByFormadorAsync(int formadorId)
         {
             // Buscar turmas onde o formador é coordenador OU leciona módulos

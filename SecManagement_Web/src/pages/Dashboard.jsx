@@ -644,7 +644,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* ✅ Pesquisa Rápida (Cursos / Formandos) */}
+          {/* Separator */}
+          <div className="my-8 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
+
+          {/* Pesquisa Rápida (Cursos / Formandos) */}
           <div className="mt-8">
             <DashboardSearch perms={perms} />
           </div>

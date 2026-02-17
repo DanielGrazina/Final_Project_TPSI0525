@@ -9,6 +9,7 @@ namespace SecManagement_API.Services.Interfaces
         Task<TurmaDto?> GetByIdAsync(int id);
         Task<TurmaDto> CreateAsync(CreateTurmaDto dto);
         Task<bool> DeleteAsync(int id);
+        Task<TurmaDto?> UpdateCoordenadorAsync(int id, int? coordenadorId);
         Task<IEnumerable<TurmaDto>> GetTurmasByFormadorAsync(int formadorId);
 
         // --- DISTRIBUIÇÃO (Módulos/Formadores) ---

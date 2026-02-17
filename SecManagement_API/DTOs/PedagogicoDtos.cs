@@ -7,12 +7,14 @@ namespace SecManagement_API.DTOs
     {
         public int Id { get; set; }
         public string Nome { get; set; } = string.Empty;
+        public string Descricao { get; set; } = string.Empty;
     }
 
     public class CreateAreaDto
     {
         [Required]
         public string Nome { get; set; } = string.Empty;
+        public string Descricao { get; set; } = string.Empty;
     }
 
     // --- CURSOS (Definição) ---
@@ -63,6 +65,11 @@ namespace SecManagement_API.DTOs
         [Required]
         [RegularExpression("Planeada|Decorrer|Terminada|Cancelada", ErrorMessage = "O estado deve ser: Planeada, Decorrer, Terminada ou Cancelada.")]
         public string Estado { get; set; } = "Planeada";
+    }
+
+    public class UpdateTurmaCoordenadorDto
+    {
+        public int? CoordenadorId { get; set; }
     }
 
     // --- TURMA MODULOS (A Distribuição/Horário Base) ---
