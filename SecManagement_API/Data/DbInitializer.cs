@@ -105,14 +105,14 @@ namespace SecManagement_API.Data
                     return f;
                 }
 
-                Area EnsureArea(string nome)
+                Area EnsureArea(string nome, string descricao = "")
                 {
                     var nomeTrim = (nome ?? string.Empty).Trim();
                     var nomeNorm = nomeTrim.ToLowerInvariant();
                     var a = context.Areas.FirstOrDefault(x => x.NomeNormalized == nomeNorm);
                     if (a != null) return a;
 
-                    a = new Area { Nome = nomeTrim, NomeNormalized = nomeNorm };
+                    a = new Area { Nome = nomeTrim, NomeNormalized = nomeNorm, Descricao = (descricao ?? string.Empty).Trim() };
                     context.Areas.Add(a);
                     context.SaveChanges();
                     return a;
@@ -343,12 +343,12 @@ namespace SecManagement_API.Data
                 // -------------------------
                 var areas = new List<Area>
                 {
-                    EnsureArea("Informática"),
-                    EnsureArea("Redes e Sistemas"),
-                    EnsureArea("Gestão"),
-                    EnsureArea("Mecatrónica"),
-                    EnsureArea("Eletrónica"),
-                    EnsureArea("Qualidade")
+                    EnsureArea("Informática", "Desenvolvimento de software, programação e sistemas de informação."),
+                    EnsureArea("Redes e Sistemas", "Administração de redes, cibersegurança e infraestrutura de TI."),
+                    EnsureArea("Gestão", "Gestão de projetos, equipas e operações empresariais."),
+                    EnsureArea("Mecatrónica", "Automação industrial, robótica e manutenção de equipamentos."),
+                    EnsureArea("Eletrónica", "Eletrónica digital, sistemas embebidos e IoT."),
+                    EnsureArea("Qualidade", "Auditorias, normas ISO, lean e melhoria contínua.")
                 };
 
                 // Cursos (alguns por área)
